@@ -17,6 +17,8 @@ module Simulation.Aivika.Trans.QueueStrategy
         DequeueStrategy(..),
         EnqueueStrategy(..),
         PriorityQueueStrategy(..),
+        -- * Strategy Queues
+        StrategyQueue(..),
         -- * Strategy Instances
         FCFS(..),
         LCFS(..),
@@ -101,6 +103,7 @@ data StaticPriorities = StaticPriorities deriving (Eq, Ord, Show)
 
 instance Comp m => QueueStrategy m FCFS where
 
+  -- | A queue used by the 'FCFS' strategy.
   newtype StrategyQueue m FCFS a = FCFSQueue (LL.DoubleLinkedList m a)
 
   {-# SPECIALISE INLINE newStrategyQueue :: FCFS -> Simulation IO (StrategyQueue IO FCFS a) #-}
@@ -128,6 +131,7 @@ instance DequeueStrategy m FCFS => EnqueueStrategy m FCFS where
 
 instance Comp m => QueueStrategy m LCFS where
 
+  -- | A queue used by the 'LCFS' strategy.
   newtype StrategyQueue m LCFS a = LCFSQueue (LL.DoubleLinkedList m a)
 
   {-# SPECIALISE INLINE newStrategyQueue :: LCFS -> Simulation IO (StrategyQueue IO LCFS a) #-}
@@ -155,6 +159,7 @@ instance DequeueStrategy m LCFS => EnqueueStrategy m LCFS where
 
 instance Comp m => QueueStrategy m StaticPriorities where
 
+  -- | A queue used by the 'StaticPriorities' strategy.
   newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue m a)
 
   {-# SPECIALISE INLINE newStrategyQueue :: StaticPriorities -> Simulation IO (StrategyQueue IO StaticPriorities a) #-}
@@ -182,6 +187,7 @@ instance DequeueStrategy m StaticPriorities => PriorityQueueStrategy m StaticPri
 
 instance Comp m => QueueStrategy m SIRO where
 
+  -- | A queue used by the 'SIRO' strategy.
   newtype StrategyQueue m SIRO a = SIROQueue (V.Vector m a)
   
   {-# SPECIALISE INLINE newStrategyQueue :: SIRO -> Simulation IO (StrategyQueue IO SIRO a) #-}
