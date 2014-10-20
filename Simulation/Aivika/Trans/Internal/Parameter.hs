@@ -59,10 +59,10 @@ import Simulation.Aivika.Trans.Internal.Specs
 
 instance Monad m => Monad (Parameter m) where
 
-  {-# SPECIALISE INLINE return :: a -> Parameter IO a #-}
+  {-# INLINE return #-}
   return a = Parameter $ \r -> return a
 
-  {-# SPECIALISE INLINE (>>=) :: Parameter IO a -> (a -> Parameter IO b) -> Parameter IO b #-}
+  {-# INLINE (>>=) #-}
   (Parameter m) >>= k =
     Parameter $ \r -> 
     do a <- m r
@@ -71,8 +71,6 @@ instance Monad m => Monad (Parameter m) where
 
 -- | Run the parameter using the specified specs.
 runParameter :: Comp m => Parameter m a -> Specs m -> m a
-{-# INLINABLE runParameter #-}
-{-# SPECIALISE runParameter :: Parameter IO a -> Specs IO -> IO a #-}
 runParameter (Parameter m) sc =
   do s <- newSession
      q <- newEventQueue s sc
@@ -87,8 +85,6 @@ runParameter (Parameter m) sc =
 -- | Run the given number of parameters using the specified specs, 
 --   where each parameter is distinguished by its index 'parameterIndex'.
 runParameters :: Comp m => Parameter m a -> Specs m -> Int -> [m a]
-{-# INLINABLE runParameters #-}
-{-# SPECIALISE runParameters :: Parameter IO a -> Specs IO -> Int -> [IO a] #-}
 runParameters (Parameter m) sc runs = map f [1 .. runs]
   where f i = do s <- newSession
                  q <- newEventQueue s sc
@@ -102,50 +98,44 @@ runParameters (Parameter m) sc runs = map f [1 .. runs]
 
 -- | Return the run index for the current simulation.
 simulationIndex :: Monad m => Parameter m Int
-{-# INLINABLE simulationIndex #-}
-{-# SPECIALISE simulationIndex :: Parameter IO Int #-}
+{-# INLINE simulationIndex #-}
 simulationIndex = Parameter $ return . runIndex
 
 -- | Return the number of simulations currently run.
 simulationCount :: Monad m => Parameter m Int
-{-# INLINABLE simulationCount #-}
-{-# SPECIALISE simulationCount :: Parameter IO Int #-}
+{-# INLINE simulationCount #-}
 simulationCount = Parameter $ return . runCount
 
 -- | Return the simulation specs.
 simulationSpecs :: Monad m => Parameter m (Specs m)
-{-# INLINABLE simulationSpecs #-}
-{-# SPECIALISE simulationSpecs :: Parameter IO (Specs IO) #-}
+{-# INLINE simulationSpecs #-}
 simulationSpecs = Parameter $ return . runSpecs
 
 -- | Return the random number generator for the simulation run.
 generatorParameter :: Monad m => Parameter m (Generator m)
-{-# INLINABLE generatorParameter #-}
-{-# SPECIALISE generatorParameter :: Parameter IO (Generator IO) #-}
+{-# INLINE generatorParameter #-}
 generatorParameter = Parameter $ return . runGenerator
 
 instance Functor m => Functor (Parameter m) where
   
-  {-# SPECIALISE INLINE fmap :: (a -> b) -> Parameter IO a -> Parameter IO b #-}
+  {-# INLINE fmap #-}
   fmap f (Parameter x) = Parameter $ \r -> fmap f $ x r
 
 instance Applicative m => Applicative (Parameter m) where
   
-  {-# SPECIALISE INLINE pure :: a -> Parameter IO a #-}
+  {-# INLINE pure #-}
   pure = Parameter . const . pure
   
-  {-# SPECIALISE INLINE (<*>) :: Parameter IO (a -> b) -> Parameter IO a -> Parameter IO b #-}
+  {-# INLINE (<*>) #-}
   (Parameter x) <*> (Parameter y) = Parameter $ \r -> x r <*> y r
 
 liftMP :: Monad m => (a -> b) -> Parameter m a -> Parameter m b
-{-# INLINABLE liftMP #-}
-{-# SPECIALISE liftMP :: (a -> b) -> Parameter IO a -> Parameter IO b #-}
+{-# INLINE liftMP #-}
 liftMP f (Parameter x) =
   Parameter $ \r -> do { a <- x r; return $ f a }
 
 liftM2P :: Monad m => (a -> b -> c) -> Parameter m a -> Parameter m b -> Parameter m c
-{-# INLINABLE liftM2P #-}
-{-# SPECIALISE liftM2P :: (a -> b -> c) -> Parameter IO a -> Parameter IO b -> Parameter IO c #-}
+{-# INLINE liftM2P #-}
 liftM2P f (Parameter x) (Parameter y) =
   Parameter $ \r -> do { a <- x r; b <- y r; return $ f a b }
 
@@ -264,8 +254,6 @@ instance ParameterLift Parameter where
     
 -- | Exception handling within 'Parameter' computations.
 catchParameter :: (Comp m, Exception e) => Parameter m a -> (e -> Parameter m a) -> Parameter m a
-{-# INLINABLE catchParameter #-}
-{-# SPECIALISE catchParameter :: Exception e => Parameter IO a -> (e -> Parameter IO a) -> Parameter IO a #-}
 catchParameter (Parameter m) h =
   Parameter $ \r -> 
   catchComp (m r) $ \e ->
@@ -273,21 +261,17 @@ catchParameter (Parameter m) h =
                            
 -- | A computation with finalization part like the 'finally' function.
 finallyParameter :: Comp m => Parameter m a -> Parameter m b -> Parameter m a
-{-# INLINABLE finallyParameter #-}
-{-# SPECIALISE finallyParameter :: Parameter IO a -> Parameter IO b -> Parameter IO a #-}
 finallyParameter (Parameter m) (Parameter m') =
   Parameter $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
 throwParameter :: (Comp m, Exception e) => e -> Parameter m a
-{-# INLINABLE throwParameter #-}
-{-# SPECIALISE throwParameter :: Exception e => e -> Parameter IO a #-}
 throwParameter = throw
 
 instance MonadFix m => MonadFix (Parameter m) where
 
-  {-# SPECIALISE INLINE mfix :: (a -> Parameter IO a) -> Parameter IO a #-}
+  {-# INLINE mfix #-}
   mfix f = 
     Parameter $ \r ->
     do { rec { a <- invokeParameter r (f a) }; return a }
@@ -320,8 +304,6 @@ memoParameter x =
 -- values from the table are used, it takes again the first value of the table,
 -- then the second one and so on.
 tableParameter :: Monad m => Array Int a -> Parameter m a
-{-# INLINABLE tableParameter #-}
-{-# SPECIALISE tableParameter :: Array Int a -> Parameter IO a #-}
 tableParameter t =
   do i <- simulationIndex
      return $ t ! (((i - i1) `mod` n) + i1)
@@ -330,35 +312,30 @@ tableParameter t =
 
 -- | Computation that returns the start simulation time.
 starttime :: Monad m => Parameter m Double
-{-# INLINABLE starttime #-}
-{-# SPECIALISE starttime :: Parameter IO Double #-}
+{-# INLINE starttime #-}
 starttime =
   Parameter $ return . spcStartTime . runSpecs
 
 -- | Computation that returns the final simulation time.
 stoptime :: Monad m => Parameter m Double
-{-# INLINABLE stoptime #-}
-{-# SPECIALISE stoptime :: Parameter IO Double #-}
+{-# INLINE stoptime #-}
 stoptime =
   Parameter $ return . spcStopTime . runSpecs
 
 -- | Computation that returns the integration time step.
 dt :: Monad m => Parameter m Double
-{-# INLINABLE dt #-}
-{-# SPECIALISE dt :: Parameter IO Double #-}
+{-# INLINE dt #-}
 dt =
   Parameter $ return . spcDT . runSpecs
 
 -- | Return the event queue.
 simulationEventQueue :: Monad m => Parameter m (EventQueue m)
-{-# INLINABLE simulationEventQueue #-}
-{-# SPECIALISE simulationEventQueue :: Parameter IO (EventQueue IO) #-}
+{-# INLINE simulationEventQueue #-}
 simulationEventQueue =
   Parameter $ return . runEventQueue
 
 -- | Return the simulation session.
 simulationSession :: Monad m => Parameter m (Session m)
-{-# INLINABLE simulationSession #-}
-{-# SPECIALISE simulationSession :: Parameter IO (Session IO) #-}
+{-# INLINE simulationSession #-}
 simulationSession =
   Parameter $ return . runSession
