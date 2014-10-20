@@ -99,22 +99,19 @@ data SignalHandler m a =
 
 instance Sessionning m => Eq (SignalHandler m a) where
 
-  {-# SPECIALISE INLINE (==) :: SignalHandler IO a -> SignalHandler IO a -> Bool #-}
+  {-# INLINE (==) #-}
   x == y = (handlerMarker x) == (handlerMarker y)
 
 -- | Subscribe the handler to the specified signal forever.
 -- To subscribe the disposable handlers, use function 'handleSignal'.
 handleSignal_ :: Comp m => Signal m a -> (a -> Event m ()) -> Event m ()
-{-# INLINABLE handleSignal_ #-}
-{-# SPECIALISE handleSignal_ :: Signal IO a -> (a -> Event IO ()) -> Event IO () #-}
+{-# INLINE handleSignal_ #-}
 handleSignal_ signal h = 
   do x <- handleSignal signal h
      return ()
      
 -- | Create a new signal source.
 newSignalSource :: Comp m => Simulation m (SignalSource m a)
-{-# INLINABLE newSignalSource #-}
-{-# SPECIALISE newSignalSource :: Simulation IO (SignalSource IO a) #-}
 newSignalSource =
   Simulation $ \r ->
   do let s = runSession r
@@ -136,8 +133,6 @@ newSignalSource =
 
 -- | Trigger all next signal handlers.
 triggerSignalHandlers :: Comp m => SignalHandlerQueue m a -> a -> Point m -> m ()
-{-# INLINABLE triggerSignalHandlers #-}
-{-# SPECIALISE triggerSignalHandlers :: SignalHandlerQueue IO a -> a -> Point IO -> IO () #-}
 triggerSignalHandlers q a p =
   do hs <- readProtoRef (queueList q)
      forM_ hs $ \h ->
@@ -145,8 +140,6 @@ triggerSignalHandlers q a p =
             
 -- | Enqueue the handler and return its representative in the queue.            
 enqueueSignalHandler :: Comp m => SignalHandlerQueue m a -> (a -> Event m ()) -> SessionMarker m -> m (SignalHandler m a)
-{-# INLINABLE enqueueSignalHandler #-}
-{-# SPECIALISE enqueueSignalHandler :: SignalHandlerQueue IO a -> (a -> Event IO ()) -> SessionMarker IO -> IO (SignalHandler IO a) #-}
 enqueueSignalHandler q h m = 
   do let handler = SignalHandler { handlerComp   = h,
                                    handlerMarker = m }
@@ -155,25 +148,23 @@ enqueueSignalHandler q h m =
 
 -- | Dequeue the handler representative.
 dequeueSignalHandler :: Comp m => SignalHandlerQueue m a -> SignalHandler m a -> m ()
-{-# INLINABLE dequeueSignalHandler #-}
-{-# SPECIALISE dequeueSignalHandler :: SignalHandlerQueue IO a -> SignalHandler IO a -> IO () #-}
 dequeueSignalHandler q h = 
   modifyProtoRef (queueList q) (delete h)
 
 instance Comp m => Functor (Signal m) where
 
-  {-# SPECIALISE INLINE fmap :: (a -> b) -> Signal IO a -> Signal IO b #-}
+  {-# INLINE fmap #-}
   fmap = mapSignal
   
 instance Comp m => Monoid (Signal m a) where 
 
-  {-# SPECIALISE INLINE mempty :: Signal IO a #-}
+  {-# INLINE mempty #-}
   mempty = emptySignal
 
-  {-# SPECIALISE INLINE mappend :: Signal IO a -> Signal IO a -> Signal IO a #-}
+  {-# INLINE mappend #-}
   mappend = merge2Signals
 
-  {-# SPECIALISE INLINE mconcat :: [Signal IO a] -> Signal IO a #-}
+  {-# INLINE mconcat #-}
   mconcat [] = emptySignal
   mconcat [x1] = x1
   mconcat [x1, x2] = merge2Signals x1 x2
@@ -185,8 +176,6 @@ instance Comp m => Monoid (Signal m a) where
   
 -- | Map the signal according the specified function.
 mapSignal :: Comp m => (a -> b) -> Signal m a -> Signal m b
-{-# INLINABLE mapSignal #-}
-{-# SPECIALISE mapSignal :: (a -> b) -> Signal IO a -> Signal IO b #-}
 mapSignal f m =
   Signal { handleSignal = \h -> 
             handleSignal m $ h . f }
@@ -194,8 +183,6 @@ mapSignal f m =
 -- | Filter only those signal values that satisfy to 
 -- the specified predicate.
 filterSignal :: Comp m => (a -> Bool) -> Signal m a -> Signal m a
-{-# INLINABLE filterSignal #-}
-{-# SPECIALISE filterSignal :: (a -> Bool) -> Signal IO a -> Signal IO a #-}
 filterSignal p m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a ->
@@ -204,8 +191,6 @@ filterSignal p m =
 -- | Filter only those signal values that satisfy to 
 -- the specified predicate.
 filterSignalM :: Comp m => (a -> Event m Bool) -> Signal m a -> Signal m a
-{-# INLINABLE filterSignalM #-}
-{-# SPECIALISE filterSignalM :: (a -> Event IO Bool) -> Signal IO a -> Signal IO a #-}
 filterSignalM p m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a ->
@@ -214,8 +199,6 @@ filterSignalM p m =
   
 -- | Merge two signals.
 merge2Signals :: Comp m => Signal m a -> Signal m a -> Signal m a
-{-# INLINABLE merge2Signals #-}
-{-# SPECIALISE merge2Signals :: Signal IO a -> Signal IO a -> Signal IO a #-}
 merge2Signals m1 m2 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -224,8 +207,6 @@ merge2Signals m1 m2 =
 
 -- | Merge three signals.
 merge3Signals :: Comp m => Signal m a -> Signal m a -> Signal m a -> Signal m a
-{-# INLINABLE merge3Signals #-}
-{-# SPECIALISE merge3Signals :: Signal IO a -> Signal IO a -> Signal IO a -> Signal IO a #-}
 merge3Signals m1 m2 m3 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -237,8 +218,6 @@ merge3Signals m1 m2 m3 =
 merge4Signals :: Comp m
                  => Signal m a -> Signal m a -> Signal m a
                  -> Signal m a -> Signal m a
-{-# INLINABLE merge4Signals #-}
-{-# SPECIALISE merge4Signals :: Signal IO a -> Signal IO a -> Signal IO a -> Signal IO a -> Signal IO a #-}
 merge4Signals m1 m2 m3 m4 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -251,8 +230,6 @@ merge4Signals m1 m2 m3 m4 =
 merge5Signals :: Comp m
                  => Signal m a -> Signal m a -> Signal m a
                  -> Signal m a -> Signal m a -> Signal m a
-{-# INLINABLE merge5Signals #-}
-{-# SPECIALISE merge5Signals :: Signal IO a -> Signal IO a -> Signal IO a -> Signal IO a -> Signal IO a -> Signal IO a #-}
 merge5Signals m1 m2 m3 m4 m5 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -264,24 +241,18 @@ merge5Signals m1 m2 m3 m4 m5 =
 
 -- | Compose the signal.
 mapSignalM :: Comp m => (a -> Event m b) -> Signal m a -> Signal m b
-{-# INLINABLE mapSignalM #-}
-{-# SPECIALISE mapSignalM :: (a -> Event IO b) -> Signal IO a -> Signal IO b #-}
 mapSignalM f m =
   Signal { handleSignal = \h ->
             handleSignal m (f >=> h) }
   
 -- | Transform the signal.
 apSignal :: Comp m => Event m (a -> b) -> Signal m a -> Signal m b
-{-# INLINABLE apSignal #-}
-{-# SPECIALISE apSignal :: Event IO (a -> b) -> Signal IO a -> Signal IO b #-}
 apSignal f m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a -> do { x <- f; h (x a) } }
 
 -- | An empty signal which is never triggered.
 emptySignal :: Comp m => Signal m a
-{-# INLINABLE emptySignal #-}
-{-# SPECIALISE emptySignal :: Signal IO a #-}
 emptySignal =
   Signal { handleSignal = \h -> return mempty }
                                     
@@ -294,16 +265,12 @@ data SignalHistory m a =
 
 -- | Create a history of the signal values.
 newSignalHistory :: Comp m => Signal m a -> Event m (SignalHistory m a)
-{-# INLINABLE newSignalHistory #-}
-{-# SPECIALISE newSignalHistory :: Signal IO a -> Event IO (SignalHistory IO a) #-}
 newSignalHistory =
   newSignalHistoryStartingWith Nothing
 
 -- | Create a history of the signal values starting with
 -- the optional initial value.
 newSignalHistoryStartingWith :: Comp m => Maybe a -> Signal m a -> Event m (SignalHistory m a)
-{-# INLINABLE newSignalHistoryStartingWith #-}
-{-# SPECIALISE newSignalHistoryStartingWith :: Maybe a -> Signal IO a -> Event IO (SignalHistory IO a) #-}
 newSignalHistoryStartingWith init signal =
   Event $ \p ->
   do let s = runSession $ pointRun p
@@ -325,8 +292,6 @@ newSignalHistoryStartingWith init signal =
        
 -- | Read the history of signal values.
 readSignalHistory :: Comp m => SignalHistory m a -> Event m (Array Int Double, Array Int a)
-{-# INLINABLE readSignalHistory #-}
-{-# SPECIALISE readSignalHistory :: SignalHistory IO a -> Event IO (Array Int Double, Array Int a) #-}
 readSignalHistory history =
   Event $ \p ->
   do xs <- UV.freezeVector (signalHistoryTimes history)
@@ -335,15 +300,11 @@ readSignalHistory history =
      
 -- | Trigger the signal with the current time.
 triggerSignalWithCurrentTime :: Comp m => SignalSource m Double -> Event m ()
-{-# INLINABLE triggerSignalWithCurrentTime #-}
-{-# SPECIALISE triggerSignalWithCurrentTime :: SignalSource IO Double -> Event IO () #-}
 triggerSignalWithCurrentTime s =
   Event $ \p -> invokeEvent p $ triggerSignal s (pointTime p)
 
 -- | Return a signal that is triggered in the specified time points.
 newSignalInTimes :: Comp m => [Double] -> Event m (Signal m Double)
-{-# INLINABLE newSignalInTimes #-}
-{-# SPECIALISE newSignalInTimes :: [Double] -> Event IO (Signal IO Double) #-}
 newSignalInTimes xs =
   do s <- liftSimulation newSignalSource
      enqueueEventWithTimes xs $ triggerSignalWithCurrentTime s
@@ -352,8 +313,6 @@ newSignalInTimes xs =
 -- | Return a signal that is triggered in the integration time points.
 -- It should be called with help of 'runEventInStartTime'.
 newSignalInIntegTimes :: Comp m => Event m (Signal m Double)
-{-# INLINABLE newSignalInIntegTimes #-}
-{-# SPECIALISE newSignalInIntegTimes :: Event IO (Signal IO Double) #-}
 newSignalInIntegTimes =
   do s <- liftSimulation newSignalSource
      enqueueEventWithIntegTimes $ triggerSignalWithCurrentTime s
@@ -362,8 +321,6 @@ newSignalInIntegTimes =
 -- | Return a signal that is triggered in the start time.
 -- It should be called with help of 'runEventInStartTime'.
 newSignalInStartTime :: Comp m => Event m (Signal m Double)
-{-# INLINABLE newSignalInStartTime #-}
-{-# SPECIALISE newSignalInStartTime :: Event IO (Signal IO Double) #-}
 newSignalInStartTime =
   do s <- liftSimulation newSignalSource
      t <- liftParameter starttime
@@ -372,8 +329,6 @@ newSignalInStartTime =
 
 -- | Return a signal that is triggered in the final time.
 newSignalInStopTime :: Comp m => Event m (Signal m Double)
-{-# INLINABLE newSignalInStopTime #-}
-{-# SPECIALISE newSignalInStopTime :: Event IO (Signal IO Double) #-}
 newSignalInStopTime =
   do s <- liftSimulation newSignalSource
      t <- liftParameter stoptime
@@ -391,35 +346,29 @@ data Signalable m a =
 
 -- | Return a signal notifying that the value has changed.
 signalableChanged :: Comp m => Signalable m a -> Signal m a
-{-# INLINABLE signalableChanged #-}
-{-# SPECIALISE signalableChanged :: Signalable IO a -> Signal IO a #-}
 signalableChanged x = mapSignalM (const $ readSignalable x) $ signalableChanged_ x
 
 instance Functor m => Functor (Signalable m) where
 
-  {-# SPECIALISE INLINE fmap :: (a -> b) -> Signalable IO a -> Signalable IO b #-}
+  {-# INLINE fmap #-}
   fmap f x = x { readSignalable = fmap f (readSignalable x) }
 
 instance (Comp m, Monoid a) => Monoid (Signalable m a) where
 
-  {-# SPECIALISE INLINE mempty :: Monoid a => Signalable IO a #-}
+  {-# INLINE mempty #-}
   mempty = emptySignalable
 
-  {-# SPECIALISE INLINE mappend :: Monoid a => Signalable IO a -> Signalable IO a -> Signalable IO a #-}
+  {-# INLINE mappend #-}
   mappend = appendSignalable
 
 -- | Return an identity.
 emptySignalable :: (Comp m, Monoid a) => Signalable m a
-{-# INLINABLE emptySignalable #-}
-{-# SPECIALISE emptySignalable :: Monoid a => Signalable IO a #-}
 emptySignalable =
   Signalable { readSignalable = return mempty,
                signalableChanged_ = mempty }
 
 -- | An associative operation.
 appendSignalable :: (Comp m, Monoid a) => Signalable m a -> Signalable m a -> Signalable m a
-{-# INLINABLE appendSignalable #-}
-{-# SPECIALISE appendSignalable :: Monoid a => Signalable IO a -> Signalable IO a -> Signalable IO a #-}
 appendSignalable m1 m2 =
   Signalable { readSignalable = liftM2 (<>) (readSignalable m1) (readSignalable m2),
                signalableChanged_ = (signalableChanged_ m1) <> (signalableChanged_ m2) }
@@ -427,8 +376,6 @@ appendSignalable m1 m2 =
 -- | Transform a signal so that the resulting signal returns a sequence of arrivals
 -- saving the information about the time points at which the original signal was received.
 arrivalSignal :: Comp m => Signal m a -> Signal m (Arrival a)
-{-# INLINABLE arrivalSignal #-}
-{-# SPECIALISE arrivalSignal :: Signal IO a -> Signal IO (Arrival a) #-}
 arrivalSignal m = 
   Signal { handleSignal = \h ->
              Event $ \p ->
