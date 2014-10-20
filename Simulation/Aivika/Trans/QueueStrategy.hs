@@ -106,18 +106,15 @@ instance Comp m => QueueStrategy m FCFS where
   -- | A queue used by the 'FCFS' strategy.
   newtype StrategyQueue m FCFS a = FCFSQueue (LL.DoubleLinkedList m a)
 
-  {-# SPECIALISE INLINE newStrategyQueue :: FCFS -> Simulation IO (StrategyQueue IO FCFS a) #-}
   newStrategyQueue s =
     fmap FCFSQueue $
     do session <- liftParameter simulationSession
        liftComp $ LL.newList session
 
-  {-# SPECIALISE INLINE strategyQueueNull :: StrategyQueue IO FCFS a -> Event IO Bool #-}
   strategyQueueNull (FCFSQueue q) = liftComp $ LL.listNull q
 
 instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
 
-  {-# SPECIALISE INLINE strategyDequeue :: StrategyQueue IO FCFS a -> Event IO a #-}
   strategyDequeue (FCFSQueue q) =
     liftComp $
     do i <- LL.listFirst q
@@ -126,7 +123,6 @@ instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
 
 instance DequeueStrategy m FCFS => EnqueueStrategy m FCFS where
 
-  {-# SPECIALISE INLINE strategyEnqueue :: StrategyQueue IO FCFS a -> a -> Event IO () #-}
   strategyEnqueue (FCFSQueue q) i = liftComp $ LL.listAddLast q i
 
 instance Comp m => QueueStrategy m LCFS where
@@ -134,18 +130,15 @@ instance Comp m => QueueStrategy m LCFS where
   -- | A queue used by the 'LCFS' strategy.
   newtype StrategyQueue m LCFS a = LCFSQueue (LL.DoubleLinkedList m a)
 
-  {-# SPECIALISE INLINE newStrategyQueue :: LCFS -> Simulation IO (StrategyQueue IO LCFS a) #-}
   newStrategyQueue s =
     fmap LCFSQueue $
     do session <- liftParameter simulationSession
        liftComp $ LL.newList session
        
-  {-# SPECIALISE INLINE strategyQueueNull :: StrategyQueue IO LCFS a -> Event IO Bool #-}
   strategyQueueNull (LCFSQueue q) = liftComp $ LL.listNull q
 
 instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
 
-  {-# SPECIALISE INLINE strategyDequeue :: StrategyQueue IO LCFS a -> Event IO a #-}
   strategyDequeue (LCFSQueue q) =
     liftComp $
     do i <- LL.listFirst q
@@ -154,7 +147,6 @@ instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
 
 instance DequeueStrategy m LCFS => EnqueueStrategy m LCFS where
 
-  {-# SPECIALISE INLINE strategyEnqueue :: StrategyQueue IO LCFS a -> a -> Event IO () #-}
   strategyEnqueue (LCFSQueue q) i = liftComp $ LL.listInsertFirst q i
 
 instance Comp m => QueueStrategy m StaticPriorities where
@@ -162,18 +154,15 @@ instance Comp m => QueueStrategy m StaticPriorities where
   -- | A queue used by the 'StaticPriorities' strategy.
   newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue m a)
 
-  {-# SPECIALISE INLINE newStrategyQueue :: StaticPriorities -> Simulation IO (StrategyQueue IO StaticPriorities a) #-}
   newStrategyQueue s =
     fmap StaticPriorityQueue $
     do session <- liftParameter simulationSession
        liftComp $ PQ.newQueue session
 
-  {-# SPECIALISE INLINE strategyQueueNull :: StrategyQueue IO StaticPriorities a -> Event IO Bool #-}
   strategyQueueNull (StaticPriorityQueue q) = liftComp $ PQ.queueNull q
 
 instance QueueStrategy m StaticPriorities => DequeueStrategy m StaticPriorities where
 
-  {-# SPECIALISE INLINE strategyDequeue :: StrategyQueue IO StaticPriorities a -> Event IO a #-}
   strategyDequeue (StaticPriorityQueue q) =
     liftComp $
     do (_, i) <- PQ.queueFront q
@@ -182,7 +171,6 @@ instance QueueStrategy m StaticPriorities => DequeueStrategy m StaticPriorities 
 
 instance DequeueStrategy m StaticPriorities => PriorityQueueStrategy m StaticPriorities Double where
 
-  {-# SPECIALISE INLINE strategyEnqueueWithPriority :: StrategyQueue IO StaticPriorities a -> Double -> a -> Event IO () #-}
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i = liftComp $ PQ.enqueue q p i
 
 instance Comp m => QueueStrategy m SIRO where
@@ -190,13 +178,11 @@ instance Comp m => QueueStrategy m SIRO where
   -- | A queue used by the 'SIRO' strategy.
   newtype StrategyQueue m SIRO a = SIROQueue (V.Vector m a)
   
-  {-# SPECIALISE INLINE newStrategyQueue :: SIRO -> Simulation IO (StrategyQueue IO SIRO a) #-}
   newStrategyQueue s =
     fmap SIROQueue $
     do session <- liftParameter simulationSession
        liftComp $ V.newVector session
 
-  {-# SPECIALISE INLINE strategyQueueNull :: StrategyQueue IO SIRO a -> Event IO Bool #-}
   strategyQueueNull (SIROQueue q) =
     liftComp $
     do n <- V.vectorCount q
@@ -204,7 +190,6 @@ instance Comp m => QueueStrategy m SIRO where
 
 instance QueueStrategy m SIRO => DequeueStrategy m SIRO where
 
-  {-# SPECIALISE INLINE strategyDequeue :: StrategyQueue IO SIRO a -> Event IO a #-}
   strategyDequeue (SIROQueue q) =
     do n <- liftComp $ V.vectorCount q
        i <- liftParameter $ randomUniformInt 0 (n - 1)
@@ -214,5 +199,4 @@ instance QueueStrategy m SIRO => DequeueStrategy m SIRO where
 
 instance DequeueStrategy m SIRO => EnqueueStrategy m SIRO where
 
-  {-# SPECIALISE INLINE strategyEnqueue :: StrategyQueue IO SIRO a -> a -> Event IO () #-}
   strategyEnqueue (SIROQueue q) i = liftComp $ V.appendVector q i
