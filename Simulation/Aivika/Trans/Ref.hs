@@ -41,7 +41,6 @@ data Ref m a =
 
 -- | Create a new reference.
 newRef :: Comp m => a -> Simulation m (Ref m a)
-{-# INLINE newRef #-}
 newRef a =
   Simulation $ \r ->
   do let s = runSession r
@@ -52,19 +51,16 @@ newRef a =
      
 -- | Read the value of a reference.
 readRef :: Comp m => Ref m a -> Event m a
-{-# INLINE readRef #-}
 readRef r = Event $ \p -> readProtoRef (refValue r)
 
 -- | Write a new value into the reference.
 writeRef :: Comp m => Ref m a -> a -> Event m ()
-{-# INLINE writeRef #-}
 writeRef r a = Event $ \p -> 
   do a `seq` writeProtoRef (refValue r) a
      invokeEvent p $ triggerSignal (refChangedSource r) a
 
 -- | Mutate the contents of the reference.
 modifyRef :: Comp m => Ref m a -> (a -> a) -> Event m ()
-{-# INLINE modifyRef #-}
 modifyRef r f = Event $ \p -> 
   do a <- readProtoRef (refValue r)
      let b = f a
@@ -73,10 +69,8 @@ modifyRef r f = Event $ \p ->
 
 -- | Return a signal that notifies about every change of the reference state.
 refChanged :: Comp m => Ref m a -> Signal m a
-{-# INLINE refChanged #-}
 refChanged v = publishSignal (refChangedSource v)
 
 -- | Return a signal that notifies about every change of the reference state.
 refChanged_ :: Comp m => Ref m a -> Signal m ()
-{-# INLINE refChanged_ #-}
 refChanged_ r = mapSignal (const ()) $ refChanged r
