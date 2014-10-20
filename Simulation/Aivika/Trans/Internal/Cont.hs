@@ -205,6 +205,7 @@ instance Comp m => Monad (Cont m) where
 
 instance CompTrans Cont where
 
+  {-# INLINE liftComp #-}
   liftComp m =
     Cont $ \c ->
     Event $ \p ->
@@ -214,6 +215,7 @@ instance CompTrans Cont where
 
 instance ParameterLift Cont where
 
+  {-# INLINE liftParameter #-}
   liftParameter (Parameter m) = 
     Cont $ \c ->
     Event $ \p ->
@@ -223,6 +225,7 @@ instance ParameterLift Cont where
 
 instance SimulationLift Cont where
 
+  {-# INLINE liftSimulation #-}
   liftSimulation (Simulation m) = 
     Cont $ \c ->
     Event $ \p ->
@@ -232,6 +235,7 @@ instance SimulationLift Cont where
 
 instance DynamicsLift Cont where
 
+  {-# INLINE liftDynamics #-}
   liftDynamics (Dynamics m) = 
     Cont $ \c ->
     Event $ \p ->
@@ -241,6 +245,7 @@ instance DynamicsLift Cont where
 
 instance EventLift Cont where
 
+  {-# INLINE liftEvent #-}
   liftEvent (Event m) = 
     Cont $ \c ->
     Event $ \p ->
@@ -250,6 +255,7 @@ instance EventLift Cont where
 
 instance (Comp m, MonadIO m) => MonadIO (Cont m) where
 
+  {-# INLINE liftIO #-}
   liftIO m =
     Cont $ \c ->
     Event $ \p ->
@@ -259,12 +265,15 @@ instance (Comp m, MonadIO m) => MonadIO (Cont m) where
 
 instance Comp m => Functor (Cont m) where
 
+  {-# INLINE fmap #-}
   fmap = liftM
 
 instance Comp m => Applicative (Cont m) where
 
+  {-# INLINE pure #-}
   pure = return
 
+  {-# INLINE (<*>) #-}
   (<*>) = ap
 
 -- | Invoke the computation.
