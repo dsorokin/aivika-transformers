@@ -36,7 +36,6 @@ import Simulation.Aivika.Trans.Unboxed
 -- calculated sequentially starting from 'starttime'.
 memoDynamics :: (Unboxed m e, Comp m) => Dynamics m e -> Simulation m (Dynamics m e)
 {-# INLINABLE memoDynamics #-}
-{-# SPECIALISE memoDynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
 memoDynamics (Dynamics m) = 
   Simulation $ \r ->
   do let sc  = runSpecs r
@@ -80,7 +79,6 @@ memoDynamics (Dynamics m) =
 -- prefer the 'memo0Dynamics' function above 'memoDynamics'.
 memo0Dynamics :: (Unboxed m e, Comp m) => Dynamics m e -> Simulation m (Dynamics m e)
 {-# INLINABLE memo0Dynamics #-}
-{-# SPECIALISE memo0Dynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
 memo0Dynamics (Dynamics m) = 
   Simulation $ \r ->
   do let sc = runSpecs r
