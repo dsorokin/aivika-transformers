@@ -320,7 +320,8 @@ cancelProcess :: (Comp m, MonadIO m) => Process m a
 cancelProcess =
   do pid <- processId
      liftEvent $ cancelProcessWithId pid
-     error "The process must be cancelled already: cancelProcess."
+     throwProcess $ 
+       (error "The process must be cancelled already: cancelProcess." :: SomeException)
 
 -- | Test whether the process with the specified identifier was cancelled.
 processCancelled :: Comp m => ProcessId m -> Event m Bool
