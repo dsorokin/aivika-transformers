@@ -42,7 +42,6 @@ data DoubleLinkedList m a =
 
 -- | Test whether the list is empty.
 listNull :: ProtoReferring m => DoubleLinkedList m a -> m Bool
-{-# INLINE listNull #-}
 listNull x =
   do head <- readProtoRef (listHead x) 
      case head of
@@ -51,12 +50,10 @@ listNull x =
     
 -- | Return the number of elements in the list.
 listCount :: ProtoReferring m => DoubleLinkedList m a -> m Int
-{-# INLINE listCount #-}
 listCount x = readProtoRef (listSize x)
 
 -- | Create a new list.
 newList :: ProtoReferring m => Session m -> m (DoubleLinkedList m a)
-{-# INLINE newList #-}
 newList s =
   do head <- newProtoRef s Nothing 
      tail <- newProtoRef s Nothing
@@ -68,7 +65,6 @@ newList s =
 
 -- | Insert a new element in the beginning.
 listInsertFirst :: ProtoReferring m => DoubleLinkedList m a -> a -> m ()
-{-# INLINABLE listInsertFirst #-}
 listInsertFirst x v =
   do let s = listSession x
      size <- readProtoRef (listSize x)
@@ -94,7 +90,6 @@ listInsertFirst x v =
 
 -- | Add a new element to the end.
 listAddLast :: ProtoReferring m => DoubleLinkedList m a -> a -> m ()
-{-# INLINABLE listAddLast #-}
 listAddLast x v =
   do let s = listSession x
      size <- readProtoRef (listSize x)
@@ -120,7 +115,6 @@ listAddLast x v =
 
 -- | Remove the first element.
 listRemoveFirst :: ProtoReferring m => DoubleLinkedList m a -> m ()
-{-# INLINABLE listRemoveFirst #-}
 listRemoveFirst x =
   do head <- readProtoRef (listHead x) 
      case head of
@@ -140,7 +134,6 @@ listRemoveFirst x =
 
 -- | Remove the last element.
 listRemoveLast :: ProtoReferring m => DoubleLinkedList m a -> m ()
-{-# INLINABLE listRemoveLast #-}
 listRemoveLast x =
   do tail <- readProtoRef (listTail x) 
      case tail of
@@ -160,7 +153,6 @@ listRemoveLast x =
 
 -- | Return the first element.
 listFirst :: ProtoReferring m => DoubleLinkedList m a -> m a
-{-# INLINABLE listFirst #-}
 listFirst x =
   do head <- readProtoRef (listHead x)
      case head of
@@ -171,7 +163,6 @@ listFirst x =
 
 -- | Return the last element.
 listLast :: ProtoReferring m => DoubleLinkedList m a -> m a
-{-# INLINABLE listLast #-}
 listLast x =
   do tail <- readProtoRef (listTail x)
      case tail of
