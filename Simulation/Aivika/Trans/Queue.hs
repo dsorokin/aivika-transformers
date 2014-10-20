@@ -189,26 +189,18 @@ data QueueItem a =
   
 -- | Create a new FCFS queue with the specified capacity.  
 newFCFSQueue :: Comp m => Int -> Event m (FCFSQueue m a)
-{-# INLINABLE newFCFSQueue #-}
-{-# SPECIALISE newFCFSQueue :: Int -> Event IO (FCFSQueue IO a) #-}
 newFCFSQueue = newQueue FCFS FCFS FCFS
   
 -- | Create a new LCFS queue with the specified capacity.  
 newLCFSQueue :: Comp m => Int -> Event m (LCFSQueue m a)  
-{-# INLINABLE newLCFSQueue #-}
-{-# SPECIALISE newLCFSQueue :: Int -> Event IO (LCFSQueue IO a) #-}
 newLCFSQueue = newQueue FCFS LCFS FCFS
   
 -- | Create a new SIRO queue with the specified capacity.  
 newSIROQueue :: Comp m => Int -> Event m (SIROQueue m a)  
-{-# INLINABLE newSIROQueue #-}
-{-# SPECIALISE newSIROQueue :: Int -> Event IO (SIROQueue IO a) #-}
 newSIROQueue = newQueue FCFS SIRO FCFS
   
 -- | Create a new priority queue with the specified capacity.  
 newPriorityQueue :: Comp m => Int -> Event m (PriorityQueue m a)  
-{-# INLINABLE newPriorityQueue #-}
-{-# SPECIALISE newPriorityQueue :: Int -> Event IO (PriorityQueue IO a) #-}
 newPriorityQueue = newQueue FCFS StaticPriorities FCFS
   
 -- | Create a new queue with the specified strategies and capacity.  
@@ -225,8 +217,6 @@ newQueue :: (Comp m,
             -> Int
             -- ^ the queue capacity
             -> Event m (Queue m si sm so a)  
-{-# INLINABLE newQueue #-}
-{-# SPECIALISE newQueue :: (QueueStrategy IO si, QueueStrategy IO sm, QueueStrategy IO so) => si -> sm -> so -> Int -> Event IO (Queue IO si sm so a) #-}
 newQueue si sm so count =
   do t  <- liftDynamics time
      sn <- liftParameter simulationSession
@@ -277,8 +267,6 @@ newQueue si sm so count =
 --
 -- See also 'queueNullChanged' and 'queueNullChanged_'.
 queueNull :: Comp m => Queue m si sm so a -> Event m Bool
-{-# INLINABLE queueNull #-}
-{-# SPECIALISE queueNull :: Queue IO si sm so a -> Event IO Bool #-}
 queueNull q =
   Event $ \p ->
   do n <- readProtoRef (queueCountRef q)
@@ -286,23 +274,17 @@ queueNull q =
   
 -- | Signal when the 'queueNull' property value has changed.
 queueNullChanged :: Comp m => Queue m si sm so a -> Signal m Bool
-{-# INLINABLE queueNullChanged #-}
-{-# SPECIALISE queueNullChanged :: Queue IO si sm so a -> Signal IO Bool #-}
 queueNullChanged q =
   mapSignalM (const $ queueNull q) (queueNullChanged_ q)
   
 -- | Signal when the 'queueNull' property value has changed.
 queueNullChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueNullChanged_ #-}
-{-# SPECIALISE queueNullChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueNullChanged_ = queueCountChanged_
 
 -- | Test whether the queue is full.
 --
 -- See also 'queueFullChanged' and 'queueFullChanged_'.
 queueFull :: Comp m => Queue m si sm so a -> Event m Bool
-{-# INLINABLE queueFull #-}
-{-# SPECIALISE queueFull :: Queue IO si sm so a -> Event IO Bool #-}
 queueFull q =
   Event $ \p ->
   do n <- readProtoRef (queueCountRef q)
@@ -310,44 +292,32 @@ queueFull q =
   
 -- | Signal when the 'queueFull' property value has changed.
 queueFullChanged :: Comp m => Queue m si sm so a -> Signal m Bool
-{-# INLINABLE queueFullChanged #-}
-{-# SPECIALISE queueFullChanged :: Queue IO si sm so a -> Signal IO Bool #-}
 queueFullChanged q =
   mapSignalM (const $ queueFull q) (queueFullChanged_ q)
   
 -- | Signal when the 'queueFull' property value has changed.
 queueFullChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueFullChanged_ #-}
-{-# SPECIALISE queueFullChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueFullChanged_ = queueCountChanged_
 
 -- | Return the current queue size.
 --
 -- See also 'queueCountStats', 'queueCountChanged' and 'queueCountChanged_'.
 queueCount :: Comp m => Queue m si sm so a -> Event m Int
-{-# INLINABLE queueCount #-}
-{-# SPECIALISE queueCount :: Queue IO si sm so a -> Event IO Int #-}
 queueCount q =
   Event $ \p -> readProtoRef (queueCountRef q)
 
 -- | Return the queue size statistics.
 queueCountStats :: Comp m => Queue m si sm so a -> Event m (TimingStats Int)
-{-# INLINABLE queueCountStats #-}
-{-# SPECIALISE queueCountStats :: Queue IO si sm so a -> Event IO (TimingStats Int) #-}
 queueCountStats q =
   Event $ \p -> readProtoRef (queueCountStatsRef q)
   
 -- | Signal when the 'queueCount' property value has changed.
 queueCountChanged :: Comp m => Queue m si sm so a -> Signal m Int
-{-# INLINABLE queueCountChanged #-}
-{-# SPECIALISE queueCountChanged :: Queue IO si sm so a -> Signal IO Int #-}
 queueCountChanged q =
   mapSignalM (const $ queueCount q) (queueCountChanged_ q)
   
 -- | Signal when the 'queueCount' property value has changed.
 queueCountChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueCountChanged_ #-}
-{-# SPECIALISE queueCountChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueCountChanged_ q =
   mapSignal (const ()) (enqueueStored q) <>
   mapSignal (const ()) (dequeueExtracted q)
@@ -356,22 +326,16 @@ queueCountChanged_ q =
 --
 -- See also 'enqueueCountChanged' and 'enqueueCountChanged_'.
 enqueueCount :: Comp m => Queue m si sm so a -> Event m Int
-{-# INLINABLE enqueueCount #-}
-{-# SPECIALISE enqueueCount :: Queue IO si sm so a -> Event IO Int #-}
 enqueueCount q =
   Event $ \p -> readProtoRef (enqueueCountRef q)
   
 -- | Signal when the 'enqueueCount' property value has changed.
 enqueueCountChanged :: Comp m => Queue m si sm so a -> Signal m Int
-{-# INLINABLE enqueueCountChanged #-}
-{-# SPECIALISE enqueueCountChanged :: Queue IO si sm so a -> Signal IO Int #-}
 enqueueCountChanged q =
   mapSignalM (const $ enqueueCount q) (enqueueCountChanged_ q)
   
 -- | Signal when the 'enqueueCount' property value has changed.
 enqueueCountChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE enqueueCountChanged_ #-}
-{-# SPECIALISE enqueueCountChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 enqueueCountChanged_ q =
   mapSignal (const ()) (enqueueInitiated q)
   
@@ -379,22 +343,16 @@ enqueueCountChanged_ q =
 --
 -- See also 'enqueueLostCountChanged' and 'enqueueLostCountChanged_'.
 enqueueLostCount :: Comp m => Queue m si sm so a -> Event m Int
-{-# INLINABLE enqueueLostCount #-}
-{-# SPECIALISE enqueueLostCount :: Queue IO si sm so a -> Event IO Int #-}
 enqueueLostCount q =
   Event $ \p -> readProtoRef (enqueueLostCountRef q)
   
 -- | Signal when the 'enqueueLostCount' property value has changed.
 enqueueLostCountChanged :: Comp m => Queue m si sm so a -> Signal m Int
-{-# INLINABLE enqueueLostCountChanged #-}
-{-# SPECIALISE enqueueLostCountChanged :: Queue IO si sm so a -> Signal IO Int #-}
 enqueueLostCountChanged q =
   mapSignalM (const $ enqueueLostCount q) (enqueueLostCountChanged_ q)
   
 -- | Signal when the 'enqueueLostCount' property value has changed.
 enqueueLostCountChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE enqueueLostCountChanged_ #-}
-{-# SPECIALISE enqueueLostCountChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 enqueueLostCountChanged_ q =
   mapSignal (const ()) (enqueueLost q)
       
@@ -402,22 +360,16 @@ enqueueLostCountChanged_ q =
 --
 -- See also 'enqueueStoreCountChanged' and 'enqueueStoreCountChanged_'.
 enqueueStoreCount :: Comp m => Queue m si sm so a -> Event m Int
-{-# INLINABLE enqueueStoreCount #-}
-{-# SPECIALISE enqueueStoreCount :: Queue IO si sm so a -> Event IO Int #-}
 enqueueStoreCount q =
   Event $ \p -> readProtoRef (enqueueStoreCountRef q)
   
 -- | Signal when the 'enqueueStoreCount' property value has changed.
 enqueueStoreCountChanged :: Comp m => Queue m si sm so a -> Signal m Int
-{-# INLINABLE enqueueStoreCountChanged #-}
-{-# SPECIALISE enqueueStoreCountChanged :: Queue IO si sm so a -> Signal IO Int #-}
 enqueueStoreCountChanged q =
   mapSignalM (const $ enqueueStoreCount q) (enqueueStoreCountChanged_ q)
   
 -- | Signal when the 'enqueueStoreCount' property value has changed.
 enqueueStoreCountChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE enqueueStoreCountChanged_ #-}
-{-# SPECIALISE enqueueStoreCountChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 enqueueStoreCountChanged_ q =
   mapSignal (const ()) (enqueueStored q)
       
@@ -427,22 +379,16 @@ enqueueStoreCountChanged_ q =
 --
 -- See also 'dequeueCountChanged' and 'dequeueCountChanged_'.
 dequeueCount :: Comp m => Queue m si sm so a -> Event m Int
-{-# INLINABLE dequeueCount #-}
-{-# SPECIALISE dequeueCount :: Queue IO si sm so a -> Event IO Int #-}
 dequeueCount q =
   Event $ \p -> readProtoRef (dequeueCountRef q)
       
 -- | Signal when the 'dequeueCount' property value has changed.
 dequeueCountChanged :: Comp m => Queue m si sm so a -> Signal m Int
-{-# INLINABLE dequeueCountChanged #-}
-{-# SPECIALISE dequeueCountChanged :: Queue IO si sm so a -> Signal IO Int #-}
 dequeueCountChanged q =
   mapSignalM (const $ dequeueCount q) (dequeueCountChanged_ q)
   
 -- | Signal when the 'dequeueCount' property value has changed.
 dequeueCountChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE dequeueCountChanged_ #-}
-{-# SPECIALISE dequeueCountChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 dequeueCountChanged_ q =
   mapSignal (const ()) (dequeueRequested q)
       
@@ -450,22 +396,16 @@ dequeueCountChanged_ q =
 --
 -- See also 'dequeueExtractCountChanged' and 'dequeueExtractCountChanged_'.
 dequeueExtractCount :: Comp m => Queue m si sm so a -> Event m Int
-{-# INLINABLE dequeueExtractCount #-}
-{-# SPECIALISE dequeueExtractCount :: Queue IO si sm so a -> Event IO Int #-}
 dequeueExtractCount q =
   Event $ \p -> readProtoRef (dequeueExtractCountRef q)
       
 -- | Signal when the 'dequeueExtractCount' property value has changed.
 dequeueExtractCountChanged :: Comp m => Queue m si sm so a -> Signal m Int
-{-# INLINABLE dequeueExtractCountChanged #-}
-{-# SPECIALISE dequeueExtractCountChanged :: Queue IO si sm so a -> Signal IO Int #-}
 dequeueExtractCountChanged q =
   mapSignalM (const $ dequeueExtractCount q) (dequeueExtractCountChanged_ q)
   
 -- | Signal when the 'dequeueExtractCount' property value has changed.
 dequeueExtractCountChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE dequeueExtractCountChanged_ #-}
-{-# SPECIALISE dequeueExtractCountChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 dequeueExtractCountChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
 
@@ -473,8 +413,6 @@ dequeueExtractCountChanged_ q =
 --
 -- See also 'queueLoadFactorChanged' and 'queueLoadFactorChanged_'.
 queueLoadFactor :: Comp m => Queue m si sm so a -> Event m Double
-{-# INLINABLE queueLoadFactor #-}
-{-# SPECIALISE queueLoadFactor :: Queue IO si sm so a -> Event IO Double #-}
 queueLoadFactor q =
   Event $ \p ->
   do x <- readProtoRef (queueCountRef q)
@@ -483,15 +421,11 @@ queueLoadFactor q =
       
 -- | Signal when the 'queueLoadFactor' property value has changed.
 queueLoadFactorChanged :: Comp m => Queue m si sm so a -> Signal m Double
-{-# INLINABLE queueLoadFactorChanged #-}
-{-# SPECIALISE queueLoadFactorChanged :: Queue IO si sm so a -> Signal IO Double #-}
 queueLoadFactorChanged q =
   mapSignalM (const $ queueLoadFactor q) (queueLoadFactorChanged_ q)
   
 -- | Signal when the 'queueLoadFactor' property value has changed.
 queueLoadFactorChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueLoadFactorChanged_ #-}
-{-# SPECIALISE queueLoadFactorChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueLoadFactorChanged_ q =
   mapSignal (const ()) (enqueueStored q) <>
   mapSignal (const ()) (dequeueExtracted q)
@@ -499,8 +433,6 @@ queueLoadFactorChanged_ q =
 -- | Return the rate of the input items that were enqueued: how many items
 -- per time.
 enqueueRate :: Comp m => Queue m si sm so a -> Event m Double
-{-# INLINABLE enqueueRate #-}
-{-# SPECIALISE enqueueRate :: Queue IO si sm so a -> Event IO Double #-}
 enqueueRate q =
   Event $ \p ->
   do x <- readProtoRef (enqueueCountRef q)
@@ -511,8 +443,6 @@ enqueueRate q =
 -- | Return the rate of the items that were stored: how many items
 -- per time.
 enqueueStoreRate :: Comp m => Queue m si sm so a -> Event m Double
-{-# INLINABLE enqueueStoreRate #-}
-{-# SPECIALISE enqueueStoreRate :: Queue IO si sm so a -> Event IO Double #-}
 enqueueStoreRate q =
   Event $ \p ->
   do x <- readProtoRef (enqueueStoreCountRef q)
@@ -524,8 +454,6 @@ enqueueStoreRate q =
 -- per time. It does not include the failed attempts to dequeue immediately
 -- without suspension.
 dequeueRate :: Comp m => Queue m si sm so a -> Event m Double
-{-# INLINABLE dequeueRate #-}
-{-# SPECIALISE dequeueRate :: Queue IO si sm so a -> Event IO Double #-}
 dequeueRate q =
   Event $ \p ->
   do x <- readProtoRef (dequeueCountRef q)
@@ -536,8 +464,6 @@ dequeueRate q =
 -- | Return the rate of the output items that were actually dequeued: how many items
 -- per time.
 dequeueExtractRate :: Comp m => Queue m si sm so a -> Event m Double
-{-# INLINABLE dequeueExtractRate #-}
-{-# SPECIALISE dequeueExtractRate :: Queue IO si sm so a -> Event IO Double #-}
 dequeueExtractRate q =
   Event $ \p ->
   do x <- readProtoRef (dequeueExtractCountRef q)
@@ -550,22 +476,16 @@ dequeueExtractRate q =
 --
 -- See also 'queueWaitTimeChanged' and 'queueWaitTimeChanged_'.
 queueWaitTime :: Comp m => Queue m si sm so a -> Event m (SamplingStats Double)
-{-# INLINABLE queueWaitTime #-}
-{-# SPECIALISE queueWaitTime :: Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
 queueWaitTime q =
   Event $ \p -> readProtoRef (queueWaitTimeRef q)
       
 -- | Signal when the 'queueWaitTime' property value has changed.
 queueWaitTimeChanged :: Comp m => Queue m si sm so a -> Signal m (SamplingStats Double)
-{-# INLINABLE queueWaitTimeChanged #-}
-{-# SPECIALISE queueWaitTimeChanged :: Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
 queueWaitTimeChanged q =
   mapSignalM (const $ queueWaitTime q) (queueWaitTimeChanged_ q)
   
 -- | Signal when the 'queueWaitTime' property value has changed.
 queueWaitTimeChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueWaitTimeChanged_ #-}
-{-# SPECIALISE queueWaitTimeChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueWaitTimeChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
       
@@ -576,22 +496,16 @@ queueWaitTimeChanged_ q =
 --
 -- See also 'queueTotalWaitTimeChanged' and 'queueTotalWaitTimeChanged_'.
 queueTotalWaitTime :: Comp m => Queue m si sm so a -> Event m (SamplingStats Double)
-{-# INLINABLE queueTotalWaitTime #-}
-{-# SPECIALISE queueTotalWaitTime :: Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
 queueTotalWaitTime q =
   Event $ \p -> readProtoRef (queueTotalWaitTimeRef q)
       
 -- | Signal when the 'queueTotalWaitTime' property value has changed.
 queueTotalWaitTimeChanged :: Comp m => Queue m si sm so a -> Signal m (SamplingStats Double)
-{-# INLINABLE queueTotalWaitTimeChanged #-}
-{-# SPECIALISE queueTotalWaitTimeChanged :: Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
 queueTotalWaitTimeChanged q =
   mapSignalM (const $ queueTotalWaitTime q) (queueTotalWaitTimeChanged_ q)
   
 -- | Signal when the 'queueTotalWaitTime' property value has changed.
 queueTotalWaitTimeChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueTotalWaitTimeChanged_ #-}
-{-# SPECIALISE queueTotalWaitTimeChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueTotalWaitTimeChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
       
@@ -600,22 +514,16 @@ queueTotalWaitTimeChanged_ q =
 --
 -- See also 'enqueueWaitTimeChanged' and 'enqueueWaitTimeChanged_'.
 enqueueWaitTime :: Comp m => Queue m si sm so a -> Event m (SamplingStats Double)
-{-# INLINABLE enqueueWaitTime #-}
-{-# SPECIALISE enqueueWaitTime :: Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
 enqueueWaitTime q =
   Event $ \p -> readProtoRef (enqueueWaitTimeRef q)
       
 -- | Signal when the 'enqueueWaitTime' property value has changed.
 enqueueWaitTimeChanged :: Comp m => Queue m si sm so a -> Signal m (SamplingStats Double)
-{-# INLINABLE enqueueWaitTimeChanged #-}
-{-# SPECIALISE enqueueWaitTimeChanged :: Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
 enqueueWaitTimeChanged q =
   mapSignalM (const $ enqueueWaitTime q) (enqueueWaitTimeChanged_ q)
   
 -- | Signal when the 'enqueueWaitTime' property value has changed.
 enqueueWaitTimeChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE enqueueWaitTimeChanged_ #-}
-{-# SPECIALISE enqueueWaitTimeChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 enqueueWaitTimeChanged_ q =
   mapSignal (const ()) (enqueueStored q)
       
@@ -624,22 +532,16 @@ enqueueWaitTimeChanged_ q =
 --
 -- See also 'dequeueWaitTimeChanged' and 'dequeueWaitTimeChanged_'.
 dequeueWaitTime :: Comp m => Queue m si sm so a -> Event m (SamplingStats Double)
-{-# INLINABLE dequeueWaitTime #-}
-{-# SPECIALISE dequeueWaitTime :: Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
 dequeueWaitTime q =
   Event $ \p -> readProtoRef (dequeueWaitTimeRef q)
       
 -- | Signal when the 'dequeueWaitTime' property value has changed.
 dequeueWaitTimeChanged :: Comp m => Queue m si sm so a -> Signal m (SamplingStats Double)
-{-# INLINABLE dequeueWaitTimeChanged #-}
-{-# SPECIALISE dequeueWaitTimeChanged :: Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
 dequeueWaitTimeChanged q =
   mapSignalM (const $ dequeueWaitTime q) (dequeueWaitTimeChanged_ q)
   
 -- | Signal when the 'dequeueWaitTime' property value has changed.
 dequeueWaitTimeChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE dequeueWaitTimeChanged_ #-}
-{-# SPECIALISE dequeueWaitTimeChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 dequeueWaitTimeChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
 
@@ -651,8 +553,6 @@ dequeueWaitTimeChanged_ q =
 --
 -- See also 'queueRateChanged' and 'queueRateChanged_'.
 queueRate :: Comp m => Queue m si sm so a -> Event m Double
-{-# INLINABLE queueRate #-}
-{-# SPECIALISE queueRate :: Queue IO si sm so a -> Event IO Double #-}
 queueRate q =
   Event $ \p ->
   do x <- readProtoRef (queueCountStatsRef q)
@@ -661,15 +561,11 @@ queueRate q =
       
 -- | Signal when the 'queueRate' property value has changed.
 queueRateChanged :: Comp m => Queue m si sm so a -> Signal m Double
-{-# INLINABLE queueRateChanged #-}
-{-# SPECIALISE queueRateChanged :: Queue IO si sm so a -> Signal IO Double #-}
 queueRateChanged q =
   mapSignalM (const $ queueRate q) (queueRateChanged_ q)
       
 -- | Signal when the 'queueRate' property value has changed.
 queueRateChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueRateChanged_ #-}
-{-# SPECIALISE queueRateChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueRateChanged_ q =
   mapSignal (const ()) (enqueueStored q) <>
   mapSignal (const ()) (dequeueExtracted q)
@@ -683,8 +579,6 @@ dequeue :: (Comp m,
            -- ^ the queue
            -> Process m a
            -- ^ the dequeued value
-{-# INLINABLE dequeue #-}
-{-# SPECIALISE dequeue :: (DequeueStrategy IO si, DequeueStrategy IO sm, EnqueueStrategy IO so) => Queue IO si sm so a -> Process IO a #-}
 dequeue q =
   do t <- liftEvent $ dequeueRequest q
      requestResource (dequeueRes q)
@@ -701,8 +595,6 @@ dequeueWithOutputPriority :: (Comp m,
                              -- ^ the priority for output
                              -> Process m a
                              -- ^ the dequeued value
-{-# INLINABLE dequeueWithOutputPriority #-}
-{-# SPECIALISE dequeueWithOutputPriority :: (DequeueStrategy IO si, DequeueStrategy IO sm, PriorityQueueStrategy IO so po) => Queue IO si sm so a -> po -> Process IO a #-}
 dequeueWithOutputPriority q po =
   do t <- liftEvent $ dequeueRequest q
      requestResourceWithPriority (dequeueRes q) po
@@ -716,8 +608,6 @@ tryDequeue :: (Comp m,
               -- ^ the queue
               -> Event m (Maybe a)
               -- ^ the dequeued value of 'Nothing'
-{-# INLINABLE tryDequeue #-}
-{-# SPECIALISE tryDequeue :: (DequeueStrategy IO si, DequeueStrategy IO sm) => Queue IO si sm so a -> Event IO (Maybe a) #-}
 tryDequeue q =
   do x <- tryRequestResourceWithinEvent (dequeueRes q)
      if x 
@@ -735,8 +625,6 @@ enqueue :: (Comp m,
            -> a
            -- ^ the item to enqueue
            -> Process m ()
-{-# INLINABLE enqueue #-}
-{-# SPECIALISE enqueue :: (EnqueueStrategy IO si, EnqueueStrategy IO sm, DequeueStrategy IO so) => Queue IO si sm so a -> a -> Process IO () #-}
 enqueue q a =
   do i <- liftEvent $ enqueueInitiate q a
      requestResource (enqueueRes q)
@@ -754,8 +642,6 @@ enqueueWithInputPriority :: (Comp m,
                             -> a
                             -- ^ the item to enqueue
                             -> Process m ()
-{-# INLINABLE enqueueWithInputPriority #-}
-{-# SPECIALISE enqueueWithInputPriority :: (PriorityQueueStrategy IO si pi, EnqueueStrategy IO sm, DequeueStrategy IO so) => Queue IO si sm so a -> pi -> a -> Process IO () #-}
 enqueueWithInputPriority q pi a =
   do i <- liftEvent $ enqueueInitiate q a
      requestResourceWithPriority (enqueueRes q) pi
@@ -773,8 +659,6 @@ enqueueWithStoringPriority :: (Comp m,
                               -> a
                               -- ^ the item to enqueue
                               -> Process m ()
-{-# INLINABLE enqueueWithStoringPriority #-}
-{-# SPECIALISE enqueueWithStoringPriority :: (EnqueueStrategy IO si, PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Queue IO si sm so a -> pm -> a -> Process IO () #-}
 enqueueWithStoringPriority q pm a =
   do i <- liftEvent $ enqueueInitiate q a
      requestResource (enqueueRes q)
@@ -794,8 +678,6 @@ enqueueWithInputStoringPriorities :: (Comp m,
                                      -> a
                                      -- ^ the item to enqueue
                                      -> Process m ()
-{-# INLINABLE enqueueWithInputStoringPriorities #-}
-{-# SPECIALISE enqueueWithInputStoringPriorities :: (PriorityQueueStrategy IO si pi, PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Queue IO si sm so a -> pi -> pm -> a -> Process IO () #-}
 enqueueWithInputStoringPriorities q pi pm a =
   do i <- liftEvent $ enqueueInitiate q a
      requestResourceWithPriority (enqueueRes q) pi
@@ -810,8 +692,6 @@ tryEnqueue :: (Comp m,
               -> a
               -- ^ the item which we try to enqueue
               -> Event m Bool
-{-# INLINABLE tryEnqueue #-}
-{-# SPECIALISE tryEnqueue :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Queue IO si sm so a -> a -> Event IO Bool #-}
 tryEnqueue q a =
   do x <- tryRequestResourceWithinEvent (enqueueRes q)
      if x 
@@ -831,8 +711,6 @@ tryEnqueueWithStoringPriority :: (Comp m,
                                  -> a
                                  -- ^ the item which we try to enqueue
                                  -> Event m Bool
-{-# INLINABLE tryEnqueueWithStoringPriority #-}
-{-# SPECIALISE tryEnqueueWithStoringPriority :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Queue IO si sm so a -> pm -> a -> Event IO Bool #-}
 tryEnqueueWithStoringPriority q pm a =
   do x <- tryRequestResourceWithinEvent (enqueueRes q)
      if x 
@@ -850,8 +728,6 @@ enqueueOrLost :: (Comp m,
                  -> a
                  -- ^ the item which we try to enqueue
                  -> Event m Bool
-{-# INLINABLE enqueueOrLost #-}
-{-# SPECIALISE enqueueOrLost :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Queue IO si sm so a -> a -> Event IO Bool #-}
 enqueueOrLost q a =
   do x <- tryRequestResourceWithinEvent (enqueueRes q)
      if x
@@ -872,8 +748,6 @@ enqueueWithStoringPriorityOrLost :: (Comp m,
                                     -> a
                                     -- ^ the item which we try to enqueue
                                     -> Event m Bool
-{-# INLINABLE enqueueWithStoringPriorityOrLost #-}
-{-# SPECIALISE enqueueWithStoringPriorityOrLost :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Queue IO si sm so a -> pm -> a -> Event IO Bool #-}
 enqueueWithStoringPriorityOrLost q pm a =
   do x <- tryRequestResourceWithinEvent (enqueueRes q)
      if x
@@ -891,8 +765,6 @@ enqueueOrLost_ :: (Comp m,
                   -> a
                   -- ^ the item which we try to enqueue
                   -> Event m ()
-{-# INLINABLE enqueueOrLost_ #-}
-{-# SPECIALISE enqueueOrLost_ :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Queue IO si sm so a -> a -> Event IO () #-}
 enqueueOrLost_ q a =
   do x <- enqueueOrLost q a
      return ()
@@ -909,23 +781,17 @@ enqueueWithStoringPriorityOrLost_ :: (Comp m,
                                      -> a
                                      -- ^ the item which we try to enqueue
                                      -> Event m ()
-{-# INLINABLE enqueueWithStoringPriorityOrLost_ #-}
-{-# SPECIALISE enqueueWithStoringPriorityOrLost_ :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Queue IO si sm so a -> pm -> a -> Event IO () #-}
 enqueueWithStoringPriorityOrLost_ q pm a =
   do x <- enqueueWithStoringPriorityOrLost q pm a
      return ()
 
 -- | Return a signal that notifies when the enqueuing operation is initiated.
 enqueueInitiated :: Comp m => Queue m si sm so a -> Signal m a
-{-# INLINABLE enqueueInitiated #-}
-{-# SPECIALISE enqueueInitiated :: Queue IO si sm so a -> Signal IO a #-}
 enqueueInitiated q = publishSignal (enqueueInitiatedSource q)
 
 -- | Return a signal that notifies when the enqueuing operation is completed
 -- and the item is stored in the internal memory of the queue.
 enqueueStored :: Comp m => Queue m si sm so a -> Signal m a
-{-# INLINABLE enqueueStored #-}
-{-# SPECIALISE enqueueStored :: Queue IO si sm so a -> Signal IO a #-}
 enqueueStored q = publishSignal (enqueueStoredSource q)
 
 -- | Return a signal which notifies that the item was lost when 
@@ -940,21 +806,15 @@ enqueueStored q = publishSignal (enqueueStoredSource q)
 -- suspended but then canceled through 'cancelProcess' from the outside then
 -- the item will not be added.
 enqueueLost :: Comp m => Queue m si sm so a -> Signal m a
-{-# INLINABLE enqueueLost #-}
-{-# SPECIALISE enqueueLost :: Queue IO si sm so a -> Signal IO a #-}
 enqueueLost q = publishSignal (enqueueLostSource q)
 
 -- | Return a signal that notifies when the dequeuing operation was requested.
 dequeueRequested :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE dequeueRequested #-}
-{-# SPECIALISE dequeueRequested :: Queue IO si sm so a -> Signal IO () #-}
 dequeueRequested q = publishSignal (dequeueRequestedSource q)
 
 -- | Return a signal that notifies when the item was extracted from the internal
 -- storage of the queue and prepared for immediate receiving by the dequeuing process.
 dequeueExtracted :: Comp m => Queue m si sm so a -> Signal m a
-{-# INLINABLE dequeueExtracted #-}
-{-# SPECIALISE dequeueExtracted :: Queue IO si sm so a -> Signal IO a #-}
 dequeueExtracted q = publishSignal (dequeueExtractedSource q)
 
 -- | Initiate the process of enqueuing the item.
@@ -964,8 +824,6 @@ enqueueInitiate :: Comp m
                    -> a
                    -- ^ the item to be enqueued
                    -> Event m (QueueItem a)
-{-# INLINABLE enqueueInitiate #-}
-{-# SPECIALISE enqueueInitiate :: Queue IO si sm so a -> a -> Event IO (QueueItem a) #-}
 enqueueInitiate q a =
   Event $ \p ->
   do let t = pointTime p
@@ -986,8 +844,6 @@ enqueueStore :: (Comp m,
                 -> QueueItem a
                 -- ^ the item to be stored
                 -> Event m ()
-{-# INLINABLE enqueueStore #-}
-{-# SPECIALISE enqueueStore :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Queue IO si sm so a -> QueueItem a -> Event IO () #-}
 enqueueStore q i =
   Event $ \p ->
   do let i' = i { itemStoringTime = pointTime p }  -- now we have the actual time of storing
@@ -1017,8 +873,6 @@ enqueueStoreWithPriority :: (Comp m,
                             -> QueueItem a
                             -- ^ the item to be enqueued
                             -> Event m ()
-{-# INLINABLE enqueueStoreWithPriority #-}
-{-# SPECIALISE enqueueStoreWithPriority :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Queue IO si sm so a -> pm -> QueueItem a -> Event IO () #-}
 enqueueStoreWithPriority q pm i =
   Event $ \p ->
   do let i' = i { itemStoringTime = pointTime p }  -- now we have the actual time of storing
@@ -1044,8 +898,6 @@ enqueueDeny :: Comp m
                -> a
                -- ^ the item to be denied
                -> Event m ()
-{-# INLINABLE enqueueDeny #-}
-{-# SPECIALISE enqueueDeny :: Queue IO si sm so a -> a -> Event IO () #-}
 enqueueDeny q a =
   Event $ \p ->
   do modifyProtoRef' (enqueueLostCountRef q) $ (+) 1
@@ -1060,8 +912,6 @@ enqueueStat :: Comp m
                -- ^ the item and its input time
                -> Event m ()
                -- ^ the action of updating the statistics
-{-# INLINABLE enqueueStat #-}
-{-# SPECIALISE enqueueStat :: Queue IO si sm so a -> QueueItem a -> Event IO () #-}
 enqueueStat q i =
   Event $ \p ->
   do let t0 = itemInputTime i
@@ -1075,8 +925,6 @@ dequeueRequest :: Comp m
                   -- ^ the queue
                   -> Event m Double
                   -- ^ the current time
-{-# INLINABLE dequeueRequest #-}
-{-# SPECIALISE dequeueRequest :: Queue IO si sm so a -> Event IO Double #-}
 dequeueRequest q =
   Event $ \p ->
   do modifyProtoRef' (dequeueCountRef q) (+ 1)
@@ -1094,8 +942,6 @@ dequeueExtract :: (Comp m,
                   -- ^ the time of the dequeuing request
                   -> Event m a
                   -- ^ the dequeued value
-{-# INLINABLE dequeueExtract #-}
-{-# SPECIALISE dequeueExtract :: (DequeueStrategy IO si, DequeueStrategy IO sm) => Queue IO si sm so a -> Double -> Event IO a #-}
 dequeueExtract q t' =
   Event $ \p ->
   do i <- invokeEvent p $
@@ -1125,8 +971,6 @@ dequeueStat :: Comp m
                -- ^ the item and its input time
                -> Event m ()
                -- ^ the action of updating the statistics
-{-# INLINABLE dequeueStat #-}
-{-# SPECIALISE dequeueStat :: Queue IO si sm so a -> Double -> QueueItem a -> Event IO () #-}
 dequeueStat q t' i =
   Event $ \p ->
   do let t0 = itemInputTime i
@@ -1141,8 +985,6 @@ dequeueStat q t' i =
 
 -- | Wait while the queue is full.
 waitWhileFullQueue :: Comp m => Queue m si sm so a -> Process m ()
-{-# INLINABLE waitWhileFullQueue #-}
-{-# SPECIALISE waitWhileFullQueue :: Queue IO si sm so a -> Process IO () #-}
 waitWhileFullQueue q =
   do x <- liftEvent (queueFull q)
      when x $
@@ -1156,8 +998,6 @@ waitWhileFullQueue q =
 -- already depend on the simulation time and therefore they may change at any
 -- time point.
 queueChanged_ :: Comp m => Queue m si sm so a -> Signal m ()
-{-# INLINABLE queueChanged_ #-}
-{-# SPECIALISE queueChanged_ :: Queue IO si sm so a -> Signal IO () #-}
 queueChanged_ q =
   mapSignal (const ()) (enqueueInitiated q) <>
   mapSignal (const ()) (enqueueStored q) <>
@@ -1168,8 +1008,6 @@ queueChanged_ q =
 -- | Return the summary for the queue with desciption of its
 -- properties and activities using the specified indent.
 queueSummary :: (Comp m, Show si, Show sm, Show so) => Queue m si sm so a -> Int -> Event m ShowS
-{-# INLINABLE queueSummary #-}
-{-# SPECIALISE queueSummary :: (Show si, Show sm, Show so) => Queue IO si sm so a -> Int -> Event IO ShowS #-}
 queueSummary q indent =
   do let si = enqueueStrategy q
          sm = enqueueStoringStrategy q
