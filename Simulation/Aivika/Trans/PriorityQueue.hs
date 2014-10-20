@@ -37,8 +37,6 @@ data PriorityQueue m a =
                   pqCapacity :: ProtoRef m Int }
 
 increase :: ProtoComp m => PriorityQueue m a -> m ()
-{-# INLINABLE increase #-}
-{-# SPECIALISE increase :: PriorityQueue IO Double -> IO () #-}
 increase pq = 
   do let s = pqSession pq
          keyRef = pqKeys pq
@@ -69,8 +67,6 @@ siftUp :: ProtoComp m
           -> a
           -- ^ value
           -> m ()
-{-# INLINABLE siftUp #-}
-{-# SPECIALISE siftUp :: UA.ProtoArray IO Double -> A.ProtoArray IO a -> Int -> Double -> a -> IO () #-}
 siftUp keys vals i k v =
   if i == 0 
   then do UA.writeProtoArray keys i k
@@ -99,8 +95,6 @@ siftDown :: ProtoComp m
             -> a
             -- ^ value
             -> m ()
-{-# INLINABLE siftDown #-}
-{-# SPECIALISE siftDown :: UA.ProtoArray IO Double -> A.ProtoArray IO a -> Int -> Int -> Double -> a -> IO () #-}
 siftDown keys vals size i k v =
   if i >= (size `div` 2)
   then do UA.writeProtoArray keys i k
@@ -129,22 +123,16 @@ siftDown keys vals size i k v =
 
 -- | Test whether the priority queue is empty.
 queueNull :: ProtoComp m => PriorityQueue m a -> m Bool
-{-# INLINABLE queueNull #-}
-{-# SPECIALISE queueNull :: PriorityQueue IO a -> IO Bool #-}
 queueNull pq =
   do size <- readProtoRef (pqSize pq)
      return $ size == 0
 
 -- | Return the number of elements in the priority queue.
 queueCount :: ProtoComp m => PriorityQueue m a -> m Int
-{-# INLINABLE queueCount #-}
-{-# SPECIALISE queueCount :: PriorityQueue IO a -> IO Int #-}
 queueCount pq = readProtoRef (pqSize pq)
 
 -- | Create a new priority queue.
 newQueue :: ProtoComp m => Session m -> m (PriorityQueue m a)
-{-# INLINABLE newQueue #-}
-{-# SPECIALISE newQueue :: Session IO -> IO (PriorityQueue IO a) #-}
 newQueue session =
   do keys        <- UA.newProtoArray_ session 11
      vals        <- A.newProtoArray_ session 11
@@ -160,8 +148,6 @@ newQueue session =
 
 -- | Enqueue a new element with the specified priority.
 enqueue :: ProtoComp m => PriorityQueue m a -> Double -> a -> m ()
-{-# INLINABLE enqueue #-}
-{-# SPECIALISE enqueue :: PriorityQueue IO a -> Double -> a -> IO () #-}
 enqueue pq k v =
   do i <- readProtoRef (pqSize pq)
      n <- readProtoRef (pqCapacity pq)
@@ -173,8 +159,6 @@ enqueue pq k v =
 
 -- | Dequeue the element with the minimal priority.
 dequeue :: ProtoComp m => PriorityQueue m a -> m ()
-{-# INLINABLE dequeue #-}
-{-# SPECIALISE dequeue :: PriorityQueue IO a -> IO () #-}
 dequeue pq =
   do size <- readProtoRef (pqSize pq)
      when (size == 0) $ error "Empty priority queue: dequeue"
@@ -192,8 +176,6 @@ dequeue pq =
 
 -- | Return the element with the minimal priority.
 queueFront :: ProtoComp m => PriorityQueue m a -> m (Double, a)
-{-# INLINABLE queueFront #-}
-{-# SPECIALISE queueFront :: PriorityQueue IO a -> IO (Double, a) #-}
 queueFront pq =
   do size <- readProtoRef (pqSize pq)
      when (size == 0) $ error "Empty priority queue: queueFront"
