@@ -37,7 +37,6 @@ instance TemplateEventQueueing m => EventQueueing m where
                  -- ^ the actual time of the event queue
                }
   
-  {-# INLINABLE newEventQueue #-}
   newEventQueue session specs = 
     do f <- newProtoRef session False
        t <- newProtoRef session $ spcStartTime specs
@@ -46,25 +45,21 @@ instance TemplateEventQueueing m => EventQueueing m where
                            queueBusy = f,
                            queueTime = t }
 
-  {-# INLINABLE enqueueEvent #-}
   enqueueEvent t (Event m) =
     Event $ \p ->
     let pq = queuePQ $ runEventQueue $ pointRun p
     in PQ.enqueue pq t m
 
-  {-# INLINABLE runEventWith #-}
   runEventWith processing (Event e) =
     Dynamics $ \p ->
     do invokeDynamics p $ processEvents processing
        e p
 
-  {-# INLINABLE eventQueueCount #-}
   eventQueueCount =
     Event $ PQ.queueCount . queuePQ . runEventQueue . pointRun
 
 -- | Process the pending events.
 processPendingEventsCore :: ProtoComp m => Bool -> Dynamics m ()
-{-# INLINABLE processPendingEventsCore #-}
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -99,7 +94,6 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
 
 -- | Process the pending events synchronously, i.e. without past.
 processPendingEvents :: ProtoComp m => Bool -> Dynamics m ()
-{-# INLINABLE processPendingEvents #-}
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -114,27 +108,22 @@ processPendingEvents includingCurrentEvents = Dynamics r where
 
 -- | A memoized value.
 processEventsIncludingCurrent :: ProtoComp m => Dynamics m ()
-{-# INLINABLE processEventsIncludingCurrent #-}
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
 processEventsIncludingEarlier :: ProtoComp m => Dynamics m ()
-{-# INLINABLE processEventsIncludingEarlier #-}
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
 processEventsIncludingCurrentCore :: ProtoComp m => Dynamics m ()
-{-# INLINABLE processEventsIncludingCurrentCore #-}
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
 processEventsIncludingEarlierCore :: ProtoComp m => Dynamics m ()
-{-# INLINABLE processEventsIncludingEarlierCore #-}
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
 processEvents :: ProtoComp m => EventProcessing -> Dynamics m ()
-{-# INLINABLE processEvents #-}
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore

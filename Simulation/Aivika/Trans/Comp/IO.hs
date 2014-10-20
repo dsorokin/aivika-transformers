@@ -33,7 +33,6 @@ instance EventQueueing IO where
                  -- ^ the actual time of the event queue
                }
   
-  {-# INLINABLE newEventQueue #-}
   newEventQueue session specs = 
     do f <- newProtoRef session False
        t <- newProtoRef session $ spcStartTime specs
@@ -42,19 +41,16 @@ instance EventQueueing IO where
                            queueBusy = f,
                            queueTime = t }
 
-  {-# INLINABLE enqueueEvent #-}
   enqueueEvent t (Event m) =
     Event $ \p ->
     let pq = queuePQ $ runEventQueue $ pointRun p
     in PQ.enqueue pq t m
 
-  {-# INLINABLE runEventWith #-}
   runEventWith processing (Event e) =
     Dynamics $ \p ->
     do invokeDynamics p $ processEvents processing
        e p
 
-  {-# INLINABLE eventQueueCount #-}
   eventQueueCount =
     Event $ PQ.queueCount . queuePQ . runEventQueue . pointRun
 
@@ -62,7 +58,6 @@ instance Comp IO
 
 -- | Process the pending events.
 processPendingEventsCore :: Bool -> Dynamics IO ()
-{-# INLINABLE processPendingEventsCore #-}
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -97,7 +92,6 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
 
 -- | Process the pending events synchronously, i.e. without past.
 processPendingEvents :: Bool -> Dynamics IO ()
-{-# INLINABLE processPendingEvents #-}
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -112,27 +106,22 @@ processPendingEvents includingCurrentEvents = Dynamics r where
 
 -- | A memoized value.
 processEventsIncludingCurrent :: Dynamics IO ()
-{-# INLINABLE processEventsIncludingCurrent #-}
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
 processEventsIncludingEarlier :: Dynamics IO ()
-{-# INLINABLE processEventsIncludingEarlier #-}
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
 processEventsIncludingCurrentCore :: Dynamics IO ()
-{-# INLINABLE processEventsIncludingCurrentCore #-}
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
 processEventsIncludingEarlierCore :: Dynamics IO ()
-{-# INLINABLE processEventsIncludingEarlierCore #-}
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
 processEvents :: EventProcessing -> Dynamics IO ()
-{-# INLINABLE processEvents #-}
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
