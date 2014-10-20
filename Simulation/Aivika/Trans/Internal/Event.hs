@@ -57,10 +57,10 @@ import Simulation.Aivika.Trans.Internal.Dynamics
 
 instance Monad m => Monad (Event m) where
 
-  {-# SPECIALISE INLINE return :: a -> Event IO a #-}
+  {-# INLINE return #-}
   return a = Event $ \p -> return a
 
-  {-# SPECIALISE INLINE (>>=) :: Event IO a -> (a -> Event IO b) -> Event IO b #-}
+  {-# INLINE (>>=) #-}
   (Event m) >>= k =
     Event $ \p -> 
     do a <- m p
@@ -69,15 +69,15 @@ instance Monad m => Monad (Event m) where
 
 instance Functor m => Functor (Event m) where
   
-  {-# SPECIALISE INLINE fmap :: (a -> b) -> Event IO a -> Event IO b #-}
+  {-# INLINE fmap #-}
   fmap f (Event x) = Event $ \p -> fmap f $ x p
 
 instance Applicative m => Applicative (Event m) where
   
-  {-# SPECIALISE INLINE pure :: a -> Event IO a #-}
+  {-# INLINE pure #-}
   pure = Event . const . pure
   
-  {-# SPECIALISE INLINE (<*>) :: Event IO (a -> b) -> Event IO a -> Event IO b #-}
+  {-# INLINE (<*>) #-}
   (Event x) <*> (Event y) = Event $ \p -> x p <*> y p
 
 instance MonadTrans Event where
@@ -123,8 +123,6 @@ instance ParameterLift Event where
 
 -- | Exception handling within 'Event' computations.
 catchEvent :: (Comp m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
-{-# INLINABLE catchEvent #-}
-{-# SPECIALISE catchEvent :: Exception e => Event IO a -> (e -> Event IO a) -> Event IO a #-}
 catchEvent (Event m) h =
   Event $ \p -> 
   catchComp (m p) $ \e ->
@@ -132,21 +130,17 @@ catchEvent (Event m) h =
                            
 -- | A computation with finalization part like the 'finally' function.
 finallyEvent :: Comp m => Event m a -> Event m b -> Event m a
-{-# INLINABLE finallyEvent #-}
-{-# SPECIALISE finallyEvent :: Event IO a -> Event IO b -> Event IO a #-}
 finallyEvent (Event m) (Event m') =
   Event $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
 throwEvent :: (Comp m, Exception e) => e -> Event m a
-{-# INLINABLE throwEvent #-}
-{-# SPECIALISE throwEvent :: Exception e => e -> Event IO a #-}
 throwEvent = throw
 
 instance MonadFix m => MonadFix (Event m) where
 
-  {-# SPECIALISE INLINE mfix :: (a -> Event IO a) -> Event IO a #-}
+  {-# INLINE mfix #-}
   mfix f = 
     Event $ \p ->
     do { rec { a <- invokeEvent p (f a) }; return a }
@@ -154,29 +148,21 @@ instance MonadFix m => MonadFix (Event m) where
 -- | Run the 'Event' computation in the start time involving all
 -- pending 'CurrentEvents' in the processing too.
 runEventInStartTime :: Comp m => Event m a -> Simulation m a
-{-# INLINABLE runEventInStartTime #-}
-{-# SPECIALISE runEventInStartTime :: Event IO a -> Simulation IO a #-}
 runEventInStartTime = runDynamicsInStartTime . runEvent
 
 -- | Run the 'Event' computation in the stop time involving all
 -- pending 'CurrentEvents' in the processing too.
 runEventInStopTime :: Comp m => Event m a -> Simulation m a
-{-# INLINABLE runEventInStopTime #-}
-{-# SPECIALISE runEventInStopTime :: Event IO a -> Simulation IO a #-}
 runEventInStopTime = runDynamicsInStopTime . runEvent
 
 -- | Actuate the event handler in the specified time points.
 enqueueEventWithTimes :: Comp m => [Double] -> Event m () -> Event m ()
-{-# INLINABLE enqueueEventWithTimes #-}
-{-# SPECIALISE enqueueEventWithTimes :: [Double] -> Event IO () -> Event IO () #-}
 enqueueEventWithTimes ts e = loop ts
   where loop []       = return ()
         loop (t : ts) = enqueueEvent t $ e >> loop ts
        
 -- | Actuate the event handler in the specified time points.
 enqueueEventWithPoints :: Comp m => [Point m] -> Event m () -> Event m ()
-{-# INLINABLE enqueueEventWithPoints #-}
-{-# SPECIALISE enqueueEventWithPoints :: [Point IO] -> Event IO () -> Event IO () #-}
 enqueueEventWithPoints xs (Event e) = loop xs
   where loop []       = return ()
         loop (x : xs) = enqueueEvent (pointTime x) $ 
@@ -186,8 +172,6 @@ enqueueEventWithPoints xs (Event e) = loop xs
                            
 -- | Actuate the event handler in the integration time points.
 enqueueEventWithIntegTimes :: Comp m => Event m () -> Event m ()
-{-# INLINABLE enqueueEventWithIntegTimes #-}
-{-# SPECIALISE enqueueEventWithIntegTimes :: Event IO () -> Event IO () #-}
 enqueueEventWithIntegTimes e =
   Event $ \p ->
   let points = integPoints $ pointRun p
@@ -205,8 +189,6 @@ data EventCancellation m =
 
 -- | Enqueue the event with an ability to cancel it.
 enqueueEventWithCancellation :: Comp m => Double -> Event m () -> Event m (EventCancellation m)
-{-# INLINABLE enqueueEventWithCancellation #-}
-{-# SPECIALISE enqueueEventWithCancellation :: Double -> Event IO () -> Event IO (EventCancellation IO) #-}
 enqueueEventWithCancellation t e =
   Event $ \p ->
   do let s = runSession $ pointRun p
@@ -237,8 +219,6 @@ enqueueEventWithCancellation t e =
 -- | Memoize the 'Event' computation, always returning the same value
 -- within a simulation run.
 memoEvent :: Comp m => Event m a -> Simulation m (Event m a)
-{-# INLINABLE memoEvent #-}
-{-# SPECIALISE memoEvent :: Event IO a -> Simulation IO (Event IO a) #-}
 memoEvent m =
   Simulation $ \r ->
   do let s = runSession r
@@ -261,8 +241,6 @@ memoEvent m =
 -- flows in one direction only. This synchronization is a key difference
 -- between the 'Event' and 'Dynamics' computations.
 memoEventInTime :: Comp m => Event m a -> Simulation m (Event m a)
-{-# INLINABLE memoEventInTime #-}
-{-# SPECIALISE memoEventInTime :: Event IO a -> Simulation IO (Event IO a) #-}
 memoEventInTime m =
   Simulation $ \r ->
   do let s = runSession r
@@ -279,8 +257,6 @@ memoEventInTime m =
 
 -- | Enqueue the event which must be actuated with the current modeling time but later.
 yieldEvent :: Comp m => Event m () -> Event m ()
-{-# INLINABLE yieldEvent #-}
-{-# SPECIALISE yieldEvent :: Event IO () -> Event IO () #-}
 yieldEvent m =
   Event $ \p ->
   invokeEvent p $
@@ -294,8 +270,8 @@ newtype DisposableEvent m =
 
 instance Monad m => Monoid (DisposableEvent m) where
 
-  {-# SPECIALISE INLINE mempty :: DisposableEvent IO #-}
+  {-# INLINE mempty #-}
   mempty = DisposableEvent $ return ()
 
-  {-# SPECIALISE INLINE mappend :: DisposableEvent IO -> DisposableEvent IO -> DisposableEvent IO #-}
+  {-# INLINE mappend #-}
   mappend (DisposableEvent x) (DisposableEvent y) = DisposableEvent $ x >> y
