@@ -24,6 +24,8 @@ module Simulation.Aivika.Trans.Var.Unboxed
 
 import Data.Array
 
+import Simulation.Aivika.Trans.Session
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
@@ -44,19 +46,20 @@ import qualified Simulation.Aivika.Trans.Vector.Unboxed as UV
 -- the variable iself can be updated wihin the discrete event simulation.
 --
 -- Only this variable is much slower than the reference.
-data Var a = 
-  Var { varXS    :: UV.Vector Double,
-        varMS    :: UV.Vector a,
-        varYS    :: UV.Vector a,
-        varChangedSource :: SignalSource a }
+data Var m a = 
+  Var { varXS    :: UV.Vector m Double,
+        varMS    :: UV.Vector m a,
+        varYS    :: UV.Vector m a,
+        varChangedSource :: SignalSource m a }
 
 -- | Create a new variable.
-newVar :: Unboxed a => a -> Simulation (Var a)
+newVar :: (Comp m, Unboxed m a) => a -> Simulation m (Var m a)
 newVar a =
   Simulation $ \r ->
-  do xs <- UV.newVector
-     ms <- UV.newVector
-     ys <- UV.newVector
+  do let sn = runSession r
+     xs <- UV.newVector sn
+     ms <- UV.newVector sn
+     ys <- UV.newVector sn
      UV.appendVector xs $ spcStartTime $ runSpecs r
      UV.appendVector ms a
      UV.appendVector ys a
@@ -71,7 +74,7 @@ newVar a =
 --
 -- This computation can be used in the ordinary differential and
 -- difference equations of System Dynamics.
-varMemo :: Unboxed a => Var a -> Dynamics a
+varMemo :: (Comp m, Unboxed m a) => Var m a -> Dynamics m a
 varMemo v =
   runEventWith CurrentEventsOrFromPast $
   Event $ \p ->
@@ -98,7 +101,7 @@ varMemo v =
 -- | Read the recent actual value of a variable for the requested time.
 --
 -- This computation is destined for using within discrete event simulation.
-readVar :: Unboxed a => Var a -> Event a
+readVar :: (Comp m, Unboxed m a) => Var m a -> Event m a
 readVar v = 
   Event $ \p ->
   do let xs = varXS v
@@ -115,7 +118,7 @@ readVar v =
                  else UV.readVector ys $ - (i + 1) - 1
 
 -- | Write a new value into the variable.
-writeVar :: Unboxed a => Var a -> a -> Event ()
+writeVar :: (Comp m, Unboxed m a) => Var m a -> a -> Event m ()
 writeVar v a =
   Event $ \p ->
   do let xs = varXS v
@@ -136,7 +139,7 @@ writeVar v a =
      invokeEvent p $ triggerSignal s a
 
 -- | Mutate the contents of the variable.
-modifyVar :: Unboxed a => Var a -> (a -> a) -> Event ()
+modifyVar :: (Comp m, Unboxed m a) => Var m a -> (a -> a) -> Event m ()
 modifyVar v f =
   Event $ \p ->
   do let xs = varXS v
@@ -169,7 +172,7 @@ modifyVar v f =
 -- If you need to get all changes including those ones that correspond to the same
 -- simulation time points then you can use the 'newSignalHistory' function passing
 -- in the 'varChanged' signal to it and then call function 'readSignalHistory'.
-freezeVar :: Unboxed a => Var a -> Event (Array Int Double, Array Int a, Array Int a)
+freezeVar :: (Comp m, Unboxed m a) => Var m a -> Event m (Array Int Double, Array Int a, Array Int a)
 freezeVar v =
   Event $ \p ->
   do xs <- UV.freezeVector (varXS v)
@@ -178,9 +181,9 @@ freezeVar v =
      return (xs, ms, ys)
      
 -- | Return a signal that notifies about every change of the variable state.
-varChanged :: Var a -> Signal a
+varChanged :: Var m a -> Signal m a
 varChanged v = publishSignal (varChangedSource v)
 
 -- | Return a signal that notifies about every change of the variable state.
-varChanged_ :: Var a -> Signal ()
+varChanged_ :: Comp m => Var m a -> Signal m ()
 varChanged_ v = mapSignal (const ()) $ varChanged v     

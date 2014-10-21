@@ -47,8 +47,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Stream.Random,
         -- module Simulation.Aivika.Trans.Task,
         -- module Simulation.Aivika.Trans.Transform,
-        -- module Simulation.Aivika.Trans.Var.Unboxed) where
-       ) where
+        module Simulation.Aivika.Trans.Var.Unboxed) where
 
 -- import Simulation.Aivika.Trans.Agent
 import Simulation.Aivika.Trans.Arrival
@@ -85,4 +84,4 @@ import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Stream.Random
 -- import Simulation.Aivika.Trans.Task
 -- import Simulation.Aivika.Trans.Transform
--- import Simulation.Aivika.Trans.Var.Unboxed
+import Simulation.Aivika.Trans.Var.Unboxed
