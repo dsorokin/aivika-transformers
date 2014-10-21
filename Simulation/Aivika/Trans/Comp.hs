@@ -34,6 +34,8 @@ class (Monad m,
        ProtoReferring m,
        ProtoArraying m,
        Unboxed m Double,
+       Unboxed m Float,
+       Unboxed m Int,
        Generating m) => ProtoComp m
 
 -- | Such a simulation monad that allows enqueueing events.
