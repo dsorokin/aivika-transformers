@@ -17,6 +17,7 @@ module Simulation.Aivika.Trans.Statistics.Accumulator
         newTimingStatsAccumulator,
         timingStatsAccumulated) where
 
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Event
@@ -25,15 +26,15 @@ import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Signal
 
 -- | Represents an accumulator for the timing statistics.
-newtype TimingStatsAccumulator a =
-  TimingStatsAccumulator { timingStatsAccumulatedRef :: Ref (TimingStats a) }
+newtype TimingStatsAccumulator m a =
+  TimingStatsAccumulator { timingStatsAccumulatedRef :: Ref m (TimingStats a) }
 
 -- | Return the accumulated statistics.
-timingStatsAccumulated :: TimingStatsAccumulator a -> Event (TimingStats a)
+timingStatsAccumulated :: Comp m => TimingStatsAccumulator m a -> Event m (TimingStats a)
 timingStatsAccumulated = readRef . timingStatsAccumulatedRef
 
 -- | Start gathering the timing statistics from the current simulation time. 
-newTimingStatsAccumulator :: TimingData a => Signalable a -> Event (TimingStatsAccumulator a)
+newTimingStatsAccumulator :: (Comp m, TimingData a) => Signalable m a -> Event m (TimingStatsAccumulator m a)
 newTimingStatsAccumulator x =
   do t0 <- liftDynamics time
      a0 <- readSignalable x
