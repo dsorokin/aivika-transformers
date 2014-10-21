@@ -11,19 +11,7 @@
 --
 -- This module defines the queue strategies.
 --
-module Simulation.Aivika.Trans.QueueStrategy
-       (-- * Strategy Classes
-        QueueStrategy(..),
-        DequeueStrategy(..),
-        EnqueueStrategy(..),
-        PriorityQueueStrategy(..),
-        -- * Strategy Queues
-        StrategyQueue(..),
-        -- * Strategy Instances
-        FCFS(..),
-        LCFS(..),
-        SIRO(..),
-        StaticPriorities(..)) where
+module Simulation.Aivika.Trans.QueueStrategy where
 
 import Control.Monad.Trans
 
@@ -101,6 +89,7 @@ data SIRO = SIRO deriving (Eq, Ord, Show)
 -- | Strategy: Static Priorities. It uses the priority queue.
 data StaticPriorities = StaticPriorities deriving (Eq, Ord, Show)
 
+-- | An implementation of the 'FCFS' queue strategy.
 instance Comp m => QueueStrategy m FCFS where
 
   -- | A queue used by the 'FCFS' strategy.
@@ -113,6 +102,7 @@ instance Comp m => QueueStrategy m FCFS where
 
   strategyQueueNull (FCFSQueue q) = liftComp $ LL.listNull q
 
+-- | An implementation of the 'FCFS' queue strategy.
 instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
 
   strategyDequeue (FCFSQueue q) =
@@ -121,10 +111,12 @@ instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
        LL.listRemoveFirst q
        return i
 
+-- | An implementation of the 'FCFS' queue strategy.
 instance DequeueStrategy m FCFS => EnqueueStrategy m FCFS where
 
   strategyEnqueue (FCFSQueue q) i = liftComp $ LL.listAddLast q i
 
+-- | An implementation of the 'LCFS' queue strategy.
 instance Comp m => QueueStrategy m LCFS where
 
   -- | A queue used by the 'LCFS' strategy.
@@ -137,6 +129,7 @@ instance Comp m => QueueStrategy m LCFS where
        
   strategyQueueNull (LCFSQueue q) = liftComp $ LL.listNull q
 
+-- | An implementation of the 'LCFS' queue strategy.
 instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
 
   strategyDequeue (LCFSQueue q) =
@@ -145,10 +138,12 @@ instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
        LL.listRemoveFirst q
        return i
 
+-- | An implementation of the 'LCFS' queue strategy.
 instance DequeueStrategy m LCFS => EnqueueStrategy m LCFS where
 
   strategyEnqueue (LCFSQueue q) i = liftComp $ LL.listInsertFirst q i
 
+-- | An implementation of the 'StaticPriorities' queue strategy.
 instance Comp m => QueueStrategy m StaticPriorities where
 
   -- | A queue used by the 'StaticPriorities' strategy.
@@ -161,6 +156,7 @@ instance Comp m => QueueStrategy m StaticPriorities where
 
   strategyQueueNull (StaticPriorityQueue q) = liftComp $ PQ.queueNull q
 
+-- | An implementation of the 'StaticPriorities' queue strategy.
 instance QueueStrategy m StaticPriorities => DequeueStrategy m StaticPriorities where
 
   strategyDequeue (StaticPriorityQueue q) =
@@ -169,10 +165,12 @@ instance QueueStrategy m StaticPriorities => DequeueStrategy m StaticPriorities 
        PQ.dequeue q
        return i
 
+-- | An implementation of the 'StaticPriorities' queue strategy.
 instance DequeueStrategy m StaticPriorities => PriorityQueueStrategy m StaticPriorities Double where
 
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i = liftComp $ PQ.enqueue q p i
 
+-- | An implementation of the 'SIRO' queue strategy.
 instance Comp m => QueueStrategy m SIRO where
 
   -- | A queue used by the 'SIRO' strategy.
@@ -188,6 +186,7 @@ instance Comp m => QueueStrategy m SIRO where
     do n <- V.vectorCount q
        return (n == 0)
 
+-- | An implementation of the 'SIRO' queue strategy.
 instance QueueStrategy m SIRO => DequeueStrategy m SIRO where
 
   strategyDequeue (SIROQueue q) =
@@ -197,6 +196,7 @@ instance QueueStrategy m SIRO => DequeueStrategy m SIRO where
        liftComp $ V.vectorDeleteAt q i
        return x
 
+-- | An implementation of the 'SIRO' queue strategy.
 instance DequeueStrategy m SIRO => EnqueueStrategy m SIRO where
 
   strategyEnqueue (SIROQueue q) i = liftComp $ V.appendVector q i
