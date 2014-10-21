@@ -20,7 +20,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Comp.Template,
         module Simulation.Aivika.Trans.Cont,
         module Simulation.Aivika.Trans.Dynamics,
-        module Simulation.Aivika.Trans.Dynamics.Interpolate,
+        module Simulation.Aivika.Trans.Dynamics.Extra,
         module Simulation.Aivika.Trans.Dynamics.Memo.Unboxed,
         module Simulation.Aivika.Trans.Dynamics.Random,
         module Simulation.Aivika.Trans.Event,
@@ -58,7 +58,7 @@ import Simulation.Aivika.Trans.Comp.IO
 import Simulation.Aivika.Trans.Comp.Template
 import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.Dynamics
-import Simulation.Aivika.Trans.Dynamics.Interpolate
+import Simulation.Aivika.Trans.Dynamics.Extra
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
 import Simulation.Aivika.Trans.Dynamics.Random
 import Simulation.Aivika.Trans.Event

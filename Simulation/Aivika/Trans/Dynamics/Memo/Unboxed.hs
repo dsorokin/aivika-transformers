@@ -28,7 +28,7 @@ import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
-import Simulation.Aivika.Trans.Dynamics.Interpolate
+import Simulation.Aivika.Trans.Dynamics.Extra
 import Simulation.Aivika.Trans.Unboxed
 
 -- | Memoize and order the computation in the integration time points using 
