@@ -45,7 +45,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Statistics.Accumulator,
         module Simulation.Aivika.Trans.Stream,
         module Simulation.Aivika.Trans.Stream.Random,
-        -- module Simulation.Aivika.Trans.Task,
+        module Simulation.Aivika.Trans.Task,
         -- module Simulation.Aivika.Trans.Transform,
         -- module Simulation.Aivika.Trans.Transform.Extra,
         -- module Simulation.Aivika.Trans.Transform.Memo.Unboxed,
