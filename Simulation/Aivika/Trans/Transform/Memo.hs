@@ -17,6 +17,7 @@ module Simulation.Aivika.Trans.Transform.Memo
         memo0Transform,
         iteratingTransform) where
 
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Extra
@@ -26,7 +27,7 @@ import Simulation.Aivika.Trans.Transform
 -- | A transform that memoizes and order the computation in the integration time points
 -- using the interpolation that knows of the Runge-Kutta method. The values are
 -- calculated sequentially starting from 'starttime'.
-memoTransform :: Transform e e
+memoTransform :: Comp m => Transform m e e
 memoTransform = Transform memoDynamics 
 
 -- | A transform that memoizes and order the computation in the integration time points using 
@@ -35,11 +36,11 @@ memoTransform = Transform memoDynamics
 -- difference when we request for values in the intermediate time points
 -- that are used by this method to integrate. In general case you should 
 -- prefer the 'memo0Transform' computation above 'memoTransform'.
-memo0Transform :: Transform e e
+memo0Transform :: Comp m => Transform m e e
 memo0Transform =  Transform memo0Dynamics
 
 -- | A transform that iterates sequentially the dynamic process with side effects in 
 -- the integration time points. It is equivalent to the 'memo0Transform' computation
 -- but significantly more efficient, for the internal array is not created.
-iteratingTransform :: Transform () ()
+iteratingTransform :: Comp m => Transform m () ()
 iteratingTransform = Transform iterateDynamics
