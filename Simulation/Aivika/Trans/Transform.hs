@@ -26,7 +26,9 @@ module Simulation.Aivika.Trans.Transform
 import qualified Control.Category as C
 import Control.Arrow
 import Control.Monad
+import Control.Monad.Fix
 
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo
@@ -41,19 +43,19 @@ import Simulation.Aivika.Trans.SystemDynamics
 -- other time points with help of one of the memoization functions
 -- like 'memo0Dynamics'.
 --
-newtype Transform a b =
-  Transform { runTransform :: Dynamics a -> Simulation (Dynamics b)
+newtype Transform m a b =
+  Transform { runTransform :: Dynamics m a -> Simulation m (Dynamics m b)
               -- ^ Run the transform.
             }
 
-instance C.Category Transform where
+instance Comp m => C.Category (Transform m) where
 
   id = Transform return
   
   (Transform g) . (Transform f) =
     Transform $ \a -> f a >>= g
 
-instance Arrow Transform where
+instance Comp m => Arrow (Transform m) where
 
   arr f = Transform $ return . fmap f
 
@@ -82,7 +84,7 @@ instance Arrow Transform where
        c' <- g b
        return $ liftM2 (,) c c'
 
-instance ArrowLoop Transform where
+instance (Comp m, MonadFix m) => ArrowLoop (Transform m) where
 
   loop (Transform f) =
     Transform $ \b ->
@@ -92,15 +94,16 @@ instance ArrowLoop Transform where
         return c
 
 -- | A transform that returns the current modeling time.
-timeTransform :: Transform a Double
+timeTransform :: Comp m => Transform m a Double
 timeTransform = Transform $ const $ return time
 
 -- | Return a delayed transform by the specified lag time and initial value.
 --
 -- This is actually the 'delayI' function wrapped in the 'Transform' type. 
-delayTransform :: Dynamics Double     -- ^ the lag time
-                  -> Dynamics a       -- ^ the initial value
-                  -> Transform a a    -- ^ the delayed transform
+delayTransform :: Comp m
+                  => Dynamics m Double     -- ^ the lag time
+                  -> Dynamics m a       -- ^ the initial value
+                  -> Transform m a a    -- ^ the delayed transform
 delayTransform lagTime init =
   Transform $ \a -> delayI a lagTime init
   
@@ -108,9 +111,10 @@ delayTransform lagTime init =
 -- by the specified initial value.
 --
 -- This is actually the 'integ' function wrapped in the 'Transform' type. 
-integTransform :: Dynamics Double
+integTransform :: (Comp m, MonadFix m)
+                  => Dynamics m Double
                   -- ^ the initial value
-                  -> Transform Double Double
+                  -> Transform m Double Double
                   -- ^ map the derivative to an integral
 integTransform = Transform . integ
 
@@ -118,9 +122,9 @@ integTransform = Transform . integ
 -- by the specified initial value.
 --
 -- This is actually the 'diffsum' function wrapped in the 'Transform' type. 
-sumTransform :: (Num a, Unboxed a) =>
-                Dynamics a
+sumTransform :: (Comp m, MonadFix m, Num a, Unboxed m a) =>
+                Dynamics m a
                 -- ^ the initial value
-                -> Transform a a
+                -> Transform m a a
                 -- ^ map the difference to a sum
 sumTransform = Transform . diffsum
