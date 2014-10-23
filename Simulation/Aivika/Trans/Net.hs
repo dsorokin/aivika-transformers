@@ -45,8 +45,10 @@ import qualified Control.Category as C
 import Control.Arrow
 import Control.Monad.Trans
 
-import Data.IORef
-
+import Simulation.Aivika.Trans.Session
+import Simulation.Aivika.Trans.ProtoRef
+import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Event
@@ -61,12 +63,12 @@ import Simulation.Aivika.Trans.Circuit
 import Simulation.Aivika.Trans.Internal.Arrival
 
 -- | Represents the net as an automaton working within the 'Process' computation.
-newtype Net a b =
-  Net { runNet :: a -> Process (b, Net a b)
+newtype Net m a b =
+  Net { runNet :: a -> Process m (b, Net m a b)
         -- ^ Run the net.
       }
 
-instance C.Category Net where
+instance Comp m => C.Category (Net m) where
 
   id = Net $ \a -> return (a, C.id)
 
@@ -78,7 +80,7 @@ instance C.Category Net where
            (c, p2) <- g b
            return (c, p2 `dot` p1)
 
-instance Arrow Net where
+instance Comp m => Arrow (Net m) where
 
   arr f = Net $ \a -> return (f a, arr f)
 
@@ -104,7 +106,7 @@ instance Arrow Net where
        (c', p2) <- g b
        return ((c, c'), p1 &&& p2)
 
-instance ArrowChoice Net where
+instance Comp m => ArrowChoice (Net m) where
 
   left x@(Net f) =
     Net $ \ebd ->
@@ -145,12 +147,12 @@ instance ArrowChoice Net where
            return (d, x ||| p2)
 
 -- | A net that never finishes its work.
-emptyNet :: Net a b
+emptyNet :: Comp m => Net m a b
 emptyNet = Net $ const neverProcess
 
 -- | Create a simple net by the specified handling function
 -- that runs the discontinuous process for each input value to get an output.
-arrNet :: (a -> Process b) -> Net a b
+arrNet :: Comp m => (a -> Process m b) -> Net m a b
 arrNet f =
   let x =
         Net $ \a ->
@@ -159,7 +161,7 @@ arrNet f =
   in x
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumNet :: (acc -> a -> Process (acc, b)) -> acc -> Net a b
+accumNet :: Comp m => (acc -> a -> Process m (acc, b)) -> acc -> Net m a b
 accumNet f acc =
   Net $ \a ->
   do (acc', b) <- f acc a
@@ -169,12 +171,12 @@ accumNet f acc =
 -- It can be useful to refer to the underlying 'Process' computation which
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
-netUsingId :: ProcessId -> Net a b -> Net a b
+netUsingId :: Comp m => ProcessId m -> Net m a b -> Net m a b
 netUsingId pid (Net f) =
   Net $ processUsingId pid . f
 
 -- | Transform the net to an equivalent processor (a rather cheap transformation).
-netProcessor :: Net a b -> Processor a b
+netProcessor :: Comp m => Net m a b -> Processor m a b
 netProcessor = Processor . loop
   where loop x as =
           Cons $
@@ -183,7 +185,7 @@ netProcessor = Processor . loop
              return (b, loop x' as')
 
 -- | Transform the processor to a similar net (a more costly transformation).
-processorNet :: Processor a b -> Net a b
+processorNet :: Comp m => Processor m a b -> Net m a b
 processorNet x =
   Net $ \a ->
   do readingA <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
@@ -191,28 +193,29 @@ processorNet x =
      readingB <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
      writingB <- liftSimulation $ newResourceWithMaxCount FCFS 1 (Just 1)
      conting  <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
-     refA <- liftIO $ newIORef Nothing
-     refB <- liftIO $ newIORef Nothing
+     sn <- liftParameter simulationSession
+     refA <- liftComp $ newProtoRef sn Nothing
+     refB <- liftComp $ newProtoRef sn Nothing
      let input =
            do requestResource readingA
-              Just a <- liftIO $ readIORef refA
-              liftIO $ writeIORef refA Nothing
+              Just a <- liftComp $ readProtoRef refA
+              liftComp $ writeProtoRef refA Nothing
               releaseResource writingA
               return (a, Cons input)
          consume bs =
            do (b, bs') <- runStream bs
               requestResource writingB
-              liftIO $ writeIORef refB (Just b)
+              liftComp $ writeProtoRef refB (Just b)
               releaseResource readingB
               requestResource conting
               consume bs'
          loop a =
            do requestResource writingA
-              liftIO $ writeIORef refA (Just a)
+              liftComp $ writeProtoRef refA (Just a)
               releaseResource readingA
               requestResource readingB
-              Just b <- liftIO $ readIORef refB
-              liftIO $ writeIORef refB Nothing
+              Just b <- liftComp $ readProtoRef refB
+              liftComp $ writeProtoRef refB Nothing
               releaseResource writingB
               return (b, Net $ \a -> releaseResource conting >> loop a)
      spawnProcess CancelTogether $
@@ -221,7 +224,7 @@ processorNet x =
 
 -- | A net that adds the information about the time points at which 
 -- the values were received.
-arrivalNet :: Net a (Arrival a)
+arrivalNet :: Comp m => Net m a (Arrival a)
 arrivalNet =
   let loop t0 =
         Net $ \a ->
@@ -236,7 +239,7 @@ arrivalNet =
   in loop Nothing
 
 -- | Delay the input by one step using the specified initial value.
-delayNet :: a -> Net a a
+delayNet :: Comp m => a -> Net m a a
 delayNet a0 =
   Net $ \a ->
   return (a0, delayNet a)
