@@ -14,7 +14,7 @@ module Simulation.Aivika.Trans
        (-- * Modules
         module Simulation.Aivika.Trans.Agent,
         module Simulation.Aivika.Trans.Arrival,
-        -- module Simulation.Aivika.Trans.Circuit,
+        module Simulation.Aivika.Trans.Circuit,
         module Simulation.Aivika.Trans.Comp,
         module Simulation.Aivika.Trans.Comp.IO,
         module Simulation.Aivika.Trans.Comp.Template,
@@ -53,7 +53,7 @@ module Simulation.Aivika.Trans
 
 import Simulation.Aivika.Trans.Agent
 import Simulation.Aivika.Trans.Arrival
--- import Simulation.Aivika.Trans.Circuit
+import Simulation.Aivika.Trans.Circuit
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Comp.IO
 import Simulation.Aivika.Trans.Comp.Template

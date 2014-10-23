@@ -46,8 +46,9 @@ import qualified Control.Category as C
 import Control.Arrow
 import Control.Monad.Fix
 
-import Data.IORef
-
+import Simulation.Aivika.Trans.Session
+import Simulation.Aivika.Trans.ProtoRef
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Internal.Arrival
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
@@ -64,12 +65,12 @@ import Simulation.Aivika.Trans.Processor
 -- Besides, it allows creating the recursive links with help of
 -- the proc-notation.
 --
-newtype Circuit a b =
-  Circuit { runCircuit :: a -> Event (b, Circuit a b)
+newtype Circuit m a b =
+  Circuit { runCircuit :: a -> Event m (b, Circuit m a b)
             -- ^ Run the circuit.
           }
 
-instance C.Category Circuit where
+instance Comp m => C.Category (Circuit m) where
 
   id = Circuit $ \a -> return (a, C.id)
 
@@ -82,7 +83,7 @@ instance C.Category Circuit where
            (c, cir2) <- invokeEvent p (g b)
            return (c, cir2 `dot` cir1)
 
-instance Arrow Circuit where
+instance Comp m => Arrow (Circuit m) where
 
   arr f = Circuit $ \a -> return (f a, arr f)
 
@@ -112,7 +113,7 @@ instance Arrow Circuit where
        (c', cir2) <- invokeEvent p (g b)
        return ((c, c'), cir1 &&& cir2)
 
-instance ArrowLoop Circuit where
+instance (Comp m, MonadFix m) => ArrowLoop (Circuit m) where
 
   loop (Circuit f) =
     Circuit $ \b ->
@@ -120,7 +121,7 @@ instance ArrowLoop Circuit where
     do rec ((c, d), cir) <- invokeEvent p (f (b, d))
        return (c, loop cir)
 
-instance ArrowChoice Circuit where
+instance Comp m => ArrowChoice (Circuit m) where
 
   left x@(Circuit f) =
     Circuit $ \ebd ->
@@ -165,21 +166,22 @@ instance ArrowChoice Circuit where
            return (d, x ||| cir2)
 
 -- | Get a signal transform by the specified circuit.
-circuitSignaling :: Circuit a b -> Signal a -> Signal b
+circuitSignaling :: Comp m => Circuit m a b -> Signal m a -> Signal m b
 circuitSignaling (Circuit cir) sa =
   Signal { handleSignal = \f ->
             Event $ \p ->
-            do r <- newIORef cir
+            do let s = runSession (pointRun p)
+               r <- newProtoRef s cir
                invokeEvent p $
                  handleSignal sa $ \a ->
                  Event $ \p ->
-                 do cir <- readIORef r
+                 do cir <- readProtoRef r
                     (b, Circuit cir') <- invokeEvent p (cir a)
-                    writeIORef r cir'
+                    writeProtoRef r cir'
                     invokeEvent p (f b) }
 
 -- | Transform the circuit to a processor.
-circuitProcessor :: Circuit a b -> Processor a b
+circuitProcessor :: Comp m => Circuit m a b -> Processor m a b
 circuitProcessor (Circuit cir) = Processor $ \sa ->
   Cons $
   do (a, xs) <- runStream sa
@@ -189,7 +191,7 @@ circuitProcessor (Circuit cir) = Processor $ \sa ->
 
 -- | Create a simple circuit by the specified handling function
 -- that runs the computation for each input value to get an output.
-arrCircuit :: (a -> Event b) -> Circuit a b
+arrCircuit :: Comp m => (a -> Event m b) -> Circuit m a b
 arrCircuit f =
   let x =
         Circuit $ \a ->
@@ -199,7 +201,7 @@ arrCircuit f =
   in x
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumCircuit :: (acc -> a -> Event (acc, b)) -> acc -> Circuit a b
+accumCircuit :: Comp m => (acc -> a -> Event m (acc, b)) -> acc -> Circuit m a b
 accumCircuit f acc =
   Circuit $ \a ->
   Event $ \p ->
@@ -208,7 +210,7 @@ accumCircuit f acc =
 
 -- | A circuit that adds the information about the time points at which 
 -- the values were received.
-arrivalCircuit :: Circuit a (Arrival a)
+arrivalCircuit :: Comp m => Circuit m a (Arrival a)
 arrivalCircuit =
   let loop t0 =
         Circuit $ \a ->
@@ -224,24 +226,25 @@ arrivalCircuit =
   in loop Nothing
 
 -- | Delay the input by one step using the specified initial value.
-delayCircuit :: a -> Circuit a a
+delayCircuit :: Comp m => a -> Circuit m a a
 delayCircuit a0 =
   Circuit $ \a ->
   return (a0, delayCircuit a)
 
 -- | A circuit that returns the current modeling time.
-timeCircuit :: Circuit a Double
+timeCircuit :: Comp m => Circuit m a Double
 timeCircuit =
   Circuit $ \a ->
   Event $ \p ->
   return (pointTime p, timeCircuit)
 
 -- | Like '>>>' but processes only the represented events.
-(>?>) :: Circuit a (Maybe b)
+(>?>) :: Comp m
+         => Circuit m a (Maybe b)
          -- ^ whether there is an event
-         -> Circuit b c
+         -> Circuit m b c
          -- ^ process the event if it presents
-         -> Circuit a (Maybe c)
+         -> Circuit m a (Maybe c)
          -- ^ the resulting circuit that processes only the represented events
 whether >?> process =
   Circuit $ \a ->
@@ -255,22 +258,23 @@ whether >?> process =
             return (Just c, whether' >?> process')
 
 -- | Like '<<<' but processes only the represented events.
-(<?<) :: Circuit b c
+(<?<) :: Comp m
+         => Circuit m b c
          -- ^ process the event if it presents
-         -> Circuit a (Maybe b)
+         -> Circuit m a (Maybe b)
          -- ^ whether there is an event
-         -> Circuit a (Maybe c)
+         -> Circuit m a (Maybe c)
          -- ^ the resulting circuit that processes only the represented events
 (<?<) = flip (>?>)
 
 -- | Filter the circuit, calculating only those parts of the circuit that satisfy
 -- the specified predicate.
-filterCircuit :: (a -> Bool) -> Circuit a b -> Circuit a (Maybe b)
+filterCircuit :: Comp m => (a -> Bool) -> Circuit m a b -> Circuit m a (Maybe b)
 filterCircuit pred = filterCircuitM (return . pred)
 
 -- | Filter the circuit within the 'Event' computation, calculating only those parts
 -- of the circuit that satisfy the specified predicate.
-filterCircuitM :: (a -> Event Bool) -> Circuit a b -> Circuit a (Maybe b)
+filterCircuitM :: Comp m => (a -> Event m Bool) -> Circuit m a b -> Circuit m a (Maybe b)
 filterCircuitM pred cir =
   Circuit $ \a ->
   Event $ \p ->
@@ -281,7 +285,7 @@ filterCircuitM pred cir =
        else return (Nothing, filterCircuitM pred cir)
 
 -- | The source of events that never occur.
-neverCircuit :: Circuit a (Maybe b)
+neverCircuit :: Comp m => Circuit m a (Maybe b)
 neverCircuit =
   Circuit $ \a -> return (Nothing, neverCircuit)
 
@@ -305,9 +309,10 @@ neverCircuit =
 -- Regarding the recursive equations, the both functions allow defining them
 -- but whithin different computations (either with help of the recursive
 -- do-notation or the proc-notation).
-integCircuit :: Double
+integCircuit :: Comp m
+                => Double
                 -- ^ the initial value
-                -> Circuit Double Double
+                -> Circuit m Double Double
                 -- ^ map the derivative to an integral
 integCircuit init = start
   where
@@ -336,10 +341,10 @@ integCircuit init = start
 -- Regarding the recursive equations, the both functions allow defining them
 -- but whithin different computations (either with help of the recursive
 -- do-notation or the proc-notation).
-sumCircuit :: Num a =>
+sumCircuit :: (Comp m, Num a) =>
               a
               -- ^ the initial value
-              -> Circuit a a
+              -> Circuit m a a
               -- ^ map the difference to a sum
 sumCircuit init = start
   where
@@ -360,20 +365,21 @@ sumCircuit init = start
 --
 -- This procedure consumes memory as the underlying memoization allocates
 -- an array to store the calculated values.
-circuitTransform :: Circuit a b -> Transform a b
+circuitTransform :: Comp m => Circuit m a b -> Transform m a b
 circuitTransform cir = Transform start
   where
     start m =
       Simulation $ \r ->
-      do ref <- newIORef cir
+      do let s = runSession r
+         ref <- newProtoRef s cir
          invokeSimulation r $
            memo0Dynamics (next ref m)
     next ref m =
       Dynamics $ \p ->
       do a <- invokeDynamics p m
-         cir <- readIORef ref
+         cir <- readProtoRef ref
          (b, cir') <-
            invokeDynamics p $
            runEvent (runCircuit cir a)
-         writeIORef ref cir'
+         writeProtoRef ref cir'
          return b
