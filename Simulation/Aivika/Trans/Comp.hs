@@ -30,7 +30,7 @@ import Simulation.Aivika.Trans.Internal.Specs
 -- | A prototype of the type class of monads based on which the simulation monads can be built. 
 class (Monad m,
        ExceptionHandling m,
-       Sessionning m,
+       SessionMonad m,
        ProtoReferring m,
        ProtoArraying m,
        Unboxed m Double,

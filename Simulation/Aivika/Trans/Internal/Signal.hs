@@ -97,7 +97,7 @@ data SignalHandler m a =
   SignalHandler { handlerComp   :: a -> Event m (),
                   handlerMarker :: SessionMarker m }
 
-instance Sessionning m => Eq (SignalHandler m a) where
+instance SessionMonad m => Eq (SignalHandler m a) where
 
   {-# INLINE (==) #-}
   x == y = (handlerMarker x) == (handlerMarker y)
