@@ -1,83 +1,12 @@
 name:            aivika-transformers
-version:         1.4
-synopsis:        A generalized version of the Aivika simulation library
+version:         2.0
+synopsis:        Computation transformers for Aivika
 description:
-    Aivika is a multi-paradigm simulation library with a strong emphasis
-    on Discrete Event Simulation (DES) and System Dynamics (SD).
+    The package adds the monad and other computation transformers to 
+    the Aivika [1] library. This is a generalization of the simulation library.
     .
-    The library has the following features:
+    \[1] <http://hackage.haskell.org/package/aivika>
     .
-    * allows defining recursive stochastic differential equations of 
-      System Dynamics (unordered as in maths via the recursive do-notation);
-    .
-    * supports the event-driven paradigm of DES as a basic core for 
-      implementing other paradigms;
-    .
-    * supports extensively the process-oriented paradigm of DES
-      with an ability to resume, suspend and cancel 
-      the discontinuous processes;
-    .
-    * allows working with the resources based on specified queue strategies 
-      (FCFS\/FIFO, LCFS\/LIFO, SIRO, static priorities and so on);
-    .
-    * allows customizing the infinite and finite queues based on strategies too;
-    .
-    * allows defining a queue network based on infinite streams of data
-      and their processors, where we can define a complex enough
-      behaviour just in a few lines of code;
-    .
-    * allows simulating circuits with recursive links and delays;
-    .
-    * supports the activity-oriented paradigm of DES;
-    .
-    * supports the basic constructs for the agent-based modeling;
-    .
-    * allows creating combined discrete-continuous models as all parts
-      of the library are well integrated and this is reflected directly 
-      in the type system;
-    .
-    * the arrays of simulation variables are inherently supported;
-    .
-    * supports the Monte-Carlo simulation;
-    .
-    * the simulation model can depend on external parameters;
-    .
-    * uses extensively signals for notification;
-    .
-    * allows gathering statistics in time points;
-    .
-    * hides technical details in high-level simulation computations
-      (monads and arrows).
-    .
-    Aivika itself is a light-weight engine with minimal dependencies. 
-    However, it has additional packages Aivika Experiment [1] and 
-    Aivika Experiment Chart [2] that offer the following features:
-    .
-    * automating the simulation experiments;
-    .
-    * saving the results in CSV files;
-    .
-    * plotting the deviation chart by rule 3-sigma, histogram, 
-      time series, XY chart;
-    .
-    * collecting the summary of statistical data;
-    .
-    * parallel execution of the Monte-Carlo simulation;
-    .
-    * have an extensible architecture.
-    .
-    All three libraries were tested on Linux, Windows and OS X.
-    .
-    The PDF documentation is available on the Aivika Wiki [3] website.
-    .
-    \[1] <http://hackage.haskell.org/package/aivika-experiment>
-    .
-    \[2] <http://hackage.haskell.org/package/aivika-experiment-chart>
-    .
-    \[3] <https://github.com/dsorokin/aivika/wiki>
-    .
-    P.S. Aivika is actually a genuine female Mari name which is pronounced 
-    with stress on the last syllable.
 category:        Simulation
 license:         BSD3
 license-file:    LICENSE
@@ -112,65 +41,73 @@ flag haste-inst
 
 library
 
-    exposed-modules: Simulation.Aivika
-                     Simulation.Aivika.Agent
-                     Simulation.Aivika.Arrival
-                     Simulation.Aivika.Circuit
-                     Simulation.Aivika.Cont
-                     Simulation.Aivika.DoubleLinkedList
-                     Simulation.Aivika.Dynamics
-                     Simulation.Aivika.Dynamics.Extra
-                     Simulation.Aivika.Dynamics.Memo
-                     Simulation.Aivika.Dynamics.Memo.Unboxed
-                     Simulation.Aivika.Dynamics.Random
-                     Simulation.Aivika.Event
-                     Simulation.Aivika.Generator
-                     Simulation.Aivika.Net
-                     Simulation.Aivika.Parameter
-                     Simulation.Aivika.Parameter.Random
-                     Simulation.Aivika.PriorityQueue
-                     Simulation.Aivika.Process
-                     Simulation.Aivika.Processor
-                     Simulation.Aivika.Processor.RoundRobbin
-                     Simulation.Aivika.Queue
-                     Simulation.Aivika.Queue.Infinite
-                     Simulation.Aivika.QueueStrategy
-                     Simulation.Aivika.Ref
-                     Simulation.Aivika.Ref.Light
-                     Simulation.Aivika.Resource
-                     Simulation.Aivika.Results.Locale
-                     Simulation.Aivika.Results
-                     Simulation.Aivika.Results.IO
-                     Simulation.Aivika.Server
-                     Simulation.Aivika.Signal
-                     Simulation.Aivika.Simulation
-                     Simulation.Aivika.Specs
-                     Simulation.Aivika.Statistics
-                     Simulation.Aivika.Statistics.Accumulator
-                     Simulation.Aivika.Stream
-                     Simulation.Aivika.Stream.Random
-                     Simulation.Aivika.SystemDynamics
-                     Simulation.Aivika.Table
-                     Simulation.Aivika.Task
-                     Simulation.Aivika.Transform
-                     Simulation.Aivika.Transform.Extra
-                     Simulation.Aivika.Transform.Memo
-                     Simulation.Aivika.Transform.Memo.Unboxed
-                     Simulation.Aivika.Unboxed
-                     Simulation.Aivika.Var
-                     Simulation.Aivika.Var.Unboxed
-                     Simulation.Aivika.Vector
-                     Simulation.Aivika.Vector.Unboxed
+    exposed-modules: Simulation.Aivika.Trans
+                     Simulation.Aivika.Trans.Agent
+                     Simulation.Aivika.Trans.Arrival
+                     Simulation.Aivika.Trans.Circuit
+                     Simulation.Aivika.Trans.Comp
+                     Simulation.Aivika.Trans.Comp.IO
+                     Simulation.Aivika.Trans.Comp.Template
+                     Simulation.Aivika.Trans.Cont
+                     Simulation.Aivika.Trans.DoubleLinkedList
+                     Simulation.Aivika.Trans.Dynamics
+                     Simulation.Aivika.Trans.Dynamics.Extra
+                     Simulation.Aivika.Trans.Dynamics.Memo
+                     Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
+                     Simulation.Aivika.Trans.Dynamics.Random
+                     Simulation.Aivika.Trans.Event
+                     Simulation.Aivika.Trans.Exception
+                     Simulation.Aivika.Trans.Generator
+                     Simulation.Aivika.Trans.Net
+                     Simulation.Aivika.Trans.Parameter
+                     Simulation.Aivika.Trans.Parameter.Random
+                     Simulation.Aivika.Trans.PriorityQueue
+                     Simulation.Aivika.Trans.Process
+                     Simulation.Aivika.Trans.Processor
+                     Simulation.Aivika.Trans.Processor.RoundRobbin
+                     Simulation.Aivika.Trans.ProtoArray
+                     Simulation.Aivika.Trans.ProtoArray.Unboxed
+                     Simulation.Aivika.Trans.ProtoRef
+                     Simulation.Aivika.Trans.Queue
+                     Simulation.Aivika.Trans.Queue.Infinite
+                     Simulation.Aivika.Trans.QueueStrategy
+                     Simulation.Aivika.Trans.Ref
+                     Simulation.Aivika.Trans.Ref.Plain
+                     Simulation.Aivika.Trans.Resource
+                     -- Simulation.Aivika.Trans.Results.Locale
+                     -- Simulation.Aivika.Trans.Results
+                     -- Simulation.Aivika.Trans.Results.IO
+                     Simulation.Aivika.Trans.Session
+                     Simulation.Aivika.Trans.Server
+                     Simulation.Aivika.Trans.Signal
+                     Simulation.Aivika.Trans.Simulation
+                     Simulation.Aivika.Trans.Specs
+                     Simulation.Aivika.Trans.Statistics
+                     Simulation.Aivika.Trans.Statistics.Accumulator
+                     Simulation.Aivika.Trans.Stream
+                     Simulation.Aivika.Trans.Stream.Random
+                     Simulation.Aivika.Trans.SystemDynamics
+                     Simulation.Aivika.Trans.Table
+                     Simulation.Aivika.Trans.Task
+                     Simulation.Aivika.Trans.Transform
+                     Simulation.Aivika.Trans.Transform.Extra
+                     Simulation.Aivika.Trans.Transform.Memo
+                     Simulation.Aivika.Trans.Transform.Memo.Unboxed
+                     Simulation.Aivika.Trans.Unboxed
+                     Simulation.Aivika.Trans.Var
+                     Simulation.Aivika.Trans.Var.Unboxed
+                     Simulation.Aivika.Trans.Vector
+                     Simulation.Aivika.Trans.Vector.Unboxed
 
-    other-modules:   Simulation.Aivika.Internal.Cont
-                     Simulation.Aivika.Internal.Dynamics
-                     Simulation.Aivika.Internal.Event
-                     Simulation.Aivika.Internal.Parameter
-                     Simulation.Aivika.Internal.Process
-                     Simulation.Aivika.Internal.Signal
-                     Simulation.Aivika.Internal.Simulation
-                     Simulation.Aivika.Internal.Specs
-                     Simulation.Aivika.Internal.Arrival
+    other-modules:   Simulation.Aivika.Trans.Internal.Cont
+                     Simulation.Aivika.Trans.Internal.Dynamics
+                     Simulation.Aivika.Trans.Internal.Event
+                     Simulation.Aivika.Trans.Internal.Parameter
+                     Simulation.Aivika.Trans.Internal.Process
+                     Simulation.Aivika.Trans.Internal.Signal
+                     Simulation.Aivika.Trans.Internal.Simulation
+                     Simulation.Aivika.Trans.Internal.Specs
+                     Simulation.Aivika.Trans.Internal.Arrival
                      
     build-depends:   base >= 4.5.0.0 && < 6,
                      mtl >= 2.1.1,
