@@ -12,7 +12,7 @@
 -- Below is defined a random number generator.
 --
 module Simulation.Aivika.Trans.Generator 
-       (Generating(..),
+       (GeneratorMonad(..),
         GeneratorType(..)) where
 
 import System.Random
@@ -22,7 +22,7 @@ import Data.IORef
 import Simulation.Aivika.Trans.Session
 
 -- | Defines a monad whithin which computation the random number generator can work.
-class (Functor m, Monad m) => Generating m where
+class (Functor m, Monad m) => GeneratorMonad m where
 
   -- | Defines a random number generator.
   data Generator m :: *
@@ -65,7 +65,7 @@ class (Functor m, Monad m) => Generating m where
   -- from 0 to 1 within current session.
   newRandomGenerator01 :: Session m -> m Double -> m (Generator m)
 
-instance Generating IO where
+instance GeneratorMonad IO where
 
   data Generator IO =
     Generator { generator01 :: IO Double,

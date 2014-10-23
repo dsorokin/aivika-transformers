@@ -36,7 +36,7 @@ class (Monad m,
        Unboxed m Double,
        Unboxed m Float,
        Unboxed m Int,
-       Generating m) => ProtoComp m
+       GeneratorMonad m) => ProtoComp m
 
 -- | Such a simulation monad that allows enqueueing events.
 class (ProtoComp m, EventQueueing m) => Comp m
