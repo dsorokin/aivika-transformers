@@ -68,7 +68,7 @@ newtype Net m a b =
         -- ^ Run the net.
       }
 
-instance Comp m => C.Category (Net m) where
+instance MonadComp m => C.Category (Net m) where
 
   id = Net $ \a -> return (a, C.id)
 
@@ -80,7 +80,7 @@ instance Comp m => C.Category (Net m) where
            (c, p2) <- g b
            return (c, p2 `dot` p1)
 
-instance Comp m => Arrow (Net m) where
+instance MonadComp m => Arrow (Net m) where
 
   arr f = Net $ \a -> return (f a, arr f)
 
@@ -106,7 +106,7 @@ instance Comp m => Arrow (Net m) where
        (c', p2) <- g b
        return ((c, c'), p1 &&& p2)
 
-instance Comp m => ArrowChoice (Net m) where
+instance MonadComp m => ArrowChoice (Net m) where
 
   left x@(Net f) =
     Net $ \ebd ->
@@ -147,12 +147,12 @@ instance Comp m => ArrowChoice (Net m) where
            return (d, x ||| p2)
 
 -- | A net that never finishes its work.
-emptyNet :: Comp m => Net m a b
+emptyNet :: MonadComp m => Net m a b
 emptyNet = Net $ const neverProcess
 
 -- | Create a simple net by the specified handling function
 -- that runs the discontinuous process for each input value to get an output.
-arrNet :: Comp m => (a -> Process m b) -> Net m a b
+arrNet :: MonadComp m => (a -> Process m b) -> Net m a b
 arrNet f =
   let x =
         Net $ \a ->
@@ -161,7 +161,7 @@ arrNet f =
   in x
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumNet :: Comp m => (acc -> a -> Process m (acc, b)) -> acc -> Net m a b
+accumNet :: MonadComp m => (acc -> a -> Process m (acc, b)) -> acc -> Net m a b
 accumNet f acc =
   Net $ \a ->
   do (acc', b) <- f acc a
@@ -171,12 +171,12 @@ accumNet f acc =
 -- It can be useful to refer to the underlying 'Process' computation which
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
-netUsingId :: Comp m => ProcessId m -> Net m a b -> Net m a b
+netUsingId :: MonadComp m => ProcessId m -> Net m a b -> Net m a b
 netUsingId pid (Net f) =
   Net $ processUsingId pid . f
 
 -- | Transform the net to an equivalent processor (a rather cheap transformation).
-netProcessor :: Comp m => Net m a b -> Processor m a b
+netProcessor :: MonadComp m => Net m a b -> Processor m a b
 netProcessor = Processor . loop
   where loop x as =
           Cons $
@@ -185,7 +185,7 @@ netProcessor = Processor . loop
              return (b, loop x' as')
 
 -- | Transform the processor to a similar net (a more costly transformation).
-processorNet :: Comp m => Processor m a b -> Net m a b
+processorNet :: MonadComp m => Processor m a b -> Net m a b
 processorNet x =
   Net $ \a ->
   do readingA <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
@@ -224,7 +224,7 @@ processorNet x =
 
 -- | A net that adds the information about the time points at which 
 -- the values were received.
-arrivalNet :: Comp m => Net m a (Arrival a)
+arrivalNet :: MonadComp m => Net m a (Arrival a)
 arrivalNet =
   let loop t0 =
         Net $ \a ->
@@ -239,7 +239,7 @@ arrivalNet =
   in loop Nothing
 
 -- | Delay the input by one step using the specified initial value.
-delayNet :: Comp m => a -> Net m a a
+delayNet :: MonadComp m => a -> Net m a a
 delayNet a0 =
   Net $ \a ->
   return (a0, delayNet a)

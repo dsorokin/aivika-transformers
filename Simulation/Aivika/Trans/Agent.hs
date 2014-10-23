@@ -62,10 +62,10 @@ data AgentMode = CreationMode
                | TransientMode
                | ProcessingMode
                       
-instance Comp m => Eq (Agent m) where
+instance MonadComp m => Eq (Agent m) where
   x == y = agentMarker x == agentMarker y
   
-instance Comp m => Eq (AgentState m) where
+instance MonadComp m => Eq (AgentState m) where
   x == y = stateMarker x == stateMarker y
 
 fullPath :: AgentState m -> [AgentState m] -> [AgentState m]
@@ -74,7 +74,7 @@ fullPath st acc =
     Nothing  -> st : acc
     Just st' -> fullPath st' (st : acc)
 
-partitionPath :: Comp m => [AgentState m] -> [AgentState m] -> ([AgentState m], [AgentState m])
+partitionPath :: MonadComp m => [AgentState m] -> [AgentState m] -> ([AgentState m], [AgentState m])
 partitionPath path1 path2 =
   case (path1, path2) of
     (h1 : t1, [h2]) | h1 == h2 -> 
@@ -84,7 +84,7 @@ partitionPath path1 path2 =
     _ ->
       (reverse path1, path2)
 
-findPath :: Comp m => Maybe (AgentState m) -> AgentState m -> ([AgentState m], [AgentState m])
+findPath :: MonadComp m => Maybe (AgentState m) -> AgentState m -> ([AgentState m], [AgentState m])
 findPath Nothing target = ([], fullPath target [])
 findPath (Just source) target
   | stateAgent source /= stateAgent target =
@@ -95,7 +95,7 @@ findPath (Just source) target
     path1 = fullPath source []
     path2 = fullPath target []
 
-traversePath :: Comp m => Maybe (AgentState m) -> AgentState m -> Event m ()
+traversePath :: MonadComp m => Maybe (AgentState m) -> AgentState m -> Event m ()
 traversePath source target =
   let (path1, path2) = findPath source target
       agent = stateAgent target
@@ -124,7 +124,7 @@ traversePath source target =
 
 -- | Add to the state a timeout handler that will be actuated 
 -- in the specified time period if the state will remain active.
-addTimeout :: Comp m => AgentState m -> Double -> Event m () -> Event m ()
+addTimeout :: MonadComp m => AgentState m -> Double -> Event m () -> Event m ()
 addTimeout st dt action =
   Event $ \p ->
   do v <- readProtoRef (stateVersionRef st)
@@ -138,7 +138,7 @@ addTimeout st dt action =
 -- | Add to the state a timer handler that will be actuated
 -- in the specified time period and then repeated again many times,
 -- while the state remains active.
-addTimer :: Comp m => AgentState m -> Event m Double -> Event m () -> Event m ()
+addTimer :: MonadComp m => AgentState m -> Event m Double -> Event m () -> Event m ()
 addTimer st dt action =
   Event $ \p ->
   do v <- readProtoRef (stateVersionRef st)
@@ -153,7 +153,7 @@ addTimer st dt action =
      invokeEvent p m2
 
 -- | Create a new state.
-newState :: Comp m => Agent m -> Simulation m (AgentState m)
+newState :: MonadComp m => Agent m -> Simulation m (AgentState m)
 newState agent =
   Simulation $ \r ->
   do let s = runSession r
@@ -171,7 +171,7 @@ newState agent =
                          stateVersionRef = vref }
 
 -- | Create a child state.
-newSubstate :: Comp m => AgentState m -> Simulation m (AgentState m)
+newSubstate :: MonadComp m => AgentState m -> Simulation m (AgentState m)
 newSubstate parent =
   Simulation $ \r ->
   do let agent = stateAgent parent
@@ -190,7 +190,7 @@ newSubstate parent =
                          stateVersionRef = vref }
 
 -- | Create an agent.
-newAgent :: Comp m => Simulation m (Agent m)
+newAgent :: MonadComp m => Simulation m (Agent m)
 newAgent =
   Simulation $ \r ->
   do let s = runSession r
@@ -204,13 +204,13 @@ newAgent =
                     agentStateChangedSource = stateChangedSource }
 
 -- | Return the selected active state.
-selectedState :: Comp m => Agent m -> Event m (Maybe (AgentState m))
+selectedState :: MonadComp m => Agent m -> Event m (Maybe (AgentState m))
 selectedState agent =
   Event $ \p -> readProtoRef (agentStateRef agent)
                    
 -- | Select the state. The activation and selection are repeated while
 -- there is the transition state defined by 'setStateTransition'.
-selectState :: Comp m => AgentState m -> Event m ()
+selectState :: MonadComp m => AgentState m -> Event m ()
 selectState st =
   Event $ \p ->
   do let agent = stateAgent st
@@ -228,13 +228,13 @@ selectState st =
             invokeEvent p $ traversePath x0 st
 
 -- | Set the activation computation for the specified state.
-setStateActivation :: Comp m => AgentState m -> Event m () -> Simulation m ()
+setStateActivation :: MonadComp m => AgentState m -> Event m () -> Simulation m ()
 setStateActivation st action =
   Simulation $ \r ->
   writeProtoRef (stateActivateRef st) action
   
 -- | Set the deactivation computation for the specified state.
-setStateDeactivation :: Comp m => AgentState m -> Event m () -> Simulation m ()
+setStateDeactivation :: MonadComp m => AgentState m -> Event m () -> Simulation m ()
 setStateDeactivation st action =
   Simulation $ \r ->
   writeProtoRef (stateDeactivateRef st) action
@@ -243,13 +243,13 @@ setStateDeactivation st action =
 -- when selecting the state directly with help of 'selectState'.
 -- If the state was activated intermediately, when selecting
 -- another state, then this computation is not used.
-setStateTransition :: Comp m => AgentState m -> Event m (Maybe (AgentState m)) -> Simulation m ()
+setStateTransition :: MonadComp m => AgentState m -> Event m (Maybe (AgentState m)) -> Simulation m ()
 setStateTransition st action =
   Simulation $ \r ->
   writeProtoRef (stateTransitRef st) action
   
 -- | Trigger the signal when the agent state changes.
-triggerAgentStateChanged :: Comp m => Point m -> Agent m -> m ()
+triggerAgentStateChanged :: MonadComp m => Point m -> Agent m -> m ()
 triggerAgentStateChanged p agent =
   do st <- readProtoRef (agentStateRef agent)
      invokeEvent p $ triggerSignal (agentStateChangedSource agent) st
@@ -260,6 +260,6 @@ selectedStateChanged agent =
   publishSignal (agentStateChangedSource agent)
 
 -- | Return a signal that notifies about every change of the selected state.
-selectedStateChanged_ :: Comp m => Agent m -> Signal m ()
+selectedStateChanged_ :: MonadComp m => Agent m -> Signal m ()
 selectedStateChanged_ agent =
   mapSignal (const ()) $ selectedStateChanged agent

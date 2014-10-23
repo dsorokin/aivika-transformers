@@ -47,12 +47,12 @@ interpolatingTransform = Transform $ return . interpolateDynamics
 -- the integration time points. The accumulator values are transformed
 -- according to the second argument, which should be either  
 -- 'memo0Transform' or its unboxed version.
-scan1Transform :: (Comp m, MonadFix m) => (a -> a -> a) -> Transform m a a -> Transform m a a
+scan1Transform :: (MonadComp m, MonadFix m) => (a -> a -> a) -> Transform m a a -> Transform m a a
 scan1Transform f (Transform tr) = Transform $ scan1Dynamics f tr
 
 -- | Like the standard 'scanl' function but applied to values in 
 -- the integration time points. The accumulator values are transformed
 -- according to the third argument, which should be either
 -- 'memo0Transform' or its unboxed version.
-scanTransform :: (Comp m, MonadFix m) => (a -> b -> a) -> a -> Transform m a a -> Transform m b a
+scanTransform :: (MonadComp m, MonadFix m) => (a -> b -> a) -> a -> Transform m a a -> Transform m b a
 scanTransform f acc (Transform tr) = Transform $ scanDynamics f acc tr

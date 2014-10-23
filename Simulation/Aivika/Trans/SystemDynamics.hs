@@ -79,47 +79,47 @@ import qualified Simulation.Aivika.Trans.Dynamics.Memo.Unboxed as MU
 --
 
 -- | Compare for equality.
-(.==.) :: (Comp m, Eq a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
+(.==.) :: (MonadComp m, Eq a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
 {-# INLINE (.==.) #-}
 (.==.) = liftM2 (==)
 
 -- | Compare for inequality.
-(./=.) :: (Comp m, Eq a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
+(./=.) :: (MonadComp m, Eq a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
 {-# INLINE (./=.) #-}
 (./=.) = liftM2 (/=)
 
 -- | Compare for ordering.
-(.<.) :: (Comp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
+(.<.) :: (MonadComp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
 {-# INLINE (.<.) #-}
 (.<.) = liftM2 (<)
 
 -- | Compare for ordering.
-(.>=.) :: (Comp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
+(.>=.) :: (MonadComp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
 {-# INLINE (.>=.) #-}
 (.>=.) = liftM2 (>=)
 
 -- | Compare for ordering.
-(.>.) :: (Comp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
+(.>.) :: (MonadComp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
 {-# INLINE (.>.) #-}
 (.>.) = liftM2 (>)
 
 -- | Compare for ordering.
-(.<=.) :: (Comp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
+(.<=.) :: (MonadComp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m Bool
 {-# INLINE (.<=.) #-}
 (.<=.) = liftM2 (<=)
 
 -- | Return the maximum.
-maxDynamics :: (Comp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m a
+maxDynamics :: (MonadComp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m a
 {-# INLINE maxDynamics #-}
 maxDynamics = liftM2 max
 
 -- | Return the minimum.
-minDynamics :: (Comp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m a
+minDynamics :: (MonadComp m, Ord a) => Dynamics m a -> Dynamics m a -> Dynamics m a
 {-# INLINE minDynamics #-}
 minDynamics = liftM2 min
 
 -- | Implement the if-then-else operator.
-ifDynamics :: Comp m => Dynamics m Bool -> Dynamics m a -> Dynamics m a -> Dynamics m a
+ifDynamics :: MonadComp m => Dynamics m Bool -> Dynamics m a -> Dynamics m a -> Dynamics m a
 {-# INLINE ifDynamics #-}
 ifDynamics cond x y =
   do a <- cond
@@ -129,7 +129,7 @@ ifDynamics cond x y =
 -- Ordinary Differential Equations
 --
 
-integEuler :: Comp m
+integEuler :: MonadComp m
               => Dynamics m Double
               -> Dynamics m Double 
               -> Dynamics m Double 
@@ -148,7 +148,7 @@ integEuler (Dynamics f) (Dynamics i) (Dynamics y) p =
       let !v = a + spcDT (pointSpecs p) * b
       return v
 
-integRK2 :: Comp m
+integRK2 :: MonadComp m
             => Dynamics m Double
             -> Dynamics m Double
             -> Dynamics m Double
@@ -186,7 +186,7 @@ integRK2 (Dynamics f) (Dynamics i) (Dynamics y) p =
     _ -> 
       error "Incorrect phase: integRK2"
 
-integRK4 :: Comp m
+integRK4 :: MonadComp m
             => Dynamics m Double
             -> Dynamics m Double
             -> Dynamics m Double
@@ -267,7 +267,7 @@ integRK4 (Dynamics f) (Dynamics i) (Dynamics y) p =
 --           kb = 1
 --       runDynamicsInStopTime $ sequence [a, b, c]
 -- @
-integ :: (Comp m, MonadFix m)
+integ :: (MonadComp m, MonadFix m)
          => Dynamics m Double                  -- ^ the derivative
          -> Dynamics m Double                  -- ^ the initial value
          -> Simulation m (Dynamics m Double)   -- ^ the integral
@@ -290,7 +290,7 @@ integ diff i =
 --   mdo y <- integ ((x - y) \/ t) i
 --       return y
 -- @     
-smoothI :: (Comp m, MonadFix m)
+smoothI :: (MonadComp m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to smooth over time
            -> Dynamics m Double                  -- ^ time
            -> Dynamics m Double                  -- ^ the initial value
@@ -303,7 +303,7 @@ smoothI x t i =
 --
 -- This is a simplified version of the 'smoothI' function
 -- without specifing the initial value.
-smooth :: (Comp m, MonadFix m)
+smooth :: (MonadComp m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to smooth over time
           -> Dynamics m Double                  -- ^ time
           -> Simulation m (Dynamics m Double)   -- ^ the first order exponential smooth
@@ -322,7 +322,7 @@ smooth x t = smoothI x t x
 --       let t' = t \/ 3.0
 --       return y
 -- @     
-smooth3I :: (Comp m, MonadFix m)
+smooth3I :: (MonadComp m, MonadFix m)
             => Dynamics m Double                  -- ^ the value to smooth over time
             -> Dynamics m Double                  -- ^ time
             -> Dynamics m Double                  -- ^ the initial value
@@ -338,7 +338,7 @@ smooth3I x t i =
 -- 
 -- This is a simplified version of the 'smooth3I' function
 -- without specifying the initial value.
-smooth3 :: (Comp m, MonadFix m)
+smooth3 :: (MonadComp m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to smooth over time
            -> Dynamics m Double                  -- ^ time
            -> Simulation m (Dynamics m Double)   -- ^ the third order exponential smooth
@@ -350,7 +350,7 @@ smooth3 x t = smooth3I x t x
 -- interval depending on the integration method used. Probably, you should apply
 -- the 'discreteDynamics' function to the result if you want to achieve an effect when
 -- the value is not changed within the time interval, which is used sometimes.
-smoothNI :: (Comp m, MonadFix m)
+smoothNI :: (MonadComp m, MonadFix m)
             => Dynamics m Double                  -- ^ the value to smooth over time
             -> Dynamics m Double                  -- ^ time
             -> Int                                -- ^ the order
@@ -369,7 +369,7 @@ smoothNI x t n i =
 --
 -- This is a simplified version of the 'smoothNI' function
 -- without specifying the initial value.
-smoothN :: (Comp m, MonadFix m)
+smoothN :: (MonadComp m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to smooth over time
            -> Dynamics m Double                  -- ^ time
            -> Int                                -- ^ the order
@@ -386,7 +386,7 @@ smoothN x t n = smoothNI x t n x
 --   mdo y <- integ (x - y \/ t) (i * t)
 --       return $ y \/ t
 -- @     
-delay1I :: (Comp m, MonadFix m)
+delay1I :: (MonadComp m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to conserve
            -> Dynamics m Double                  -- ^ time
            -> Dynamics m Double                  -- ^ the initial value
@@ -399,14 +399,14 @@ delay1I x t i =
 --
 -- This is a simplified version of the 'delay1I' function
 -- without specifying the initial value.
-delay1 :: (Comp m, MonadFix m)
+delay1 :: (MonadComp m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to conserve
           -> Dynamics m Double                  -- ^ time
           -> Simulation m (Dynamics m Double)   -- ^ the first order exponential delay
 delay1 x t = delay1I x t x
 
 -- | Return the third order exponential delay.
-delay3I :: (Comp m, MonadFix m)
+delay3I :: (MonadComp m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to conserve
            -> Dynamics m Double                  -- ^ time
            -> Dynamics m Double                  -- ^ the initial value
@@ -422,14 +422,14 @@ delay3I x t i =
 --
 -- This is a simplified version of the 'delay3I' function
 -- without specifying the initial value.
-delay3 :: (Comp m, MonadFix m)
+delay3 :: (MonadComp m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to conserve
           -> Dynamics m Double                  -- ^ time
           -> Simulation m (Dynamics m Double)   -- ^ the third order exponential delay
 delay3 x t = delay3I x t x
 
 -- | Return the n'th order exponential delay.
-delayNI :: (Comp m, MonadFix m)
+delayNI :: (MonadComp m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to conserve
            -> Dynamics m Double                  -- ^ time
            -> Int                                -- ^ the order
@@ -448,7 +448,7 @@ delayNI x t n i =
 --
 -- This is a simplified version of the 'delayNI' function
 -- without specifying the initial value.
-delayN :: (Comp m, MonadFix m)
+delayN :: (MonadComp m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to conserve
           -> Dynamics m Double                  -- ^ time
           -> Int                                -- ^ the order
@@ -464,7 +464,7 @@ delayN x t n = delayNI x t n x
 --   do y <- smooth x at
 --      return $ x * (1.0 + (x \/ y - 1.0) \/ at * hz)
 -- @
-forecast :: (Comp m, MonadFix m)
+forecast :: (MonadComp m, MonadFix m)
             => Dynamics m Double                  -- ^ the value to forecast
             -> Dynamics m Double                  -- ^ the average time
             -> Dynamics m Double                  -- ^ the time horizon
@@ -482,7 +482,7 @@ forecast x at hz =
 --   do y <- smoothI x at (x \/ (1.0 + i * at))
 --      return $ (x \/ y - 1.0) \/ at
 -- @
-trend :: (Comp m, MonadFix m)
+trend :: (MonadComp m, MonadFix m)
          => Dynamics m Double                  -- ^ the value for which the trend is calculated
          -> Dynamics m Double                  -- ^ the average time
          -> Dynamics m Double                  -- ^ the initial value
@@ -500,7 +500,7 @@ trend x at i =
 -- the difference is used instead of derivative.
 --
 -- As usual, to create a loopback, you should use the recursive do-notation.
-diffsum :: (Comp m, MonadFix m,
+diffsum :: (MonadComp m, MonadFix m,
             Unboxed m a, Num a)
            => Dynamics m a                  -- ^ the difference
            -> Dynamics m a                  -- ^ the initial value
@@ -529,14 +529,14 @@ diffsum (Dynamics diff) (Dynamics i) =
 --
 
 -- | Lookup @x@ in a table of pairs @(x, y)@ using linear interpolation.
-lookupDynamics :: Comp m => Dynamics m Double -> Array Int (Double, Double) -> Dynamics m Double
+lookupDynamics :: MonadComp m => Dynamics m Double -> Array Int (Double, Double) -> Dynamics m Double
 lookupDynamics (Dynamics m) tbl =
   Dynamics $ \p ->
   do a <- m p
      return $ tableLookup a tbl
 
 -- | Lookup @x@ in a table of pairs @(x, y)@ using stepwise function.
-lookupStepwiseDynamics :: Comp m => Dynamics m Double -> Array Int (Double, Double) -> Dynamics m Double
+lookupStepwiseDynamics :: MonadComp m => Dynamics m Double -> Array Int (Double, Double) -> Dynamics m Double
 lookupStepwiseDynamics (Dynamics m) tbl =
   Dynamics $ \p ->
   do a <- m p
@@ -547,7 +547,7 @@ lookupStepwiseDynamics (Dynamics m) tbl =
 --
 
 -- | Return the delayed value using the specified lag time.
-delay :: Comp m
+delay :: MonadComp m
          => Dynamics m a          -- ^ the value to delay
          -> Dynamics m Double     -- ^ the lag time
          -> Dynamics m a          -- ^ the delayed value
@@ -576,7 +576,7 @@ delay (Dynamics x) (Dynamics d) = discreteDynamics $ Dynamics r
 
 -- | Return the delayed value using the specified lag time and initial value.
 -- Because of the latter, it allows creating a loop back.
-delayI :: Comp m
+delayI :: MonadComp m
           => Dynamics m a                    -- ^ the value to delay
           -> Dynamics m Double               -- ^ the lag time
           -> Dynamics m a                    -- ^ the initial value
@@ -620,7 +620,7 @@ delayI (Dynamics x) (Dynamics d) (Dynamics i) = M.memo0Dynamics $ Dynamics r
 --       accum <- integ (stream * df) init
 --       return $ (accum + dt' * stream * df) * factor
 -- @
-npv :: (Comp m, MonadFix m)
+npv :: (MonadComp m, MonadFix m)
        => Dynamics m Double                  -- ^ the stream
        -> Dynamics m Double                  -- ^ the discount rate
        -> Dynamics m Double                  -- ^ the initial value
@@ -644,7 +644,7 @@ npv stream rate init factor =
 --       accum <- integ (stream * df) init
 --       return $ (accum + dt' * stream * df) * factor
 -- @
-npve :: (Comp m, MonadFix m)
+npve :: (MonadComp m, MonadFix m)
         => Dynamics m Double                  -- ^ the stream
         -> Dynamics m Double                  -- ^ the discount rate
         -> Dynamics m Double                  -- ^ the initial value
@@ -657,7 +657,7 @@ npve stream rate init factor =
       return $ (accum + dt' * stream * df) * factor
 
 -- | Computation that returns 0 until the step time and then returns the specified height.
-step :: Comp m
+step :: MonadComp m
         => Dynamics m Double
         -- ^ the height
         -> Dynamics m Double
@@ -676,7 +676,7 @@ step h st =
 
 -- | Computation that returns 1, starting at the time start, and lasting for the interval
 -- width; 0 is returned at all other times.
-pulse :: Comp m
+pulse :: MonadComp m
          => Dynamics m Double
          -- ^ the time start
          -> Dynamics m Double
@@ -697,7 +697,7 @@ pulse st w =
 -- | Computation that returns 1, starting at the time start, and lasting for the interval
 -- width and then repeats this pattern with the specified period; 0 is returned at all
 -- other times.
-pulseP :: Comp m
+pulseP :: MonadComp m
           => Dynamics m Double
           -- ^ the time start
           -> Dynamics m Double
@@ -724,7 +724,7 @@ pulseP st w period =
 
 -- | Computation that returns 0 until the specified time start and then
 -- slopes upward until the end time and then holds constant.
-ramp :: Comp m
+ramp :: MonadComp m
         => Dynamics m Double
         -- ^ the slope parameter
         -> Dynamics m Double

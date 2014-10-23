@@ -48,14 +48,14 @@ newtype Transform m a b =
               -- ^ Run the transform.
             }
 
-instance Comp m => C.Category (Transform m) where
+instance MonadComp m => C.Category (Transform m) where
 
   id = Transform return
   
   (Transform g) . (Transform f) =
     Transform $ \a -> f a >>= g
 
-instance Comp m => Arrow (Transform m) where
+instance MonadComp m => Arrow (Transform m) where
 
   arr f = Transform $ return . fmap f
 
@@ -84,7 +84,7 @@ instance Comp m => Arrow (Transform m) where
        c' <- g b
        return $ liftM2 (,) c c'
 
-instance (Comp m, MonadFix m) => ArrowLoop (Transform m) where
+instance (MonadComp m, MonadFix m) => ArrowLoop (Transform m) where
 
   loop (Transform f) =
     Transform $ \b ->
@@ -94,13 +94,13 @@ instance (Comp m, MonadFix m) => ArrowLoop (Transform m) where
         return c
 
 -- | A transform that returns the current modeling time.
-timeTransform :: Comp m => Transform m a Double
+timeTransform :: MonadComp m => Transform m a Double
 timeTransform = Transform $ const $ return time
 
 -- | Return a delayed transform by the specified lag time and initial value.
 --
 -- This is actually the 'delayI' function wrapped in the 'Transform' type. 
-delayTransform :: Comp m
+delayTransform :: MonadComp m
                   => Dynamics m Double     -- ^ the lag time
                   -> Dynamics m a       -- ^ the initial value
                   -> Transform m a a    -- ^ the delayed transform
@@ -111,7 +111,7 @@ delayTransform lagTime init =
 -- by the specified initial value.
 --
 -- This is actually the 'integ' function wrapped in the 'Transform' type. 
-integTransform :: (Comp m, MonadFix m)
+integTransform :: (MonadComp m, MonadFix m)
                   => Dynamics m Double
                   -- ^ the initial value
                   -> Transform m Double Double
@@ -122,7 +122,7 @@ integTransform = Transform . integ
 -- by the specified initial value.
 --
 -- This is actually the 'diffsum' function wrapped in the 'Transform' type. 
-sumTransform :: (Comp m, MonadFix m, Num a, Unboxed m a) =>
+sumTransform :: (MonadComp m, MonadFix m, Num a, Unboxed m a) =>
                 Dynamics m a
                 -- ^ the initial value
                 -> Transform m a a

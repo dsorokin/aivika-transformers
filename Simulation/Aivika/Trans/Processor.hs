@@ -78,7 +78,7 @@ instance C.Category (Processor m) where
 -- while the pure streams were considered in the
 -- mentioned article.
   
-instance Comp m => Arrow (Processor m) where
+instance MonadComp m => Arrow (Processor m) where
 
   arr = Processor . mapStream
 
@@ -103,7 +103,7 @@ instance Comp m => Arrow (Processor m) where
   Processor f &&& Processor g =
     Processor $ \xs -> zipStreamSeq (f xs) (g xs)
 
-instance Comp m => ArrowChoice (Processor m) where
+instance MonadComp m => ArrowChoice (Processor m) where
 
   left (Processor f) =
     Processor $ \xs ->
@@ -117,11 +117,11 @@ instance Comp m => ArrowChoice (Processor m) where
     do ys <- liftSimulation $ memoStream xs
        runStream $ replaceRightStream ys (f $ rightStream ys)
 
-instance Comp m => ArrowZero (Processor m) where
+instance MonadComp m => ArrowZero (Processor m) where
 
   zeroArrow = emptyProcessor
 
-instance Comp m => ArrowPlus (Processor m) where
+instance MonadComp m => ArrowPlus (Processor m) where
 
   (Processor f) <+> (Processor g) =
     Processor $ \xs ->
@@ -130,16 +130,16 @@ instance Comp m => ArrowPlus (Processor m) where
        runStream $ mergeStreams (f xs1) (g xs2)
 
 -- | A processor that never finishes its work producing an 'emptyStream'.
-emptyProcessor :: Comp m => Processor m a b
+emptyProcessor :: MonadComp m => Processor m a b
 emptyProcessor = Processor $ const emptyStream
 
 -- | Create a simple processor by the specified handling function
 -- that runs the discontinuous process for each input value to get the output.
-arrProcessor :: Comp m => (a -> Process m b) -> Processor m a b
+arrProcessor :: MonadComp m => (a -> Process m b) -> Processor m a b
 arrProcessor = Processor . mapStreamM
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumProcessor :: Comp m => (acc -> a -> Process m (acc, b)) -> acc -> Processor m a b
+accumProcessor :: MonadComp m => (acc -> a -> Process m (acc, b)) -> acc -> Processor m a b
 accumProcessor f acc =
   Processor $ \xs -> Cons $ loop xs acc where
     loop xs acc =
@@ -151,7 +151,7 @@ accumProcessor f acc =
 -- It can be useful to refer to the underlying 'Process' computation which
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
-processorUsingId :: Comp m => ProcessId m -> Processor m a b -> Processor m a b
+processorUsingId :: MonadComp m => ProcessId m -> Processor m a b -> Processor m a b
 processorUsingId pid (Processor f) =
   Processor $ Cons . processUsingId pid . runStream . f
 
@@ -161,7 +161,7 @@ processorUsingId pid (Processor f) =
 -- If you don't know what the enqueue strategies to apply, then
 -- you will probably need 'FCFS' for the both parameters, or
 -- function 'processorParallel' that does namely this.
-processorQueuedParallel :: (Comp m,
+processorQueuedParallel :: (MonadComp m,
                             EnqueueStrategy m si,
                             EnqueueStrategy m so)
                            => si
@@ -183,7 +183,7 @@ processorQueuedParallel si so ps =
      runStream output
 
 -- | Launches the specified processors in parallel using priorities for combining the output.
-processorPrioritisingOutputParallel :: (Comp m,
+processorPrioritisingOutputParallel :: (MonadComp m,
                                         EnqueueStrategy m si,
                                         PriorityQueueStrategy m so po)
                                        => si
@@ -205,7 +205,7 @@ processorPrioritisingOutputParallel si so ps =
      runStream output
 
 -- | Launches the specified processors in parallel using priorities for consuming the intput.
-processorPrioritisingInputParallel :: (Comp m,
+processorPrioritisingInputParallel :: (MonadComp m,
                                        PriorityQueueStrategy m si pi,
                                        EnqueueStrategy m so)
                                       => si
@@ -228,7 +228,7 @@ processorPrioritisingInputParallel si so ps =
 
 -- | Launches the specified processors in parallel using priorities for consuming
 -- the input and combining the output.
-processorPrioritisingInputOutputParallel :: (Comp m,
+processorPrioritisingInputOutputParallel :: (MonadComp m,
                                              PriorityQueueStrategy m si pi,
                                              PriorityQueueStrategy m so po)
                                             => si
@@ -252,12 +252,12 @@ processorPrioritisingInputOutputParallel si so ps =
 -- | Launches the processors in parallel consuming the same input stream and producing
 -- a combined output stream. This version applies the 'FCFS' strategy both for input
 -- and output, which suits the most part of uses cases.
-processorParallel :: Comp m => [Processor m a b] -> Processor m a b
+processorParallel :: MonadComp m => [Processor m a b] -> Processor m a b
 processorParallel = processorQueuedParallel FCFS FCFS
 
 -- | Launches the processors sequentially using the 'prefetchProcessor' between them
 -- to model an autonomous work of each of the processors specified.
-processorSeq :: Comp m => [Processor m a a] -> Processor m a a
+processorSeq :: MonadComp m => [Processor m a a] -> Processor m a a
 processorSeq []  = emptyProcessor
 processorSeq [p] = p
 processorSeq (p : ps) = p >>> prefetchProcessor >>> processorSeq ps
@@ -266,7 +266,7 @@ processorSeq (p : ps) = p >>> prefetchProcessor >>> processorSeq ps
 -- consumes the input stream but the stream passed in as the second argument
 -- and produced usually by some other process is returned as an output.
 -- This kind of processor is very useful for modeling the queues.
-bufferProcessor :: Comp m
+bufferProcessor :: MonadComp m
                    => (Stream m a -> Process m ())
                    -- ^ a separate process to consume the input 
                    -> Stream m b
@@ -281,7 +281,7 @@ bufferProcessor consume output =
 -- | Like 'bufferProcessor' but allows creating a loop when some items
 -- can be processed repeatedly. It is very useful for modeling the processors 
 -- with queues and loop-backs.
-bufferProcessorLoop :: Comp m
+bufferProcessorLoop :: MonadComp m
                        => (Stream m a -> Stream m c -> Process m ())
                        -- ^ consume two streams: the input values of type @a@
                        -- and the values of type @c@ returned by the loop
@@ -325,7 +325,7 @@ bufferProcessorLoop consume preoutput cond body =
 -- then you can use a more generic function 'bufferProcessor' which this function is
 -- based on. In case of need, you can even write your own function from scratch. It is
 -- quite easy actually.
-queueProcessor :: Comp m =>
+queueProcessor :: MonadComp m =>
                   (a -> Process m ())
                   -- ^ enqueue the input item and wait
                   -- while the queue is full if required
@@ -342,7 +342,7 @@ queueProcessor enqueue dequeue =
 -- | Like 'queueProcessor' creates a queue processor but with a loop when some items 
 -- can be processed and then added to the queue again. Also it allows specifying 
 -- how two input streams of data can be merged.
-queueProcessorLoopMerging :: Comp m
+queueProcessorLoopMerging :: MonadComp m
                              => (Stream m a -> Stream m d -> Stream m e)
                              -- ^ merge two streams: the input values of type @a@
                              -- and the values of type @d@ returned by the loop
@@ -372,7 +372,7 @@ queueProcessorLoopMerging merge enqueue dequeue =
 -- merges two input streams of data: one stream that come from the external source and 
 -- another stream of data returned by the loop. The first stream has a priority over 
 -- the second one.
-queueProcessorLoopSeq :: Comp m
+queueProcessorLoopSeq :: MonadComp m
                          => (a -> Process m ())
                          -- ^ enqueue the input item and wait
                          -- while the queue is full if required
@@ -394,7 +394,7 @@ queueProcessorLoopSeq =
 -- some items can be processed and then added to the queue again. Only it runs two 
 -- simultaneous processes to enqueue the input streams of data: one stream that come 
 -- from the external source and another stream of data returned by the loop.
-queueProcessorLoopParallel :: Comp m
+queueProcessorLoopParallel :: MonadComp m
                               => (a -> Process m ())
                               -- ^ enqueue the input item and wait
                               -- while the queue is full if required
@@ -425,7 +425,7 @@ queueProcessorLoopParallel enqueue dequeue =
 -- You can think of this as the prefetched processor could place its latest 
 -- data item in some temporary space for later use, which is very useful 
 -- for modeling a sequence of separate and independent work places.
-prefetchProcessor :: Comp m => Processor m a a
+prefetchProcessor :: MonadComp m => Processor m a a
 prefetchProcessor = Processor prefetchStream
 
 -- | Convert the specified signal transform to a processor.
@@ -439,7 +439,7 @@ prefetchProcessor = Processor prefetchStream
 -- The former is passive, while the latter is active.
 --
 -- Cancel the processor's process to unsubscribe from the signals provided.
-signalProcessor :: Comp m => (Signal m a -> Signal m b) -> Processor m a b
+signalProcessor :: MonadComp m => (Signal m a -> Signal m b) -> Processor m a b
 signalProcessor f =
   Processor $ \xs ->
   Cons $
@@ -458,7 +458,7 @@ signalProcessor f =
 -- The former is passive, while the latter is active.
 --
 -- Cancel the returned process to unsubscribe from the signal specified.
-processorSignaling :: Comp m => Processor m a b -> Signal m a -> Process m (Signal m b)
+processorSignaling :: MonadComp m => Processor m a b -> Signal m a -> Process m (Signal m b)
 processorSignaling (Processor f) sa =
   do xs <- signalStream sa
      let ys = f xs
@@ -466,9 +466,9 @@ processorSignaling (Processor f) sa =
 
 -- | A processor that adds the information about the time points at which 
 -- the original stream items were received by demand.
-arrivalProcessor :: Comp m => Processor m a (Arrival a)
+arrivalProcessor :: MonadComp m => Processor m a (Arrival a)
 arrivalProcessor = Processor arrivalStream
 
 -- | A processor that delays the input stream by one step using the specified initial value.
-delayProcessor :: Comp m => a -> Processor m a a
+delayProcessor :: MonadComp m => a -> Processor m a a
 delayProcessor a0 = Processor $ delayStream a0

@@ -53,7 +53,7 @@ data Var m a =
         varChangedSource :: SignalSource m a }
 
 -- | Create a new variable.
-newVar :: (Comp m, Unboxed m a) => a -> Simulation m (Var m a)
+newVar :: (MonadComp m, Unboxed m a) => a -> Simulation m (Var m a)
 newVar a =
   Simulation $ \r ->
   do let sn = runSession r
@@ -74,7 +74,7 @@ newVar a =
 --
 -- This computation can be used in the ordinary differential and
 -- difference equations of System Dynamics.
-varMemo :: (Comp m, Unboxed m a) => Var m a -> Dynamics m a
+varMemo :: (MonadComp m, Unboxed m a) => Var m a -> Dynamics m a
 varMemo v =
   runEventWith CurrentEventsOrFromPast $
   Event $ \p ->
@@ -101,7 +101,7 @@ varMemo v =
 -- | Read the recent actual value of a variable for the requested time.
 --
 -- This computation is destined for using within discrete event simulation.
-readVar :: (Comp m, Unboxed m a) => Var m a -> Event m a
+readVar :: (MonadComp m, Unboxed m a) => Var m a -> Event m a
 readVar v = 
   Event $ \p ->
   do let xs = varXS v
@@ -118,7 +118,7 @@ readVar v =
                  else UV.readVector ys $ - (i + 1) - 1
 
 -- | Write a new value into the variable.
-writeVar :: (Comp m, Unboxed m a) => Var m a -> a -> Event m ()
+writeVar :: (MonadComp m, Unboxed m a) => Var m a -> a -> Event m ()
 writeVar v a =
   Event $ \p ->
   do let xs = varXS v
@@ -139,7 +139,7 @@ writeVar v a =
      invokeEvent p $ triggerSignal s a
 
 -- | Mutate the contents of the variable.
-modifyVar :: (Comp m, Unboxed m a) => Var m a -> (a -> a) -> Event m ()
+modifyVar :: (MonadComp m, Unboxed m a) => Var m a -> (a -> a) -> Event m ()
 modifyVar v f =
   Event $ \p ->
   do let xs = varXS v
@@ -172,7 +172,7 @@ modifyVar v f =
 -- If you need to get all changes including those ones that correspond to the same
 -- simulation time points then you can use the 'newSignalHistory' function passing
 -- in the 'varChanged' signal to it and then call function 'readSignalHistory'.
-freezeVar :: (Comp m, Unboxed m a) => Var m a -> Event m (Array Int Double, Array Int a, Array Int a)
+freezeVar :: (MonadComp m, Unboxed m a) => Var m a -> Event m (Array Int Double, Array Int a, Array Int a)
 freezeVar v =
   Event $ \p ->
   do xs <- UV.freezeVector (varXS v)
@@ -185,5 +185,5 @@ varChanged :: Var m a -> Signal m a
 varChanged v = publishSignal (varChangedSource v)
 
 -- | Return a signal that notifies about every change of the variable state.
-varChanged_ :: Comp m => Var m a -> Signal m ()
+varChanged_ :: MonadComp m => Var m a -> Signal m ()
 varChanged_ v = mapSignal (const ()) $ varChanged v     

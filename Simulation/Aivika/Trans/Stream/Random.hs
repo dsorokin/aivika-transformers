@@ -41,7 +41,7 @@ import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Arrival
 
 -- | Return a sream of random events that arrive with the specified delay.
-randomStream :: Comp m
+randomStream :: MonadComp m
                 => Parameter m (Double, a)
                 -- ^ compute a pair of the delay and event of type @a@
                 -> Stream m (Arrival a)
@@ -71,7 +71,7 @@ randomStream delay = Cons $ loop Nothing where
        return (arrival, Cons $ loop (Just t2))
 
 -- | Create a new stream with delays distributed uniformly.
-randomUniformStream :: Comp m
+randomUniformStream :: MonadComp m
                        => Double
                        -- ^ the minimum delay
                        -> Double
@@ -84,7 +84,7 @@ randomUniformStream min max =
   return (x, x)
 
 -- | Create a new stream with integer delays distributed uniformly.
-randomUniformIntStream :: Comp m
+randomUniformIntStream :: MonadComp m
                           => Int
                           -- ^ the minimum delay
                           -> Int
@@ -97,7 +97,7 @@ randomUniformIntStream min max =
   return (fromIntegral x, x)
 
 -- | Create a new stream with delays distributed normally.
-randomNormalStream :: Comp m
+randomNormalStream :: MonadComp m
                       => Double
                       -- ^ the mean delay
                       -> Double
@@ -111,7 +111,7 @@ randomNormalStream mu nu =
          
 -- | Return a new stream with delays distibuted exponentially with the specified mean
 -- (the reciprocal of the rate).
-randomExponentialStream :: Comp m
+randomExponentialStream :: MonadComp m
                            => Double
                            -- ^ the mean delay (the reciprocal of the rate)
                            -> Stream m (Arrival Double)
@@ -123,7 +123,7 @@ randomExponentialStream mu =
          
 -- | Return a new stream with delays having the Erlang distribution with the specified
 -- scale (the reciprocal of the rate) and shape parameters.
-randomErlangStream :: Comp m
+randomErlangStream :: MonadComp m
                       => Double
                       -- ^ the scale (the reciprocal of the rate)
                       -> Int
@@ -137,7 +137,7 @@ randomErlangStream beta m =
 
 -- | Return a new stream with delays having the Poisson distribution with
 -- the specified mean.
-randomPoissonStream :: Comp m
+randomPoissonStream :: MonadComp m
                        => Double
                        -- ^ the mean delay
                        -> Stream m (Arrival Int)
@@ -149,7 +149,7 @@ randomPoissonStream mu =
 
 -- | Return a new stream with delays having the binomial distribution with the specified
 -- probability and trials.
-randomBinomialStream :: Comp m
+randomBinomialStream :: MonadComp m
                         => Double
                         -- ^ the probability
                         -> Int

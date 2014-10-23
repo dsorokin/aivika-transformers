@@ -36,7 +36,7 @@ data PriorityQueue m a =
                   pqSize     :: ProtoRef m Int,
                   pqCapacity :: ProtoRef m Int }
 
-increase :: ProtoComp m => PriorityQueue m a -> m ()
+increase :: ProtoMonad m => PriorityQueue m a -> m ()
 increase pq = 
   do let s = pqSession pq
          keyRef = pqKeys pq
@@ -55,7 +55,7 @@ increase pq =
      writeProtoRef valRef vals'
      writeProtoRef capacityRef capacity'
 
-siftUp :: ProtoComp m 
+siftUp :: ProtoMonad m 
           => UA.ProtoArray m Double
           -- ^ keys
           -> A.ProtoArray m a
@@ -81,7 +81,7 @@ siftUp keys vals i k v =
                     A.writeProtoArray vals i vn
                     siftUp keys vals n k v
 
-siftDown :: ProtoComp m 
+siftDown :: ProtoMonad m 
             => UA.ProtoArray m Double
             -- ^ keys
             -> A.ProtoArray m a
@@ -122,17 +122,17 @@ siftDown keys vals size i k v =
                               siftDown keys vals size n'' k v
 
 -- | Test whether the priority queue is empty.
-queueNull :: ProtoComp m => PriorityQueue m a -> m Bool
+queueNull :: ProtoMonad m => PriorityQueue m a -> m Bool
 queueNull pq =
   do size <- readProtoRef (pqSize pq)
      return $ size == 0
 
 -- | Return the number of elements in the priority queue.
-queueCount :: ProtoComp m => PriorityQueue m a -> m Int
+queueCount :: ProtoMonad m => PriorityQueue m a -> m Int
 queueCount pq = readProtoRef (pqSize pq)
 
 -- | Create a new priority queue.
-newQueue :: ProtoComp m => Session m -> m (PriorityQueue m a)
+newQueue :: ProtoMonad m => Session m -> m (PriorityQueue m a)
 newQueue session =
   do keys        <- UA.newProtoArray_ session 11
      vals        <- A.newProtoArray_ session 11
@@ -147,7 +147,7 @@ newQueue session =
                             pqCapacity = capacityRef }
 
 -- | Enqueue a new element with the specified priority.
-enqueue :: ProtoComp m => PriorityQueue m a -> Double -> a -> m ()
+enqueue :: ProtoMonad m => PriorityQueue m a -> Double -> a -> m ()
 enqueue pq k v =
   do i <- readProtoRef (pqSize pq)
      n <- readProtoRef (pqCapacity pq)
@@ -158,7 +158,7 @@ enqueue pq k v =
      siftUp keys vals i k v
 
 -- | Dequeue the element with the minimal priority.
-dequeue :: ProtoComp m => PriorityQueue m a -> m ()
+dequeue :: ProtoMonad m => PriorityQueue m a -> m ()
 dequeue pq =
   do size <- readProtoRef (pqSize pq)
      when (size == 0) $ error "Empty priority queue: dequeue"
@@ -175,7 +175,7 @@ dequeue pq =
      siftDown keys vals i 0 k v
 
 -- | Return the element with the minimal priority.
-queueFront :: ProtoComp m => PriorityQueue m a -> m (Double, a)
+queueFront :: ProtoMonad m => PriorityQueue m a -> m (Double, a)
 queueFront pq =
   do size <- readProtoRef (pqSize pq)
      when (size == 0) $ error "Empty priority queue: queueFront"

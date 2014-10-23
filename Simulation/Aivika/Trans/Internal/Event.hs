@@ -90,7 +90,7 @@ instance MonadIO m => MonadIO (Event m) where
   {-# INLINE liftIO #-}
   liftIO = Event . const . liftIO
 
-instance CompTrans Event where
+instance MonadCompTrans Event where
 
   {-# INLINE liftComp #-}
   liftComp = Event . const
@@ -99,7 +99,7 @@ instance CompTrans Event where
 class EventLift t where
   
   -- | Lift the specified 'Event' computation into another computation.
-  liftEvent :: Comp m => Event m a -> t m a
+  liftEvent :: MonadComp m => Event m a -> t m a
 
 instance EventLift Event where
   
@@ -122,20 +122,20 @@ instance ParameterLift Event where
   liftParameter (Parameter x) = Event $ x . pointRun
 
 -- | Exception handling within 'Event' computations.
-catchEvent :: (Comp m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
+catchEvent :: (MonadComp m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
 catchEvent (Event m) h =
   Event $ \p -> 
   catchComp (m p) $ \e ->
   let Event m' = h e in m' p
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyEvent :: Comp m => Event m a -> Event m b -> Event m a
+finallyEvent :: MonadComp m => Event m a -> Event m b -> Event m a
 finallyEvent (Event m) (Event m') =
   Event $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
-throwEvent :: (Comp m, Exception e) => e -> Event m a
+throwEvent :: (MonadComp m, Exception e) => e -> Event m a
 throwEvent = throw
 
 instance MonadFix m => MonadFix (Event m) where
@@ -147,22 +147,22 @@ instance MonadFix m => MonadFix (Event m) where
 
 -- | Run the 'Event' computation in the start time involving all
 -- pending 'CurrentEvents' in the processing too.
-runEventInStartTime :: Comp m => Event m a -> Simulation m a
+runEventInStartTime :: MonadComp m => Event m a -> Simulation m a
 runEventInStartTime = runDynamicsInStartTime . runEvent
 
 -- | Run the 'Event' computation in the stop time involving all
 -- pending 'CurrentEvents' in the processing too.
-runEventInStopTime :: Comp m => Event m a -> Simulation m a
+runEventInStopTime :: MonadComp m => Event m a -> Simulation m a
 runEventInStopTime = runDynamicsInStopTime . runEvent
 
 -- | Actuate the event handler in the specified time points.
-enqueueEventWithTimes :: Comp m => [Double] -> Event m () -> Event m ()
+enqueueEventWithTimes :: MonadComp m => [Double] -> Event m () -> Event m ()
 enqueueEventWithTimes ts e = loop ts
   where loop []       = return ()
         loop (t : ts) = enqueueEvent t $ e >> loop ts
        
 -- | Actuate the event handler in the specified time points.
-enqueueEventWithPoints :: Comp m => [Point m] -> Event m () -> Event m ()
+enqueueEventWithPoints :: MonadComp m => [Point m] -> Event m () -> Event m ()
 enqueueEventWithPoints xs (Event e) = loop xs
   where loop []       = return ()
         loop (x : xs) = enqueueEvent (pointTime x) $ 
@@ -171,7 +171,7 @@ enqueueEventWithPoints xs (Event e) = loop xs
                            invokeEvent p $ loop xs
                            
 -- | Actuate the event handler in the integration time points.
-enqueueEventWithIntegTimes :: Comp m => Event m () -> Event m ()
+enqueueEventWithIntegTimes :: MonadComp m => Event m () -> Event m ()
 enqueueEventWithIntegTimes e =
   Event $ \p ->
   let points = integPoints $ pointRun p
@@ -188,7 +188,7 @@ data EventCancellation m =
                     }
 
 -- | Enqueue the event with an ability to cancel it.
-enqueueEventWithCancellation :: Comp m => Double -> Event m () -> Event m (EventCancellation m)
+enqueueEventWithCancellation :: MonadComp m => Double -> Event m () -> Event m (EventCancellation m)
 enqueueEventWithCancellation t e =
   Event $ \p ->
   do let s = runSession $ pointRun p
@@ -218,7 +218,7 @@ enqueueEventWithCancellation t e =
 
 -- | Memoize the 'Event' computation, always returning the same value
 -- within a simulation run.
-memoEvent :: Comp m => Event m a -> Simulation m (Event m a)
+memoEvent :: MonadComp m => Event m a -> Simulation m (Event m a)
 memoEvent m =
   Simulation $ \r ->
   do let s = runSession r
@@ -240,7 +240,7 @@ memoEvent m =
 -- computation is always synchronized with the event queue which time
 -- flows in one direction only. This synchronization is a key difference
 -- between the 'Event' and 'Dynamics' computations.
-memoEventInTime :: Comp m => Event m a -> Simulation m (Event m a)
+memoEventInTime :: MonadComp m => Event m a -> Simulation m (Event m a)
 memoEventInTime m =
   Simulation $ \r ->
   do let s = runSession r
@@ -256,7 +256,7 @@ memoEventInTime m =
                  return v
 
 -- | Enqueue the event which must be actuated with the current modeling time but later.
-yieldEvent :: Comp m => Event m () -> Event m ()
+yieldEvent :: MonadComp m => Event m () -> Event m ()
 yieldEvent m =
   Event $ \p ->
   invokeEvent p $

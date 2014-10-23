@@ -71,7 +71,7 @@ interpolateDynamics (Dynamics m) =
 -- the integration time points. The accumulator values are transformed
 -- according to the second argument, which should be either function 
 -- 'memo0Dynamics' or its unboxed version.
-scan1Dynamics :: (Comp m, MonadFix m)
+scan1Dynamics :: (MonadComp m, MonadFix m)
                  => (a -> a -> a)
                  -> (Dynamics m a -> Simulation m (Dynamics m a))
                  -> (Dynamics m a -> Simulation m (Dynamics m a))
@@ -93,7 +93,7 @@ scan1Dynamics f tr m =
 -- the integration time points. The accumulator values are transformed
 -- according to the third argument, which should be either function
 -- 'memo0Dynamics' or its unboxed version.
-scanDynamics :: (Comp m, MonadFix m)
+scanDynamics :: (MonadComp m, MonadFix m)
                 => (a -> b -> a)
                 -> a
                 -> (Dynamics m a -> Simulation m (Dynamics m a))

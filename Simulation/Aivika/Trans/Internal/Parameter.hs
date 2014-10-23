@@ -70,7 +70,7 @@ instance Monad m => Monad (Parameter m) where
        m' r
 
 -- | Run the parameter using the specified specs.
-runParameter :: Comp m => Parameter m a -> Specs m -> m a
+runParameter :: MonadComp m => Parameter m a -> Specs m -> m a
 runParameter (Parameter m) sc =
   do s <- newSession
      q <- newEventQueue s sc
@@ -84,7 +84,7 @@ runParameter (Parameter m) sc =
 
 -- | Run the given number of parameters using the specified specs, 
 --   where each parameter is distinguished by its index 'parameterIndex'.
-runParameters :: Comp m => Parameter m a -> Specs m -> Int -> [m a]
+runParameters :: MonadComp m => Parameter m a -> Specs m -> Int -> [m a]
 runParameters (Parameter m) sc runs = map f [1 .. runs]
   where f i = do s <- newSession
                  q <- newEventQueue s sc
@@ -236,7 +236,7 @@ instance MonadIO m => MonadIO (Parameter m) where
   {-# INLINE liftIO #-}
   liftIO = Parameter . const . liftIO
 
-instance CompTrans Parameter where
+instance MonadCompTrans Parameter where
 
   {-# INLINE liftComp #-}
   liftComp = Parameter . const
@@ -245,7 +245,7 @@ instance CompTrans Parameter where
 class ParameterLift t where
   
   -- | Lift the specified 'Parameter' computation into another computation.
-  liftParameter :: Comp m => Parameter m a -> t m a
+  liftParameter :: MonadComp m => Parameter m a -> t m a
 
 instance ParameterLift Parameter where
   
@@ -253,20 +253,20 @@ instance ParameterLift Parameter where
   liftParameter = id
     
 -- | Exception handling within 'Parameter' computations.
-catchParameter :: (Comp m, Exception e) => Parameter m a -> (e -> Parameter m a) -> Parameter m a
+catchParameter :: (MonadComp m, Exception e) => Parameter m a -> (e -> Parameter m a) -> Parameter m a
 catchParameter (Parameter m) h =
   Parameter $ \r -> 
   catchComp (m r) $ \e ->
   let Parameter m' = h e in m' r
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyParameter :: Comp m => Parameter m a -> Parameter m b -> Parameter m a
+finallyParameter :: MonadComp m => Parameter m a -> Parameter m b -> Parameter m a
 finallyParameter (Parameter m) (Parameter m') =
   Parameter $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
-throwParameter :: (Comp m, Exception e) => e -> Parameter m a
+throwParameter :: (MonadComp m, Exception e) => e -> Parameter m a
 throwParameter = throw
 
 instance MonadFix m => MonadFix (Parameter m) where

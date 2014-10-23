@@ -12,9 +12,9 @@
 -- It defines a type class of monads based on which the simulation monads can be built.
 --
 module Simulation.Aivika.Trans.Comp
-       (ProtoComp(..),
-        Comp(..),
-        CompTrans(..)) where
+       (ProtoMonad(..),
+        MonadComp(..),
+        MonadCompTrans(..)) where
 
 import Control.Monad
 import Control.Monad.Trans
@@ -36,17 +36,17 @@ class (Monad m,
        Unboxed m Double,
        Unboxed m Float,
        Unboxed m Int,
-       GeneratorMonad m) => ProtoComp m
+       GeneratorMonad m) => ProtoMonad m
 
--- | Such a simulation monad that allows enqueueing events.
-class (ProtoComp m, EventQueueing m) => Comp m
+-- | Such a prototype monad that allows enqueueing events.
+class (ProtoMonad m, EventQueueing m) => MonadComp m
 
 -- | A variant of the standard 'MonadTrans' type class with one difference:
--- the computation that will be lifted into another must be 'Comp' instead of
+-- the computation that will be lifted into another must be 'MonadComp' instead of
 -- more general and less restricted 'Monad'.
-class CompTrans t where
+class MonadCompTrans t where
 
   -- | Lift the underlying computation into another within simulation.
-  liftComp :: Comp m => m a -> t m a
+  liftComp :: MonadComp m => m a -> t m a
 
-instance ProtoComp IO
+instance ProtoMonad IO

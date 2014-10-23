@@ -70,7 +70,7 @@ newtype Circuit m a b =
             -- ^ Run the circuit.
           }
 
-instance Comp m => C.Category (Circuit m) where
+instance MonadComp m => C.Category (Circuit m) where
 
   id = Circuit $ \a -> return (a, C.id)
 
@@ -83,7 +83,7 @@ instance Comp m => C.Category (Circuit m) where
            (c, cir2) <- invokeEvent p (g b)
            return (c, cir2 `dot` cir1)
 
-instance Comp m => Arrow (Circuit m) where
+instance MonadComp m => Arrow (Circuit m) where
 
   arr f = Circuit $ \a -> return (f a, arr f)
 
@@ -113,7 +113,7 @@ instance Comp m => Arrow (Circuit m) where
        (c', cir2) <- invokeEvent p (g b)
        return ((c, c'), cir1 &&& cir2)
 
-instance (Comp m, MonadFix m) => ArrowLoop (Circuit m) where
+instance (MonadComp m, MonadFix m) => ArrowLoop (Circuit m) where
 
   loop (Circuit f) =
     Circuit $ \b ->
@@ -121,7 +121,7 @@ instance (Comp m, MonadFix m) => ArrowLoop (Circuit m) where
     do rec ((c, d), cir) <- invokeEvent p (f (b, d))
        return (c, loop cir)
 
-instance Comp m => ArrowChoice (Circuit m) where
+instance MonadComp m => ArrowChoice (Circuit m) where
 
   left x@(Circuit f) =
     Circuit $ \ebd ->
@@ -166,7 +166,7 @@ instance Comp m => ArrowChoice (Circuit m) where
            return (d, x ||| cir2)
 
 -- | Get a signal transform by the specified circuit.
-circuitSignaling :: Comp m => Circuit m a b -> Signal m a -> Signal m b
+circuitSignaling :: MonadComp m => Circuit m a b -> Signal m a -> Signal m b
 circuitSignaling (Circuit cir) sa =
   Signal { handleSignal = \f ->
             Event $ \p ->
@@ -181,7 +181,7 @@ circuitSignaling (Circuit cir) sa =
                     invokeEvent p (f b) }
 
 -- | Transform the circuit to a processor.
-circuitProcessor :: Comp m => Circuit m a b -> Processor m a b
+circuitProcessor :: MonadComp m => Circuit m a b -> Processor m a b
 circuitProcessor (Circuit cir) = Processor $ \sa ->
   Cons $
   do (a, xs) <- runStream sa
@@ -191,7 +191,7 @@ circuitProcessor (Circuit cir) = Processor $ \sa ->
 
 -- | Create a simple circuit by the specified handling function
 -- that runs the computation for each input value to get an output.
-arrCircuit :: Comp m => (a -> Event m b) -> Circuit m a b
+arrCircuit :: MonadComp m => (a -> Event m b) -> Circuit m a b
 arrCircuit f =
   let x =
         Circuit $ \a ->
@@ -201,7 +201,7 @@ arrCircuit f =
   in x
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumCircuit :: Comp m => (acc -> a -> Event m (acc, b)) -> acc -> Circuit m a b
+accumCircuit :: MonadComp m => (acc -> a -> Event m (acc, b)) -> acc -> Circuit m a b
 accumCircuit f acc =
   Circuit $ \a ->
   Event $ \p ->
@@ -210,7 +210,7 @@ accumCircuit f acc =
 
 -- | A circuit that adds the information about the time points at which 
 -- the values were received.
-arrivalCircuit :: Comp m => Circuit m a (Arrival a)
+arrivalCircuit :: MonadComp m => Circuit m a (Arrival a)
 arrivalCircuit =
   let loop t0 =
         Circuit $ \a ->
@@ -226,20 +226,20 @@ arrivalCircuit =
   in loop Nothing
 
 -- | Delay the input by one step using the specified initial value.
-delayCircuit :: Comp m => a -> Circuit m a a
+delayCircuit :: MonadComp m => a -> Circuit m a a
 delayCircuit a0 =
   Circuit $ \a ->
   return (a0, delayCircuit a)
 
 -- | A circuit that returns the current modeling time.
-timeCircuit :: Comp m => Circuit m a Double
+timeCircuit :: MonadComp m => Circuit m a Double
 timeCircuit =
   Circuit $ \a ->
   Event $ \p ->
   return (pointTime p, timeCircuit)
 
 -- | Like '>>>' but processes only the represented events.
-(>?>) :: Comp m
+(>?>) :: MonadComp m
          => Circuit m a (Maybe b)
          -- ^ whether there is an event
          -> Circuit m b c
@@ -258,7 +258,7 @@ whether >?> process =
             return (Just c, whether' >?> process')
 
 -- | Like '<<<' but processes only the represented events.
-(<?<) :: Comp m
+(<?<) :: MonadComp m
          => Circuit m b c
          -- ^ process the event if it presents
          -> Circuit m a (Maybe b)
@@ -269,12 +269,12 @@ whether >?> process =
 
 -- | Filter the circuit, calculating only those parts of the circuit that satisfy
 -- the specified predicate.
-filterCircuit :: Comp m => (a -> Bool) -> Circuit m a b -> Circuit m a (Maybe b)
+filterCircuit :: MonadComp m => (a -> Bool) -> Circuit m a b -> Circuit m a (Maybe b)
 filterCircuit pred = filterCircuitM (return . pred)
 
 -- | Filter the circuit within the 'Event' computation, calculating only those parts
 -- of the circuit that satisfy the specified predicate.
-filterCircuitM :: Comp m => (a -> Event m Bool) -> Circuit m a b -> Circuit m a (Maybe b)
+filterCircuitM :: MonadComp m => (a -> Event m Bool) -> Circuit m a b -> Circuit m a (Maybe b)
 filterCircuitM pred cir =
   Circuit $ \a ->
   Event $ \p ->
@@ -285,7 +285,7 @@ filterCircuitM pred cir =
        else return (Nothing, filterCircuitM pred cir)
 
 -- | The source of events that never occur.
-neverCircuit :: Comp m => Circuit m a (Maybe b)
+neverCircuit :: MonadComp m => Circuit m a (Maybe b)
 neverCircuit =
   Circuit $ \a -> return (Nothing, neverCircuit)
 
@@ -309,7 +309,7 @@ neverCircuit =
 -- Regarding the recursive equations, the both functions allow defining them
 -- but whithin different computations (either with help of the recursive
 -- do-notation or the proc-notation).
-integCircuit :: Comp m
+integCircuit :: MonadComp m
                 => Double
                 -- ^ the initial value
                 -> Circuit m Double Double
@@ -341,7 +341,7 @@ integCircuit init = start
 -- Regarding the recursive equations, the both functions allow defining them
 -- but whithin different computations (either with help of the recursive
 -- do-notation or the proc-notation).
-sumCircuit :: (Comp m, Num a) =>
+sumCircuit :: (MonadComp m, Num a) =>
               a
               -- ^ the initial value
               -> Circuit m a a
@@ -365,7 +365,7 @@ sumCircuit init = start
 --
 -- This procedure consumes memory as the underlying memoization allocates
 -- an array to store the calculated values.
-circuitTransform :: Comp m => Circuit m a b -> Transform m a b
+circuitTransform :: MonadComp m => Circuit m a b -> Transform m a b
 circuitTransform cir = Transform start
   where
     start m =

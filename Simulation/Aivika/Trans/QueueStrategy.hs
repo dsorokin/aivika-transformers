@@ -27,7 +27,7 @@ import qualified Simulation.Aivika.Trans.PriorityQueue as PQ
 import qualified Simulation.Aivika.Trans.Vector as V
 
 -- | Defines the basic queue strategy.
-class Comp m => QueueStrategy m s where
+class MonadComp m => QueueStrategy m s where
 
   -- | The strategy queue.
   data StrategyQueue m s :: * -> *
@@ -90,7 +90,7 @@ data SIRO = SIRO deriving (Eq, Ord, Show)
 data StaticPriorities = StaticPriorities deriving (Eq, Ord, Show)
 
 -- | An implementation of the 'FCFS' queue strategy.
-instance Comp m => QueueStrategy m FCFS where
+instance MonadComp m => QueueStrategy m FCFS where
 
   -- | A queue used by the 'FCFS' strategy.
   newtype StrategyQueue m FCFS a = FCFSQueue (LL.DoubleLinkedList m a)
@@ -117,7 +117,7 @@ instance DequeueStrategy m FCFS => EnqueueStrategy m FCFS where
   strategyEnqueue (FCFSQueue q) i = liftComp $ LL.listAddLast q i
 
 -- | An implementation of the 'LCFS' queue strategy.
-instance Comp m => QueueStrategy m LCFS where
+instance MonadComp m => QueueStrategy m LCFS where
 
   -- | A queue used by the 'LCFS' strategy.
   newtype StrategyQueue m LCFS a = LCFSQueue (LL.DoubleLinkedList m a)
@@ -144,7 +144,7 @@ instance DequeueStrategy m LCFS => EnqueueStrategy m LCFS where
   strategyEnqueue (LCFSQueue q) i = liftComp $ LL.listInsertFirst q i
 
 -- | An implementation of the 'StaticPriorities' queue strategy.
-instance Comp m => QueueStrategy m StaticPriorities where
+instance MonadComp m => QueueStrategy m StaticPriorities where
 
   -- | A queue used by the 'StaticPriorities' strategy.
   newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue m a)
@@ -171,7 +171,7 @@ instance DequeueStrategy m StaticPriorities => PriorityQueueStrategy m StaticPri
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i = liftComp $ PQ.enqueue q p i
 
 -- | An implementation of the 'SIRO' queue strategy.
-instance Comp m => QueueStrategy m SIRO where
+instance MonadComp m => QueueStrategy m SIRO where
 
   -- | A queue used by the 'SIRO' strategy.
   newtype StrategyQueue m SIRO a = SIROQueue (V.Vector m a)

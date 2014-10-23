@@ -36,7 +36,7 @@ newtype Ref m a =
   Ref { refValue :: ProtoRef m a }
 
 -- | Create a new reference.
-newRef :: Comp m => a -> Simulation m (Ref m a)
+newRef :: MonadComp m => a -> Simulation m (Ref m a)
 newRef a =
   Simulation $ \r ->
   do let s = runSession r
@@ -44,16 +44,16 @@ newRef a =
      return Ref { refValue = x }
      
 -- | Read the value of a reference.
-readRef :: Comp m => Ref m a -> Event m a
+readRef :: MonadComp m => Ref m a -> Event m a
 readRef r = Event $ \p -> readProtoRef (refValue r)
 
 -- | Write a new value into the reference.
-writeRef :: Comp m => Ref m a -> a -> Event m ()
+writeRef :: MonadComp m => Ref m a -> a -> Event m ()
 writeRef r a = Event $ \p -> 
   a `seq` writeProtoRef (refValue r) a
 
 -- | Mutate the contents of the reference.
-modifyRef :: Comp m => Ref m a -> (a -> a) -> Event m ()
+modifyRef :: MonadComp m => Ref m a -> (a -> a) -> Event m ()
 modifyRef r f = Event $ \p -> 
   do a <- readProtoRef (refValue r)
      let b = f a

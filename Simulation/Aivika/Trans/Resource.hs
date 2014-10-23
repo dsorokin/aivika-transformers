@@ -88,7 +88,7 @@ data Resource m s =
 
 -- | Create a new FCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
-newFCFSResource :: Comp m
+newFCFSResource :: MonadComp m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (FCFSResource m)
@@ -96,7 +96,7 @@ newFCFSResource = newResource FCFS
 
 -- | Create a new FCFS resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newFCFSResourceWithMaxCount :: Comp m
+newFCFSResourceWithMaxCount :: MonadComp m
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -106,7 +106,7 @@ newFCFSResourceWithMaxCount = newResourceWithMaxCount FCFS
 
 -- | Create a new LCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
-newLCFSResource :: Comp m
+newLCFSResource :: MonadComp m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (LCFSResource m)
@@ -114,7 +114,7 @@ newLCFSResource = newResource LCFS
 
 -- | Create a new LCFS resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newLCFSResourceWithMaxCount :: Comp m
+newLCFSResourceWithMaxCount :: MonadComp m
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -124,7 +124,7 @@ newLCFSResourceWithMaxCount = newResourceWithMaxCount LCFS
 
 -- | Create a new SIRO resource with the specified initial count which value becomes
 -- the upper bound as well.
-newSIROResource :: Comp m
+newSIROResource :: MonadComp m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (SIROResource m)
@@ -132,7 +132,7 @@ newSIROResource = newResource SIRO
 
 -- | Create a new SIRO resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newSIROResourceWithMaxCount :: Comp m
+newSIROResourceWithMaxCount :: MonadComp m
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -142,7 +142,7 @@ newSIROResourceWithMaxCount = newResourceWithMaxCount SIRO
 
 -- | Create a new priority resource with the specified initial count which value becomes
 -- the upper bound as well.
-newPriorityResource :: Comp m
+newPriorityResource :: MonadComp m
                        => Int
                        -- ^ the initial count (and maximal count too) of the resource
                        -> Simulation m (PriorityResource m)
@@ -150,7 +150,7 @@ newPriorityResource = newResource StaticPriorities
 
 -- | Create a new priority resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newPriorityResourceWithMaxCount :: Comp m
+newPriorityResourceWithMaxCount :: MonadComp m
                                    => Int
                                    -- ^ the initial count of the resource
                                    -> Maybe Int
@@ -160,7 +160,7 @@ newPriorityResourceWithMaxCount = newResourceWithMaxCount StaticPriorities
 
 -- | Create a new resource with the specified queue strategy and initial count.
 -- The last value becomes the upper bound as well.
-newResource :: (Comp m, QueueStrategy m s)
+newResource :: (MonadComp m, QueueStrategy m s)
                => s
                -- ^ the strategy for managing the queuing requests
                -> Int
@@ -182,7 +182,7 @@ newResource s count =
 
 -- | Create a new resource with the specified queue strategy, initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newResourceWithMaxCount :: (Comp m, QueueStrategy m s)
+newResourceWithMaxCount :: (MonadComp m, QueueStrategy m s)
                            => s
                            -- ^ the strategy for managing the queuing requests
                            -> Int
@@ -212,14 +212,14 @@ newResourceWithMaxCount s count maxCount =
                        resourceWaitList = waitList }
 
 -- | Return the current count of the resource.
-resourceCount :: Comp m => Resource m s -> Event m Int
+resourceCount :: MonadComp m => Resource m s -> Event m Int
 resourceCount r =
   Event $ \p -> readProtoRef (resourceCountRef r)
 
 -- | Request for the resource decreasing its count in case of success,
 -- otherwise suspending the discontinuous process until some other 
 -- process releases the resource.
-requestResource :: (Comp m, EnqueueStrategy m s)
+requestResource :: (MonadComp m, EnqueueStrategy m s)
                    => Resource m s 
                    -- ^ the requested resource
                    -> Process m ()
@@ -239,7 +239,7 @@ requestResource r =
 -- | Request with the priority for the resource decreasing its count
 -- in case of success, otherwise suspending the discontinuous process
 -- until some other process releases the resource.
-requestResourceWithPriority :: (Comp m, PriorityQueueStrategy m s p)
+requestResourceWithPriority :: (MonadComp m, PriorityQueueStrategy m s p)
                                => Resource m s
                                -- ^ the requested resource
                                -> p
@@ -260,7 +260,7 @@ requestResourceWithPriority r priority =
 
 -- | Release the resource increasing its count and resuming one of the
 -- previously suspended processes as possible.
-releaseResource :: (Comp m, DequeueStrategy m s)
+releaseResource :: (MonadComp m, DequeueStrategy m s)
                    => Resource m s
                    -- ^ the resource to release
                    -> Process m ()
@@ -273,7 +273,7 @@ releaseResource r =
 
 -- | Release the resource increasing its count and resuming one of the
 -- previously suspended processes as possible.
-releaseResourceWithinEvent :: (Comp m, DequeueStrategy m s)
+releaseResourceWithinEvent :: (MonadComp m, DequeueStrategy m s)
                               => Resource m s
                               -- ^ the resource to release
                               -> Event m ()
@@ -303,7 +303,7 @@ releaseResourceWithinEvent r =
 
 -- | Try to request for the resource decreasing its count in case of success
 -- and returning 'True' in the 'Event' monad; otherwise, returning 'False'.
-tryRequestResourceWithinEvent :: Comp m
+tryRequestResourceWithinEvent :: MonadComp m
                                  => Resource m s
                                  -- ^ the resource which we try to request for
                                  -> Event m Bool
@@ -318,7 +318,7 @@ tryRequestResourceWithinEvent r =
                
 -- | Acquire the resource, perform some action and safely release the resource               
 -- in the end, even if the 'IOException' was raised within the action. 
-usingResource :: (Comp m, EnqueueStrategy m s)
+usingResource :: (MonadComp m, EnqueueStrategy m s)
                  => Resource m s
                  -- ^ the resource we are going to request for and then release in the end
                  -> Process m a
@@ -332,7 +332,7 @@ usingResource r m =
 -- | Acquire the resource with the specified priority, perform some action and
 -- safely release the resource in the end, even if the 'IOException' was raised
 -- within the action.
-usingResourceWithPriority :: (Comp m, PriorityQueueStrategy m s p)
+usingResourceWithPriority :: (MonadComp m, PriorityQueueStrategy m s p)
                              => Resource m s
                              -- ^ the resource we are going to request for and then
                              -- release in the end

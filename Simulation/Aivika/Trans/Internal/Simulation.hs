@@ -51,7 +51,7 @@ instance Monad m => Monad (Simulation m) where
        m' r
 
 -- | Run the simulation using the specified specs.
-runSimulation :: Comp m => Simulation m a -> Specs m -> m a
+runSimulation :: MonadComp m => Simulation m a -> Specs m -> m a
 runSimulation (Simulation m) sc =
   do s <- newSession
      q <- newEventQueue s sc
@@ -65,7 +65,7 @@ runSimulation (Simulation m) sc =
 
 -- | Run the given number of simulations using the specified specs, 
 --   where each simulation is distinguished by its index 'simulationIndex'.
-runSimulations :: Comp m => Simulation m a -> Specs m -> Int -> [m a]
+runSimulations :: MonadComp m => Simulation m a -> Specs m -> Int -> [m a]
 runSimulations (Simulation m) sc runs = map f [1 .. runs]
   where f i = do s <- newSession
                  q <- newEventQueue s sc
@@ -100,7 +100,7 @@ instance MonadTrans Simulation where
   {-# INLINE lift #-}
   lift = Simulation . const
 
-instance CompTrans Simulation where
+instance MonadCompTrans Simulation where
 
   {-# INLINE liftComp #-}
   liftComp = Simulation . const
@@ -114,7 +114,7 @@ instance MonadIO m => MonadIO (Simulation m) where
 class SimulationLift t where
   
   -- | Lift the specified 'Simulation' computation into another computation.
-  liftSimulation :: Comp m => Simulation m a -> t m a
+  liftSimulation :: MonadComp m => Simulation m a -> t m a
 
 instance SimulationLift Simulation where
   
@@ -127,20 +127,20 @@ instance ParameterLift Simulation where
   liftParameter (Parameter x) = Simulation x
     
 -- | Exception handling within 'Simulation' computations.
-catchSimulation :: (Comp m, Exception e) => Simulation m a -> (e -> Simulation m a) -> Simulation m a
+catchSimulation :: (MonadComp m, Exception e) => Simulation m a -> (e -> Simulation m a) -> Simulation m a
 catchSimulation (Simulation m) h =
   Simulation $ \r -> 
   catchComp (m r) $ \e ->
   let Simulation m' = h e in m' r
                            
 -- | A computation with finalization part like the 'finally' function.
-finallySimulation :: Comp m => Simulation m a -> Simulation m b -> Simulation m a
+finallySimulation :: MonadComp m => Simulation m a -> Simulation m b -> Simulation m a
 finallySimulation (Simulation m) (Simulation m') =
   Simulation $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
-throwSimulation :: (Comp m, Exception e) => e -> Simulation m a
+throwSimulation :: (MonadComp m, Exception e) => e -> Simulation m a
 throwSimulation = throw
 
 instance MonadFix m => MonadFix (Simulation m) where
@@ -152,7 +152,7 @@ instance MonadFix m => MonadFix (Simulation m) where
 
 -- | Memoize the 'Simulation' computation, always returning the same value
 -- within a simulation run.
-memoSimulation :: Comp m => Simulation m a -> Simulation m (Simulation m a)
+memoSimulation :: MonadComp m => Simulation m a -> Simulation m (Simulation m a)
 memoSimulation m =
   Simulation $ \r ->
   do let s = runSession r

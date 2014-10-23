@@ -40,7 +40,7 @@ data Ref m a =
         refChangedSource :: SignalSource m a }
 
 -- | Create a new reference.
-newRef :: Comp m => a -> Simulation m (Ref m a)
+newRef :: MonadComp m => a -> Simulation m (Ref m a)
 newRef a =
   Simulation $ \r ->
   do let s = runSession r
@@ -50,17 +50,17 @@ newRef a =
                   refChangedSource = s }
      
 -- | Read the value of a reference.
-readRef :: Comp m => Ref m a -> Event m a
+readRef :: MonadComp m => Ref m a -> Event m a
 readRef r = Event $ \p -> readProtoRef (refValue r)
 
 -- | Write a new value into the reference.
-writeRef :: Comp m => Ref m a -> a -> Event m ()
+writeRef :: MonadComp m => Ref m a -> a -> Event m ()
 writeRef r a = Event $ \p -> 
   do a `seq` writeProtoRef (refValue r) a
      invokeEvent p $ triggerSignal (refChangedSource r) a
 
 -- | Mutate the contents of the reference.
-modifyRef :: Comp m => Ref m a -> (a -> a) -> Event m ()
+modifyRef :: MonadComp m => Ref m a -> (a -> a) -> Event m ()
 modifyRef r f = Event $ \p -> 
   do a <- readProtoRef (refValue r)
      let b = f a
@@ -68,9 +68,9 @@ modifyRef r f = Event $ \p ->
      invokeEvent p $ triggerSignal (refChangedSource r) b
 
 -- | Return a signal that notifies about every change of the reference state.
-refChanged :: Comp m => Ref m a -> Signal m a
+refChanged :: MonadComp m => Ref m a -> Signal m a
 refChanged v = publishSignal (refChangedSource v)
 
 -- | Return a signal that notifies about every change of the reference state.
-refChanged_ :: Comp m => Ref m a -> Signal m ()
+refChanged_ :: MonadComp m => Ref m a -> Signal m ()
 refChanged_ r = mapSignal (const ()) $ refChanged r

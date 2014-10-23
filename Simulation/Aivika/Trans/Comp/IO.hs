@@ -54,7 +54,7 @@ instance EventQueueing IO where
   eventQueueCount =
     Event $ PQ.queueCount . queuePQ . runEventQueue . pointRun
 
-instance Comp IO
+instance MonadComp IO
 
 -- | Process the pending events.
 processPendingEventsCore :: Bool -> Dynamics IO ()

@@ -198,7 +198,7 @@ instance MonadIO m => MonadIO (Dynamics m) where
   {-# INLINE liftIO #-}
   liftIO = Dynamics . const . liftIO
 
-instance CompTrans Dynamics where
+instance MonadCompTrans Dynamics where
 
   {-# INLINE liftComp #-}
   liftComp = Dynamics . const
@@ -207,7 +207,7 @@ instance CompTrans Dynamics where
 class DynamicsLift t where
   
   -- | Lift the specified 'Dynamics' computation into another computation.
-  liftDynamics :: Comp m => Dynamics m a -> t m a
+  liftDynamics :: MonadComp m => Dynamics m a -> t m a
 
 instance DynamicsLift Dynamics where
   
@@ -225,20 +225,20 @@ instance ParameterLift Dynamics where
   liftParameter (Parameter x) = Dynamics $ x . pointRun
   
 -- | Exception handling within 'Dynamics' computations.
-catchDynamics :: (Comp m, Exception e) => Dynamics m a -> (e -> Dynamics m a) -> Dynamics m a
+catchDynamics :: (MonadComp m, Exception e) => Dynamics m a -> (e -> Dynamics m a) -> Dynamics m a
 catchDynamics (Dynamics m) h =
   Dynamics $ \p -> 
   catchComp (m p) $ \e ->
   let Dynamics m' = h e in m' p
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyDynamics :: Comp m => Dynamics m a -> Dynamics m b -> Dynamics m a
+finallyDynamics :: MonadComp m => Dynamics m a -> Dynamics m b -> Dynamics m a
 finallyDynamics (Dynamics m) (Dynamics m') =
   Dynamics $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
-throwDynamics :: (Comp m, Exception e) => e -> Dynamics m a
+throwDynamics :: (MonadComp m, Exception e) => e -> Dynamics m a
 throwDynamics = throw
 
 instance MonadFix m => MonadFix (Dynamics m) where
