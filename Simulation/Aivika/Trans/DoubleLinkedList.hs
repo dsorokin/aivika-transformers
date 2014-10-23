@@ -41,7 +41,7 @@ data DoubleLinkedList m a =
                      listSize :: ProtoRef m Int }
 
 -- | Test whether the list is empty.
-listNull :: ProtoReferring m => DoubleLinkedList m a -> m Bool
+listNull :: ProtoRefMonad m => DoubleLinkedList m a -> m Bool
 listNull x =
   do head <- readProtoRef (listHead x) 
      case head of
@@ -49,11 +49,11 @@ listNull x =
        Just _  -> return False
     
 -- | Return the number of elements in the list.
-listCount :: ProtoReferring m => DoubleLinkedList m a -> m Int
+listCount :: ProtoRefMonad m => DoubleLinkedList m a -> m Int
 listCount x = readProtoRef (listSize x)
 
 -- | Create a new list.
-newList :: ProtoReferring m => Session m -> m (DoubleLinkedList m a)
+newList :: ProtoRefMonad m => Session m -> m (DoubleLinkedList m a)
 newList s =
   do head <- newProtoRef s Nothing 
      tail <- newProtoRef s Nothing
@@ -64,7 +64,7 @@ newList s =
                                listSize = size }
 
 -- | Insert a new element in the beginning.
-listInsertFirst :: ProtoReferring m => DoubleLinkedList m a -> a -> m ()
+listInsertFirst :: ProtoRefMonad m => DoubleLinkedList m a -> a -> m ()
 listInsertFirst x v =
   do let s = listSession x
      size <- readProtoRef (listSize x)
@@ -89,7 +89,7 @@ listInsertFirst x v =
             writeProtoRef (listHead x) item
 
 -- | Add a new element to the end.
-listAddLast :: ProtoReferring m => DoubleLinkedList m a -> a -> m ()
+listAddLast :: ProtoRefMonad m => DoubleLinkedList m a -> a -> m ()
 listAddLast x v =
   do let s = listSession x
      size <- readProtoRef (listSize x)
@@ -114,7 +114,7 @@ listAddLast x v =
             writeProtoRef (listTail x) item
 
 -- | Remove the first element.
-listRemoveFirst :: ProtoReferring m => DoubleLinkedList m a -> m ()
+listRemoveFirst :: ProtoRefMonad m => DoubleLinkedList m a -> m ()
 listRemoveFirst x =
   do head <- readProtoRef (listHead x) 
      case head of
@@ -133,7 +133,7 @@ listRemoveFirst x =
                    writeProtoRef (listHead x) head'
 
 -- | Remove the last element.
-listRemoveLast :: ProtoReferring m => DoubleLinkedList m a -> m ()
+listRemoveLast :: ProtoRefMonad m => DoubleLinkedList m a -> m ()
 listRemoveLast x =
   do tail <- readProtoRef (listTail x) 
      case tail of
@@ -152,7 +152,7 @@ listRemoveLast x =
                    writeProtoRef (listTail x) tail'
 
 -- | Return the first element.
-listFirst :: ProtoReferring m => DoubleLinkedList m a -> m a
+listFirst :: ProtoRefMonad m => DoubleLinkedList m a -> m a
 listFirst x =
   do head <- readProtoRef (listHead x)
      case head of
@@ -162,7 +162,7 @@ listFirst x =
          return $ itemVal h
 
 -- | Return the last element.
-listLast :: ProtoReferring m => DoubleLinkedList m a -> m a
+listLast :: ProtoRefMonad m => DoubleLinkedList m a -> m a
 listLast x =
   do tail <- readProtoRef (listTail x)
      case tail of

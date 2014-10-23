@@ -12,7 +12,7 @@
 -- It defines a prototype of mutable references.
 --
 module Simulation.Aivika.Trans.ProtoRef
-       (ProtoReferring(..),
+       (ProtoRefMonad(..),
         ProtoRef(..)) where
 
 import Data.IORef
@@ -21,7 +21,7 @@ import Simulation.Aivika.Trans.Session
 
 -- | A monad within which computation we can create and work with
 -- the prototype of mutable reference.
-class (Functor m, Monad m) => ProtoReferring m where
+class (Functor m, Monad m) => ProtoRefMonad m where
   
   -- | A prototype of mutable reference.
   data ProtoRef m :: * -> *
@@ -41,7 +41,7 @@ class (Functor m, Monad m) => ProtoReferring m where
   -- | A strict version of 'modifyProtoRef'.
   modifyProtoRef' :: ProtoRef m a -> (a -> a) -> m ()
 
-instance ProtoReferring IO where
+instance ProtoRefMonad IO where
 
   newtype ProtoRef IO a = ProtoRef (IORef a)
 

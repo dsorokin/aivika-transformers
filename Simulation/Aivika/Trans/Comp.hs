@@ -31,7 +31,7 @@ import Simulation.Aivika.Trans.Internal.Specs
 class (Monad m,
        ExceptionHandling m,
        SessionMonad m,
-       ProtoReferring m,
+       ProtoRefMonad m,
        ProtoArraying m,
        Unboxed m Double,
        Unboxed m Float,
