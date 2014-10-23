@@ -22,7 +22,7 @@ import Data.Int
 import Data.Word
 
 -- | The type which values can be contained in an unboxed array.
-class ProtoArraying m e => Unboxed m e
+class ProtoArrayMonad m e => Unboxed m e
 
 instance Unboxed IO Bool
 instance Unboxed IO Char

@@ -41,7 +41,7 @@ data Vector m a =
              vectorCapacityRef :: ProtoRef m Int }
 
 -- | Create a new vector within the specified simulation session.
-newVector :: ProtoArraying m a => Session m -> m (Vector m a)
+newVector :: ProtoArrayMonad m a => Session m -> m (Vector m a)
 newVector session = 
   do array <- newProtoArray_ session 4
      arrayRef <- newProtoRef session array
@@ -53,7 +53,7 @@ newVector session =
                      vectorCapacityRef = capacityRef }
 
 -- | Copy the vector.
-copyVector :: ProtoArraying m a => Vector m a -> m (Vector m a)
+copyVector :: ProtoArrayMonad m a => Vector m a -> m (Vector m a)
 copyVector vector =
   do let session = vectorSession vector
      array <- readProtoRef (vectorArrayRef vector)
@@ -71,7 +71,7 @@ copyVector vector =
                      vectorCapacityRef = capacityRef' }
        
 -- | Ensure that the vector has the specified capacity.
-vectorEnsureCapacity :: ProtoArraying m a => Vector m a -> Int -> m ()
+vectorEnsureCapacity :: ProtoArrayMonad m a => Vector m a -> Int -> m ()
 vectorEnsureCapacity vector capacity =
   do capacity' <- readProtoRef (vectorCapacityRef vector)
      when (capacity' < capacity) $
@@ -87,11 +87,11 @@ vectorEnsureCapacity vector capacity =
           writeProtoRef (vectorCapacityRef vector) capacity''
 
 -- | Return the element count.
-vectorCount :: ProtoArraying m a => Vector m a -> m Int
+vectorCount :: ProtoArrayMonad m a => Vector m a -> m Int
 vectorCount vector = readProtoRef (vectorCountRef vector)
 
 -- | Add the specified element to the end of the vector.
-appendVector :: ProtoArraying m a => Vector m a -> a -> m ()          
+appendVector :: ProtoArrayMonad m a => Vector m a -> a -> m ()          
 appendVector vector item =
   do count <- readProtoRef (vectorCountRef vector)
      vectorEnsureCapacity vector (count + 1)
@@ -100,20 +100,20 @@ appendVector vector item =
      writeProtoRef (vectorCountRef vector) (count + 1)
 
 -- | Read a value from the vector, where indices are started from 0.
-readVector :: ProtoArraying m a => Vector m a -> Int -> m a
+readVector :: ProtoArrayMonad m a => Vector m a -> Int -> m a
 readVector vector index =
   do array <- readProtoRef (vectorArrayRef vector)
      readProtoArray array index
 
 -- | Set an array item at the specified index which is started from 0.
-writeVector :: ProtoArraying m a => Vector m a -> Int -> a -> m ()
+writeVector :: ProtoArrayMonad m a => Vector m a -> Int -> a -> m ()
 writeVector vector index item =
   do array <- readProtoRef (vectorArrayRef vector)
      writeProtoArray array index item
 
 -- | Return the index of the specified element using binary search; otherwise, 
 -- a negated insertion index minus one: 0 -> -0 - 1, ..., i -> -i - 1, ....
-vectorBinarySearch :: (ProtoArraying m a, Ord a) => Vector m a -> a -> m Int
+vectorBinarySearch :: (ProtoArrayMonad m a, Ord a) => Vector m a -> a -> m Int
 vectorBinarySearch vector item =
   do array <- readProtoRef (vectorArrayRef vector)
      count <- readProtoRef (vectorCountRef vector)
@@ -121,19 +121,19 @@ vectorBinarySearch vector item =
 
 -- | Return the index of the specified element using binary search
 -- within the specified range; otherwise, a negated insertion index minus one.
-vectorBinarySearchWithin :: (ProtoArraying m a, Ord a) => Vector m a -> a -> Int -> Int -> m Int
+vectorBinarySearchWithin :: (ProtoArrayMonad m a, Ord a) => Vector m a -> a -> Int -> Int -> m Int
 vectorBinarySearchWithin vector item left right =
   do array <- readProtoRef (vectorArrayRef vector)
      vectorBinarySearch' array item left right
 
 -- | Return the elements of the vector in an immutable array.
-freezeVector :: ProtoArraying m a => Vector m a -> m (Array Int a)
+freezeVector :: ProtoArrayMonad m a => Vector m a -> m (Array Int a)
 freezeVector vector =
   do array <- readProtoRef (vectorArrayRef vector)
      freezeProtoArray array
 
 -- | Insert the element in the vector at the specified index.
-vectorInsert :: ProtoArraying m a => Vector m a -> Int -> a -> m ()
+vectorInsert :: ProtoArrayMonad m a => Vector m a -> Int -> a -> m ()
 vectorInsert vector index item =
   do count <- readProtoRef (vectorCountRef vector)
      when (index < 0) $
@@ -153,7 +153,7 @@ vectorInsert vector index item =
      writeProtoRef (vectorCountRef vector) (count + 1)
 
 -- | Delete the element at the specified index.
-vectorDeleteAt :: ProtoArraying m a => Vector m a -> Int -> m ()
+vectorDeleteAt :: ProtoArrayMonad m a => Vector m a -> Int -> m ()
 vectorDeleteAt vector index =
   do count <- readProtoRef (vectorCountRef vector)
      when (index < 0) $
@@ -172,7 +172,7 @@ vectorDeleteAt vector index =
      writeProtoRef (vectorCountRef vector) (count - 1)
 
 -- | Return the index of the item or -1.
-vectorIndex :: (ProtoArraying m a, Eq a) => Vector m a -> a -> m Int
+vectorIndex :: (ProtoArrayMonad m a, Eq a) => Vector m a -> a -> m Int
 vectorIndex vector item =
   do count <- readProtoRef (vectorCountRef vector)
      array <- readProtoRef (vectorArrayRef vector)
@@ -185,7 +185,7 @@ vectorIndex vector item =
                      else loop $ index + 1
      loop 0
 
-vectorBinarySearch' :: (ProtoArraying m a, Ord a) => ProtoArray m a -> a -> Int -> Int -> m Int
+vectorBinarySearch' :: (ProtoArrayMonad m a, Ord a) => ProtoArray m a -> a -> Int -> Int -> m Int
 vectorBinarySearch' array item left right =
   if left > right 
   then return $ - (right + 1) - 1

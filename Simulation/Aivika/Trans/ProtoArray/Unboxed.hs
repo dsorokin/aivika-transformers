@@ -12,7 +12,7 @@
 -- It defines a prototype of all mutable unboxed arrays.
 --
 module Simulation.Aivika.Trans.ProtoArray.Unboxed
-       (ProtoArraying(..)) where
+       (ProtoArrayMonad(..)) where
 
 import Data.Array
 import Data.Array.IO.Safe
@@ -22,7 +22,7 @@ import Simulation.Aivika.Trans.ProtoRef
 
 -- | A monad within which computation we can create and work with
 -- the prototype of mutable unboxed arrays.
-class ProtoRefMonad m => ProtoArraying m a where
+class ProtoRefMonad m => ProtoArrayMonad m a where
   
   -- | A prototype of mutable unboxed array.
   data ProtoArray m :: * -> *
@@ -53,7 +53,7 @@ class ProtoRefMonad m => ProtoArraying m a where
   -- | Return the elements of the mutable array in an immutable array.
   freezeProtoArray :: ProtoArray m a -> m (Array Int a)
 
-instance MArray IOUArray a IO => ProtoArraying IO a where
+instance MArray IOUArray a IO => ProtoArrayMonad IO a where
 
   newtype ProtoArray IO a = ProtoArray (IOUArray Int a)
 

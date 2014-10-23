@@ -12,7 +12,7 @@
 -- It defines a prototype of all mutable arrays.
 --
 module Simulation.Aivika.Trans.ProtoArray
-       (ProtoArraying(..)) where
+       (ProtoArrayMonad(..)) where
 
 import Data.Array
 import Data.Array.IO.Safe
@@ -22,7 +22,7 @@ import Simulation.Aivika.Trans.ProtoRef
 
 -- | A monad within which computation we can create and work with
 -- the prototype of mutable arrays.
-class ProtoRefMonad m => ProtoArraying m where
+class ProtoRefMonad m => ProtoArrayMonad m where
   
   -- | A prototype of mutable array.
   data ProtoArray m :: * -> *
@@ -53,7 +53,7 @@ class ProtoRefMonad m => ProtoArraying m where
   -- | Return the elements of the mutable array in an immutable array.
   freezeProtoArray :: ProtoArray m a -> m (Array Int a)
 
-instance ProtoArraying IO where
+instance ProtoArrayMonad IO where
 
   newtype ProtoArray IO a = ProtoArray (IOArray Int a)
 
