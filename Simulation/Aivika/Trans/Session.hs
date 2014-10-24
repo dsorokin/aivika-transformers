@@ -20,7 +20,7 @@ import Data.IORef
 -- | A monad within which computation we can create and work with a simulation session.
 class (Functor m, Monad m) => SessionMonad m where
   
-  -- | A simulation session identifier.
+  -- | A simulation session.
   data Session m :: *
 
   -- | A marker that exists with the session and which can be compared for equality.
