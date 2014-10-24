@@ -24,7 +24,7 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Internal.Specs
 
 -- | A template-based implementation of the 'EventQueueing' class type.
-class ProtoMonad m => TemplateEventQueueing m 
+class ProtoMonadComp m => TemplateEventQueueing m 
 
 instance TemplateEventQueueing m => EventQueueing m where
 
@@ -59,7 +59,7 @@ instance TemplateEventQueueing m => EventQueueing m where
     Event $ PQ.queueCount . queuePQ . runEventQueue . pointRun
 
 -- | Process the pending events.
-processPendingEventsCore :: ProtoMonad m => Bool -> Dynamics m ()
+processPendingEventsCore :: ProtoMonadComp m => Bool -> Dynamics m ()
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -93,7 +93,7 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
                  call q p
 
 -- | Process the pending events synchronously, i.e. without past.
-processPendingEvents :: ProtoMonad m => Bool -> Dynamics m ()
+processPendingEvents :: ProtoMonadComp m => Bool -> Dynamics m ()
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -107,23 +107,23 @@ processPendingEvents includingCurrentEvents = Dynamics r where
   m = processPendingEventsCore includingCurrentEvents
 
 -- | A memoized value.
-processEventsIncludingCurrent :: ProtoMonad m => Dynamics m ()
+processEventsIncludingCurrent :: ProtoMonadComp m => Dynamics m ()
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
-processEventsIncludingEarlier :: ProtoMonad m => Dynamics m ()
+processEventsIncludingEarlier :: ProtoMonadComp m => Dynamics m ()
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
-processEventsIncludingCurrentCore :: ProtoMonad m => Dynamics m ()
+processEventsIncludingCurrentCore :: ProtoMonadComp m => Dynamics m ()
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
-processEventsIncludingEarlierCore :: ProtoMonad m => Dynamics m ()
+processEventsIncludingEarlierCore :: ProtoMonadComp m => Dynamics m ()
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
-processEvents :: ProtoMonad m => EventProcessing -> Dynamics m ()
+processEvents :: ProtoMonadComp m => EventProcessing -> Dynamics m ()
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
