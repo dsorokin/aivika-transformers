@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3
 --
--- It identfies a current simulation session usually associated with the current simulation run.
+-- It identifies a current simulation session usually associated with the current simulation run.
 --
 module Simulation.Aivika.Trans.Session
        (SessionMonad(..),
@@ -20,7 +20,7 @@ import Data.IORef
 -- | A monad within which computation we can create and work with a simulation session.
 class (Functor m, Monad m) => SessionMonad m where
   
-  -- | A simulation session.
+  -- | A simulation session identifier.
   data Session m :: *
 
   -- | A marker that exists with the session and which can be compared for equality.
