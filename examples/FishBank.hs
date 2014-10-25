@@ -1,10 +1,12 @@
 
 {-# LANGUAGE RecursiveDo #-}
 
+import Control.Monad.Fix
+
 import Data.Array
 
-import Simulation.Aivika
-import Simulation.Aivika.SystemDynamics
+import Simulation.Aivika.Trans
+import Simulation.Aivika.Trans.SystemDynamics
 
 specs = Specs { spcStartTime = 0, 
                 spcStopTime = 13, 
@@ -13,7 +15,7 @@ specs = Specs { spcStartTime = 0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
 
-model :: Simulation Results
+model :: (MonadComp m, MonadFix m) => Simulation m (Results m)
 model =
   mdo let annualProfit = profit
           area = 100
