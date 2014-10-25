@@ -1,10 +1,10 @@
 
 {-# LANGUAGE RecursiveDo #-}
 
-import Simulation.Aivika
-import Simulation.Aivika.SystemDynamics
+import Control.Monad.Fix
 
-import qualified Data.Vector as V
+import Simulation.Aivika.Trans
+import Simulation.Aivika.Trans.SystemDynamics
 
 specs = Specs { spcStartTime = 0, 
                 spcStopTime = 13, 
@@ -12,7 +12,7 @@ specs = Specs { spcStartTime = 0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
 
-model :: Simulation Results
+model :: (MonadComp m, MonadFix m) => Simulation m (Results m)
 model = 
   mdo a <- integ (- ka * a) 100
       b <- integ (ka * a - kb * b) 0
