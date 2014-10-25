@@ -62,6 +62,7 @@ import qualified Data.Array as A
 
 import System.IO
 
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Specs
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
@@ -71,21 +72,22 @@ import Simulation.Aivika.Trans.Results.Locale
 
 -- | This is a function that shows the simulation results within
 -- the 'Event' computation synchronized with the event queue.
-type ResultSourceShowS = ResultSource -> Event ShowS
+type ResultSourceShowS m = ResultSource m -> Event m ShowS
 
 -- | This is a function that prints the simulation results within
 -- the 'Event' computation synchronized with the event queue.
-type ResultSourcePrint = ResultSource -> Event ()
+type ResultSourcePrint m = ResultSource m -> Event m ()
 
 -- | Print a localised text representation of the results by the specified source
 -- and with the given indent.
-hPrintResultSourceIndented :: Handle
+hPrintResultSourceIndented :: (MonadComp m, MonadIO m)
+                              => Handle
                               -- ^ a handle
                               -> Int
                               -- ^ an indent
                               -> ResultLocalisation
                               -- ^ a localisation
-                              -> ResultSourcePrint
+                              -> ResultSourcePrint m
 hPrintResultSourceIndented h indent loc source@(ResultItemSource (ResultItem x)) =
   hPrintResultSourceIndentedLabelled h indent (resultItemName x) loc source
 hPrintResultSourceIndented h indent loc source@(ResultVectorSource x) =
@@ -97,7 +99,8 @@ hPrintResultSourceIndented h indent loc source@(ResultSeparatorSource x) =
 
 -- | Print an indented and labelled text representation of the results by
 -- the specified source.
-hPrintResultSourceIndentedLabelled :: Handle
+hPrintResultSourceIndentedLabelled :: (MonadComp m, MonadIO m)
+                                      => Handle
                                       -- ^ a handle
                                       -> Int
                                       -- ^ an indent
@@ -105,7 +108,7 @@ hPrintResultSourceIndentedLabelled :: Handle
                                       -- ^ a label
                                       -> ResultLocalisation
                                       -- ^ a localisation
-                                      -> ResultSourcePrint
+                                      -> ResultSourcePrint m
 hPrintResultSourceIndentedLabelled h indent label loc (ResultItemSource (ResultItem x)) =
   case resultValueData (resultItemToStringValue x) of
     Just m ->
@@ -167,50 +170,54 @@ hPrintResultSourceIndentedLabelled h indent label loc (ResultSeparatorSource x) 
 
 -- | Print a localised text representation of the results by the specified source
 -- and with the given indent.
-printResultSourceIndented :: Int
+printResultSourceIndented :: (MonadComp m, MonadIO m)
+                             => Int
                              -- ^ an indent
                              -> ResultLocalisation
                              -- ^ a localisation
-                             -> ResultSourcePrint
+                             -> ResultSourcePrint m
 printResultSourceIndented = hPrintResultSourceIndented stdout
 
 -- | Print a localised text representation of the results by the specified source.
-hPrintResultSource :: Handle
+hPrintResultSource :: (MonadComp m, MonadIO m)
+                      => Handle
                       -- ^ a handle
                       -> ResultLocalisation
                       -- ^ a localisation
-                      -> ResultSourcePrint
+                      -> ResultSourcePrint m
 hPrintResultSource h = hPrintResultSourceIndented h 0
 
 -- | Print a localised text representation of the results by the specified source.
-printResultSource :: ResultLocalisation
+printResultSource :: (MonadComp m, MonadIO m)
+                     => ResultLocalisation
                      -- ^ a localisation
-                     -> ResultSourcePrint
+                     -> ResultSourcePrint m
 printResultSource = hPrintResultSource stdout
 
 -- | Print in Russian a text representation of the results by the specified source.
-hPrintResultSourceInRussian :: Handle -> ResultSourcePrint
+hPrintResultSourceInRussian :: (MonadComp m, MonadIO m) => Handle -> ResultSourcePrint m
 hPrintResultSourceInRussian h = hPrintResultSource h russianResultLocalisation
 
 -- | Print in English a text representation of the results by the specified source.
-hPrintResultSourceInEnglish :: Handle -> ResultSourcePrint
+hPrintResultSourceInEnglish :: (MonadComp m, MonadIO m) => Handle -> ResultSourcePrint m
 hPrintResultSourceInEnglish h = hPrintResultSource h englishResultLocalisation
 
 -- | Print in Russian a text representation of the results by the specified source.
-printResultSourceInRussian :: ResultSourcePrint
+printResultSourceInRussian :: (MonadComp m, MonadIO m) => ResultSourcePrint m
 printResultSourceInRussian = hPrintResultSourceInRussian stdout
 
 -- | Print in English a text representation of the results by the specified source.
-printResultSourceInEnglish :: ResultSourcePrint
+printResultSourceInEnglish :: (MonadComp m, MonadIO m) => ResultSourcePrint m
 printResultSourceInEnglish = hPrintResultSourceInEnglish stdout
 
 -- | Show a localised text representation of the results by the specified source
 -- and with the given indent.
-showResultSourceIndented :: Int
+showResultSourceIndented :: MonadComp m
+                            => Int
                             -- ^ an indent
                             -> ResultLocalisation
                             -- ^ a localisation
-                            -> ResultSourceShowS
+                            -> ResultSourceShowS m
 showResultSourceIndented indent loc source@(ResultItemSource (ResultItem x)) =
   showResultSourceIndentedLabelled indent (resultItemName x) loc source
 showResultSourceIndented indent loc source@(ResultVectorSource x) =
@@ -221,13 +228,14 @@ showResultSourceIndented indent loc source@(ResultSeparatorSource x) =
   showResultSourceIndentedLabelled indent (resultSeparatorText x) loc source
 
 -- | Show an indented and labelled text representation of the results by the specified source.
-showResultSourceIndentedLabelled :: Int
-                                   -- ^ an indent
-                                   -> String
-                                   -- ^ a label
-                                   -> ResultLocalisation
-                                   -- ^ a localisation
-                                   -> ResultSourceShowS
+showResultSourceIndentedLabelled :: MonadComp m
+                                    => Int
+                                    -- ^ an indent
+                                    -> String
+                                    -- ^ a label
+                                    -> ResultLocalisation
+                                    -- ^ a localisation
+                                    -> ResultSourceShowS m
 showResultSourceIndentedLabelled indent label loc (ResultItemSource (ResultItem x)) =
   case resultValueData (resultItemToStringValue x) of
     Just m ->
@@ -291,21 +299,22 @@ showResultSourceIndentedLabelled indent label loc (ResultSeparatorSource x) =
        showString "\n\n"
 
 -- | Show a localised text representation of the results by the specified source.
-showResultSource :: ResultLocalisation
+showResultSource :: MonadComp m
+                    => ResultLocalisation
                     -- ^ a localisation
-                    -> ResultSourceShowS
+                    -> ResultSourceShowS m
 showResultSource = showResultSourceIndented 0
 
 -- | Show in Russian a text representation of the results by the specified source.
-showResultSourceInRussian :: ResultSourceShowS
+showResultSourceInRussian :: MonadComp m => ResultSourceShowS m
 showResultSourceInRussian = showResultSource russianResultLocalisation
 
 -- | Show in English a text representation of the results by the specified source.
-showResultSourceInEnglish :: ResultSourceShowS
+showResultSourceInEnglish :: MonadComp m => ResultSourceShowS m
 showResultSourceInEnglish = showResultSource englishResultLocalisation
 
 -- | Print the results with the information about the modeling time.
-printResultsWithTime :: ResultSourcePrint -> Results -> Event ()
+printResultsWithTime :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Results m -> Event m ()
 printResultsWithTime print results =
   do let x1 = textResultSource "----------"
          x2 = timeResultSource
@@ -318,41 +327,41 @@ printResultsWithTime print results =
      -- print x3
 
 -- | Print the simulation results in start time.
-printResultsInStartTime :: ResultSourcePrint -> Results -> Simulation ()
+printResultsInStartTime :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
 printResultsInStartTime print results =
   runEventInStartTime $ printResultsWithTime print results
 
 -- | Print the simulation results in stop time.
-printResultsInStopTime :: ResultSourcePrint -> Results -> Simulation ()
+printResultsInStopTime :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
 printResultsInStopTime print results =
   runEventInStopTime $ printResultsWithTime print results
 
 -- | Print the simulation results in the integration time points.
-printResultsInIntegTimes :: ResultSourcePrint -> Results -> Simulation ()
+printResultsInIntegTimes :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
 printResultsInIntegTimes print results =
   do let loop (m : ms) = m >> loop ms
          loop [] = return ()
      ms <- runDynamicsInIntegTimes $ runEvent $
            printResultsWithTime print results
-     liftIO $ loop ms
+     liftComp $ loop ms
 
 -- | Print the simulation results in the specified time.
-printResultsInTime :: Double -> ResultSourcePrint -> Results -> Simulation ()
+printResultsInTime :: (MonadComp m, MonadIO m) => Double -> ResultSourcePrint m -> Results m -> Simulation m ()
 printResultsInTime t print results =
   runDynamicsInTime t $ runEvent $
   printResultsWithTime print results
 
 -- | Print the simulation results in the specified time points.
-printResultsInTimes :: [Double] -> ResultSourcePrint -> Results -> Simulation ()
+printResultsInTimes :: (MonadComp m, MonadIO m) => [Double] -> ResultSourcePrint m -> Results m -> Simulation m ()
 printResultsInTimes ts print results =
   do let loop (m : ms) = m >> loop ms
          loop [] = return ()
      ms <- runDynamicsInTimes ts $ runEvent $
            printResultsWithTime print results
-     liftIO $ loop ms
+     liftComp $ loop ms
 
 -- | Show the results with the information about the modeling time.
-showResultsWithTime :: ResultSourceShowS -> Results -> Event ShowS
+showResultsWithTime :: MonadComp m => ResultSourceShowS m -> Results m -> Event m ShowS
 showResultsWithTime f results =
   do let x1 = textResultSource "----------"
          x2 = timeResultSource
@@ -370,12 +379,12 @@ showResultsWithTime f results =
        -- y3
 
 -- | Show the simulation results in start time.
-showResultsInStartTime :: ResultSourceShowS -> Results -> Simulation ShowS
+showResultsInStartTime :: MonadComp m => ResultSourceShowS m -> Results m -> Simulation m ShowS
 showResultsInStartTime f results =
   runEventInStartTime $ showResultsWithTime f results
 
 -- | Show the simulation results in stop time.
-showResultsInStopTime :: ResultSourceShowS -> Results -> Simulation ShowS
+showResultsInStopTime :: MonadComp m => ResultSourceShowS m -> Results m -> Simulation m ShowS
 showResultsInStopTime f results =
   runEventInStopTime $ showResultsWithTime f results
 
@@ -383,16 +392,16 @@ showResultsInStopTime f results =
 --
 -- It may consume much memory, for we have to traverse all the integration
 -- points to create the resulting function within the 'Simulation' computation.
-showResultsInIntegTimes :: ResultSourceShowS -> Results -> Simulation ShowS
+showResultsInIntegTimes :: MonadComp m => ResultSourceShowS m -> Results m -> Simulation m ShowS
 showResultsInIntegTimes f results =
   do let loop (m : ms) = return (.) `ap` m `ap` loop ms
          loop [] = return id
      ms <- runDynamicsInIntegTimes $ runEvent $
            showResultsWithTime f results
-     liftIO $ loop ms
+     liftComp $ loop ms
 
 -- | Show the simulation results in the specified time point.
-showResultsInTime :: Double -> ResultSourceShowS -> Results -> Simulation ShowS
+showResultsInTime :: MonadComp m => Double -> ResultSourceShowS m -> Results m -> Simulation m ShowS
 showResultsInTime t f results =
   runDynamicsInTime t $ runEvent $
   showResultsWithTime f results
@@ -401,52 +410,52 @@ showResultsInTime t f results =
 --
 -- It may consume much memory, for we have to traverse all the specified
 -- points to create the resulting function within the 'Simulation' computation.
-showResultsInTimes :: [Double] -> ResultSourceShowS -> Results -> Simulation ShowS
+showResultsInTimes :: MonadComp m => [Double] -> ResultSourceShowS m -> Results m -> Simulation m ShowS
 showResultsInTimes ts f results =
   do let loop (m : ms) = return (.) `ap` m `ap` loop ms
          loop [] = return id
      ms <- runDynamicsInTimes ts $ runEvent $
            showResultsWithTime f results
-     liftIO $ loop ms
+     liftComp $ loop ms
 
 -- | Run the simulation and then print the results in the start time.
-printSimulationResultsInStartTime :: ResultSourcePrint -> Simulation Results -> Specs -> IO ()
+printSimulationResultsInStartTime :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 printSimulationResultsInStartTime print model specs =
   flip runSimulation specs $
   model >>= printResultsInStartTime print
 
 -- | Run the simulation and then print the results in the final time.
-printSimulationResultsInStopTime :: ResultSourcePrint -> Simulation Results -> Specs -> IO ()
+printSimulationResultsInStopTime :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 printSimulationResultsInStopTime print model specs =
   flip runSimulation specs $
   model >>= printResultsInStopTime print
 
 -- | Run the simulation and then print the results in the integration time points.
-printSimulationResultsInIntegTimes :: ResultSourcePrint -> Simulation Results -> Specs -> IO ()
+printSimulationResultsInIntegTimes :: (MonadComp m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 printSimulationResultsInIntegTimes print model specs =
   flip runSimulation specs $
   model >>= printResultsInIntegTimes print
 
 -- | Run the simulation and then print the results in the specified time point.
-printSimulationResultsInTime :: Double -> ResultSourcePrint -> Simulation Results -> Specs -> IO ()
+printSimulationResultsInTime :: (MonadComp m, MonadIO m) => Double -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 printSimulationResultsInTime t print model specs =
   flip runSimulation specs $
   model >>= printResultsInTime t print
 
 -- | Run the simulation and then print the results in the specified time points.
-printSimulationResultsInTimes :: [Double] -> ResultSourcePrint -> Simulation Results -> Specs -> IO ()
+printSimulationResultsInTimes :: (MonadComp m, MonadIO m) => [Double] -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 printSimulationResultsInTimes ts print model specs =
   flip runSimulation specs $
   model >>= printResultsInTimes ts print
 
 -- | Run the simulation and then show the results in the start time.
-showSimulationResultsInStartTime :: ResultSourceShowS -> Simulation Results -> Specs -> IO ShowS
+showSimulationResultsInStartTime :: MonadComp m => ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
 showSimulationResultsInStartTime f model specs =
   flip runSimulation specs $
   model >>= showResultsInStartTime f
 
 -- | Run the simulation and then show the results in the final time.
-showSimulationResultsInStopTime :: ResultSourceShowS -> Simulation Results -> Specs -> IO ShowS
+showSimulationResultsInStopTime :: MonadComp m => ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
 showSimulationResultsInStopTime f model specs =
   flip runSimulation specs $
   model >>= showResultsInStopTime f
@@ -455,13 +464,13 @@ showSimulationResultsInStopTime f model specs =
 --
 -- It may consume much memory, for we have to traverse all the integration
 -- points to create the resulting function within the 'IO' computation.
-showSimulationResultsInIntegTimes :: ResultSourceShowS -> Simulation Results -> Specs -> IO ShowS
+showSimulationResultsInIntegTimes :: MonadComp m => ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
 showSimulationResultsInIntegTimes f model specs =
   flip runSimulation specs $
   model >>= showResultsInIntegTimes f
 
 -- | Run the simulation and then show the results in the integration time point.
-showSimulationResultsInTime :: Double -> ResultSourceShowS -> Simulation Results -> Specs -> IO ShowS
+showSimulationResultsInTime :: MonadComp m => Double -> ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
 showSimulationResultsInTime t f model specs =
   flip runSimulation specs $
   model >>= showResultsInTime t f
@@ -470,7 +479,7 @@ showSimulationResultsInTime t f model specs =
 --
 -- It may consume much memory, for we have to traverse all the specified
 -- points to create the resulting function within the 'IO' computation.
-showSimulationResultsInTimes :: [Double] -> ResultSourceShowS -> Simulation Results -> Specs -> IO ShowS
+showSimulationResultsInTimes :: MonadComp m => [Double] -> ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
 showSimulationResultsInTimes ts f model specs =
   flip runSimulation specs $
   model >>= showResultsInTimes ts f

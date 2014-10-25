@@ -74,9 +74,9 @@ library
                      Simulation.Aivika.Trans.Ref
                      Simulation.Aivika.Trans.Ref.Plain
                      Simulation.Aivika.Trans.Resource
-                     -- Simulation.Aivika.Trans.Results.Locale
-                     -- Simulation.Aivika.Trans.Results
-                     -- Simulation.Aivika.Trans.Results.IO
+                     Simulation.Aivika.Trans.Results.Locale
+                     Simulation.Aivika.Trans.Results
+                     Simulation.Aivika.Trans.Results.IO
                      Simulation.Aivika.Trans.Session
                      Simulation.Aivika.Trans.Server
                      Simulation.Aivika.Trans.Signal
