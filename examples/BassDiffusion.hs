@@ -8,7 +8,7 @@ import Data.Array
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika
+import Simulation.Aivika.Trans
 
 n = 500    -- the number of agents
 
@@ -22,11 +22,11 @@ specs = Specs { spcStartTime = 0.0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
 
-data Person = Person { personAgent :: Agent,
-                       personPotentialAdopter :: AgentState,
-                       personAdopter :: AgentState }
+data Person m = Person { personAgent :: Agent m,
+                         personPotentialAdopter :: AgentState m,
+                         personAdopter :: AgentState m }
               
-createPerson :: Simulation Person              
+createPerson :: MonadComp m => Simulation m (Person m) 
 createPerson =    
   do agent <- newAgent
      potentialAdopter <- newState agent
@@ -35,14 +35,14 @@ createPerson =
                      personPotentialAdopter = potentialAdopter,
                      personAdopter = adopter }
        
-createPersons :: Simulation (Array Int Person)
+createPersons :: MonadComp m => Simulation m (Array Int (Person m))
 createPersons =
   do list <- forM [1 .. n] $ \i ->
        do p <- createPerson
           return (i, p)
      return $ array (1, n) list
      
-definePerson :: Person -> Array Int Person -> Ref Int -> Ref Int -> Simulation ()
+definePerson :: MonadComp m => Person m -> Array Int (Person m) -> Ref m Int -> Ref m Int -> Simulation m ()
 definePerson p ps potentialAdopters adopters =
   do setStateActivation (personPotentialAdopter p) $
        do modifyRef potentialAdopters $ \a -> a + 1
@@ -71,19 +71,19 @@ definePerson p ps potentialAdopters adopters =
      setStateDeactivation (personAdopter p) $
        modifyRef adopters $ \a -> a - 1
         
-definePersons :: Array Int Person -> Ref Int -> Ref Int -> Simulation ()
+definePersons :: MonadComp m => Array Int (Person m) -> Ref m Int -> Ref m Int -> Simulation m ()
 definePersons ps potentialAdopters adopters =
   forM_ (elems ps) $ \p -> 
   definePerson p ps potentialAdopters adopters
                                
-activatePerson :: Person -> Event ()
+activatePerson :: MonadComp m => Person m -> Event m ()
 activatePerson p = selectState (personPotentialAdopter p)
 
-activatePersons :: Array Int Person -> Event ()
+activatePersons :: MonadComp m => Array Int (Person m) -> Event m ()
 activatePersons ps =
   forM_ (elems ps) $ \p -> activatePerson p
 
-model :: Simulation Results
+model :: MonadComp m => Simulation m (Results m)
 model =
   do potentialAdopters <- newRef 0
      adopters <- newRef 0
