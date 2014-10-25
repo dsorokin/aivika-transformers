@@ -1,5 +1,5 @@
 
-{-# LANGUAGE CPP, FlexibleContexts, FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
+{-# LANGUAGE CPP, FlexibleContexts, FlexibleInstances, UndecidableInstances, ExistentialQuantification, MultiParamTypeClasses, FunctionalDependencies #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Results
@@ -22,10 +22,10 @@ module Simulation.Aivika.Trans.Results
         resultSummary,
         resultByName,
         resultByProperty,
+        resultById,
         resultByIndex,
         resultBySubscript,
         ResultComputing(..),
-        ResultComputation(..),
         ResultListWithSubscript(..),
         ResultArrayWithSubscript(..),
 #ifndef __HASTE__
@@ -117,6 +117,7 @@ import Data.Ix
 import Data.Maybe
 import Data.Monoid
 
+import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
@@ -125,7 +126,7 @@ import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Statistics.Accumulator
 import Simulation.Aivika.Trans.Ref
-import qualified Simulation.Aivika.Trans.Ref.Light as LR
+import qualified Simulation.Aivika.Trans.Ref.Plain as LR
 import Simulation.Aivika.Trans.Var
 import Simulation.Aivika.Trans.QueueStrategy
 import qualified Simulation.Aivika.Trans.Queue as Q
@@ -139,158 +140,158 @@ type ResultName = String
 
 -- | Represents a provider of the simulation results. It is usually something, or
 -- an array of something, or a list of such values which can be simulated to get data.
-class ResultProvider p where
+class MonadComp m => ResultProvider p m | p -> m where
   
   -- | Return the source of simulation results by the specified name, description and provider. 
-  resultSource :: ResultName -> ResultDescription -> p -> ResultSource
+  resultSource :: ResultName -> ResultDescription -> p -> ResultSource m
   resultSource name descr = resultSource' name (UserDefinedResultId descr)
 
   -- | Return the source of simulation results by the specified name, identifier and provider. 
-  resultSource' :: ResultName -> ResultId -> p -> ResultSource
+  resultSource' :: ResultName -> ResultId -> p -> ResultSource m
 
 -- | It associates the result sources with their names.
-type ResultSourceMap = M.Map ResultName ResultSource
+type ResultSourceMap m = M.Map ResultName (ResultSource m)
 
 -- | Encapsulates the result source.
-data ResultSource = ResultItemSource ResultItem
-                    -- ^ The source consisting of a single item.
-                  | ResultObjectSource ResultObject
-                    -- ^ An object-like source.
-                  | ResultVectorSource ResultVector
-                    -- ^ A vector-like structure.
-                  | ResultSeparatorSource ResultSeparator
-                    -- ^ This is a separator text.
+data ResultSource m = ResultItemSource (ResultItem m)
+                      -- ^ The source consisting of a single item.
+                    | ResultObjectSource (ResultObject m)
+                      -- ^ An object-like source.
+                    | ResultVectorSource (ResultVector m)
+                      -- ^ A vector-like structure.
+                    | ResultSeparatorSource ResultSeparator
+                      -- ^ This is a separator text.
 
 -- | The simulation results represented by a single item.
-data ResultItem = forall a. ResultItemable a => ResultItem a
+data ResultItem m = forall a. ResultItemable a => ResultItem (a m)
 
 -- | Represents a type class for actual representing the items.
 class ResultItemable a where
 
   -- | The item name.
-  resultItemName :: a -> ResultName
+  resultItemName :: a m -> ResultName
   
   -- | The item identifier.
-  resultItemId :: a -> ResultId
+  resultItemId :: a m -> ResultId
 
   -- | Whether the item emits a signal.
-  resultItemSignal :: a -> ResultSignal
+  resultItemSignal :: MonadComp m => a m -> ResultSignal m
 
   -- | Return an expanded version of the item, for example,
   -- when the statistics item is exanded to an object
   -- having the corresponded properties for count, average,
   -- deviation, minimum, maximum and so on.
-  resultItemExpansion :: a -> ResultSource
+  resultItemExpansion :: MonadComp m => a m -> ResultSource m
   
   -- | Return usually a short version of the item, i.e. its summary,
   -- but values of some data types such as statistics can be
   -- implicitly expanded to an object with the corresponded
   -- properties.
-  resultItemSummary :: a -> ResultSource
+  resultItemSummary :: MonadComp m => a m -> ResultSource m
   
   -- | Return integer numbers in time points.
-  resultItemToIntValue :: a -> ResultValue Int
+  resultItemToIntValue :: MonadComp m => a m -> ResultValue Int m
 
   -- | Return lists of integer numbers in time points. 
-  resultItemToIntListValue :: a -> ResultValue [Int]
+  resultItemToIntListValue :: MonadComp m => a m -> ResultValue [Int] m
 
   -- | Return statistics based on integer numbers.
-  resultItemToIntStatsValue :: a -> ResultValue (SamplingStats Int)
+  resultItemToIntStatsValue :: MonadComp m => a m -> ResultValue (SamplingStats Int) m
 
   -- | Return timing statistics based on integer numbers.
-  resultItemToIntTimingStatsValue :: a -> ResultValue (TimingStats Int)
+  resultItemToIntTimingStatsValue :: MonadComp m => a m -> ResultValue (TimingStats Int) m
 
   -- | Return double numbers in time points.
-  resultItemToDoubleValue :: a -> ResultValue Double
+  resultItemToDoubleValue :: MonadComp m => a m -> ResultValue Double m
   
   -- | Return lists of double numbers in time points. 
-  resultItemToDoubleListValue :: a -> ResultValue [Double]
+  resultItemToDoubleListValue :: MonadComp m => a m -> ResultValue [Double] m
 
   -- | Return statistics based on double numbers.
-  resultItemToDoubleStatsValue :: a -> ResultValue (SamplingStats Double)
+  resultItemToDoubleStatsValue :: MonadComp m => a m -> ResultValue (SamplingStats Double) m
 
   -- | Return timing statistics based on integer numbers.
-  resultItemToDoubleTimingStatsValue :: a -> ResultValue (TimingStats Double)
+  resultItemToDoubleTimingStatsValue :: MonadComp m => a m -> ResultValue (TimingStats Double) m
 
   -- | Return string representations in time points.
-  resultItemToStringValue :: a -> ResultValue String
+  resultItemToStringValue :: MonadComp m => a m -> ResultValue String m
 
 -- | Return a version optimised for fast aggregation of the statistics based on integer numbers.
-resultItemToIntStatsEitherValue :: ResultItemable a => a -> ResultValue (Either Int (SamplingStats Int))
+resultItemToIntStatsEitherValue :: (MonadComp m, ResultItemable a) => a m -> ResultValue (Either Int (SamplingStats Int)) m
 resultItemToIntStatsEitherValue x =
   case resultValueData x1 of
-    Just a1 -> fmap Left x1
+    Just a1 -> mapResultValue Left x1
     Nothing ->
       case resultValueData x2 of
-        Just a2 -> fmap Right x2
+        Just a2 -> mapResultValue Right x2
         Nothing -> voidResultValue x2
   where
     x1 = resultItemToIntValue x
     x2 = resultItemToIntStatsValue x
 
 -- | Return a version optimised for fast aggregation of the statistics based on double floating point numbers.
-resultItemToDoubleStatsEitherValue :: ResultItemable a => a -> ResultValue (Either Double (SamplingStats Double))
+resultItemToDoubleStatsEitherValue :: (MonadComp m, ResultItemable a) => a m -> ResultValue (Either Double (SamplingStats Double)) m
 resultItemToDoubleStatsEitherValue x =
   case resultValueData x1 of
-    Just a1 -> fmap Left x1
+    Just a1 -> mapResultValue Left x1
     Nothing ->
       case resultValueData x2 of
-        Just a2 -> fmap Right x2
+        Just a2 -> mapResultValue Right x2
         Nothing -> voidResultValue x2
   where
     x1 = resultItemToDoubleValue x
     x2 = resultItemToDoubleStatsValue x
 
 -- | The simulation results represented by an object having properties.
-data ResultObject =
+data ResultObject m =
   ResultObject { resultObjectName :: ResultName,
                  -- ^ The object name.
                  resultObjectId :: ResultId,
                  -- ^ The object identifier.
                  resultObjectTypeId :: ResultId,
                  -- ^ The object type identifier.
-                 resultObjectProperties :: [ResultProperty],
+                 resultObjectProperties :: [ResultProperty m],
                  -- ^ The object properties.
-                 resultObjectSignal :: ResultSignal,
+                 resultObjectSignal :: ResultSignal m,
                  -- ^ A combined signal if present.
-                 resultObjectSummary :: ResultSource
+                 resultObjectSummary :: ResultSource m
                  -- ^ A short version of the object, i.e. its summary.
                }
 
 -- | The object property containing the simulation results.
-data ResultProperty =
+data ResultProperty m =
   ResultProperty { resultPropertyLabel :: ResultName,
                    -- ^ The property short label.
                    resultPropertyId :: ResultId,
                    -- ^ The property identifier.
-                   resultPropertySource :: ResultSource
+                   resultPropertySource :: ResultSource m
                    -- ^ The simulation results supplied by the property.
                  }
 
 -- | The simulation results represented by a vector.
-data ResultVector =
+data ResultVector m =
   ResultVector { resultVectorName :: ResultName,
                  -- ^ The vector name.
                  resultVectorId :: ResultId,
                  -- ^ The vector identifier.
-                 resultVectorItems :: A.Array Int ResultSource,
+                 resultVectorItems :: A.Array Int (ResultSource m),
                  -- ^ The results supplied by the vector items.
                  resultVectorSubscript :: A.Array Int ResultName,
                  -- ^ The subscript used as a suffix to create item names.
-                 resultVectorSignal :: ResultSignal,
+                 resultVectorSignal :: ResultSignal m,
                  -- ^ A combined signal if present.
-                 resultVectorSummary :: ResultSource
+                 resultVectorSummary :: ResultSource m
                  -- ^ A short version of the vector, i.e. summary.
                }
 
 -- | Calculate the result vector signal and memoize it in a new vector.
-memoResultVectorSignal :: ResultVector -> ResultVector
+memoResultVectorSignal :: MonadComp m => ResultVector m -> ResultVector m
 memoResultVectorSignal x =
   x { resultVectorSignal =
          foldr (<>) mempty $ map resultSourceSignal $ A.elems $ resultVectorItems x }
 
 -- | Calculate the result vector summary and memoize it in a new vector.
-memoResultVectorSummary :: ResultVector -> ResultVector
+memoResultVectorSummary :: MonadComp m => ResultVector m -> ResultVector m
 memoResultVectorSummary x =
   x { resultVectorSummary =
          ResultVectorSource $
@@ -308,52 +309,52 @@ data ResultSeparator =
                   }
 
 -- | A parameterised value that actually represents a generalised result item that have no parametric type.
-data ResultValue e =
+data ResultValue e m =
   ResultValue { resultValueName :: ResultName,
                 -- ^ The value name.
                 resultValueId :: ResultId,
                 -- ^ The value identifier.
-                resultValueData :: ResultData e,
+                resultValueData :: ResultData e m,
                 -- ^ Simulation data supplied by the value.
-                resultValueSignal :: ResultSignal
+                resultValueSignal :: ResultSignal m
                 -- ^ Whether the value emits a signal when changing simulation data.
               }
 
-instance Functor ResultValue where
-  fmap f x = x { resultValueData = fmap (fmap f) (resultValueData x) }
+mapResultValue :: MonadComp m => (a -> b) -> ResultValue a m -> ResultValue b m
+mapResultValue f x = x { resultValueData = fmap (fmap f) (resultValueData x) }
 
 -- | Return a new value with the discarded simulation results.
-voidResultValue :: ResultValue a -> ResultValue b
+voidResultValue :: ResultValue a m -> ResultValue b m
 voidResultValue x = x { resultValueData = Nothing }
 
 -- | A container of the simulation results such as queue, server or array.
-data ResultContainer e =
+data ResultContainer e m =
   ResultContainer { resultContainerName :: ResultName,
                     -- ^ The container name.
                     resultContainerId :: ResultId,
                     -- ^ The container identifier.
                     resultContainerData :: e,
                     -- ^ The container data.
-                    resultContainerSignal :: ResultSignal
+                    resultContainerSignal :: ResultSignal m
                     -- ^ Whether the container emits a signal when changing simulation data.
                   }
 
-instance Functor ResultContainer where
-  fmap f x = x { resultContainerData = f (resultContainerData x) }
+mapResultContainer :: (a -> b) -> ResultContainer a m -> ResultContainer b m
+mapResultContainer f x = x { resultContainerData = f (resultContainerData x) }
 
 -- | Create a new property source by the specified container.
 resultContainerPropertySource :: ResultItemable (ResultValue b)
-                                 => ResultContainer a
+                                 => ResultContainer a m
                                  -- ^ the container
                                  -> ResultName
                                  -- ^ the property label
                                  -> ResultId
                                  -- ^ the property identifier
-                                 -> (a -> ResultData b)
+                                 -> (a -> ResultData b m)
                                  -- ^ get the specified data from the container
-                                 -> (a -> ResultSignal)
+                                 -> (a -> ResultSignal m)
                                  -- ^ get the data signal from the container
-                                 -> ResultSource
+                                 -> ResultSource m
 resultContainerPropertySource cont name i f g =
   ResultItemSource $
   ResultItem $
@@ -364,8 +365,9 @@ resultContainerPropertySource cont name i f g =
     resultValueSignal = g (resultContainerData cont) }
 
 -- | Create a constant property by the specified container.
-resultContainerConstProperty :: ResultItemable (ResultValue b)
-                                => ResultContainer a
+resultContainerConstProperty :: (MonadComp m,
+                                 ResultItemable (ResultValue b))
+                                => ResultContainer a m
                                 -- ^ the container
                                 -> ResultName
                                 -- ^ the property label
@@ -373,7 +375,7 @@ resultContainerConstProperty :: ResultItemable (ResultValue b)
                                 -- ^ the property identifier
                                 -> (a -> b)
                                 -- ^ get the specified data from the container
-                                -> ResultProperty
+                                -> ResultProperty m
 resultContainerConstProperty cont name i f =
   ResultProperty {
     resultPropertyLabel = name,
@@ -382,16 +384,17 @@ resultContainerConstProperty cont name i f =
       resultContainerPropertySource cont name i (Just . return . f) (const EmptyResultSignal) }
   
 -- | Create by the specified container a property that changes in the integration time points, or it is supposed to be such one.
-resultContainerIntegProperty :: ResultItemable (ResultValue b)
-                                => ResultContainer a
+resultContainerIntegProperty :: (MonadComp m,
+                                 ResultItemable (ResultValue b))
+                                => ResultContainer a m
                                 -- ^ the container
                                 -> ResultName
                                 -- ^ the property label
                                 -> ResultId
                                 -- ^ the property identifier
-                                -> (a -> Event b)
+                                -> (a -> Event m b)
                                 -- ^ get the specified data from the container
-                             -> ResultProperty
+                                -> ResultProperty m
 resultContainerIntegProperty cont name i f =
   ResultProperty {
     resultPropertyLabel = name,
@@ -400,18 +403,19 @@ resultContainerIntegProperty cont name i f =
       resultContainerPropertySource cont name i (Just . f) (const UnknownResultSignal) }
   
 -- | Create a property by the specified container.
-resultContainerProperty :: ResultItemable (ResultValue b)
-                           => ResultContainer a
+resultContainerProperty :: (MonadComp m,
+                            ResultItemable (ResultValue b))
+                           => ResultContainer a m
                            -- ^ the container
                            -> ResultName
                            -- ^ the property label
                            -> ResultId
                            -- ^ the property identifier
-                           -> (a -> Event b)
+                           -> (a -> Event m b)
                            -- ^ get the specified data from the container
-                           -> (a -> Signal ())
+                           -> (a -> Signal m ())
                            -- ^ get a signal triggered when changing data.
-                           -> ResultProperty
+                           -> ResultProperty m
 resultContainerProperty cont name i f g =                     
   ResultProperty {
     resultPropertyLabel = name,
@@ -420,8 +424,9 @@ resultContainerProperty cont name i f g =
       resultContainerPropertySource cont name i (Just . f) (ResultSignal . g) }
 
 -- | Create by the specified container a mapped property which is recomputed each time again and again.
-resultContainerMapProperty :: ResultItemable (ResultValue b)
-                              => ResultContainer (ResultData a)
+resultContainerMapProperty :: (MonadComp m,
+                               ResultItemable (ResultValue b))
+                              => ResultContainer (ResultData a m) m
                               -- ^ the container
                               -> ResultName
                               -- ^ the property label
@@ -429,7 +434,7 @@ resultContainerMapProperty :: ResultItemable (ResultValue b)
                               -- ^ the property identifier
                               -> (a -> b)
                               -- ^ recompute the specified data
-                              -> ResultProperty
+                              -> ResultProperty m
 resultContainerMapProperty cont name i f =                     
   ResultProperty {
     resultPropertyLabel = name,
@@ -438,7 +443,7 @@ resultContainerMapProperty cont name i f =
       resultContainerPropertySource cont name i (fmap $ fmap f) (const $ resultContainerSignal cont) }
 
 -- | Convert the result value to a container with the specified object identifier. 
-resultValueToContainer :: ResultValue a -> ResultContainer (ResultData a)
+resultValueToContainer :: ResultValue a m -> ResultContainer (ResultData a m) m
 resultValueToContainer x =
   ResultContainer {
     resultContainerName   = resultValueName x,
@@ -447,7 +452,7 @@ resultValueToContainer x =
     resultContainerSignal = resultValueSignal x }
 
 -- | Convert the result container to a value.
-resultContainerToValue :: ResultContainer (ResultData a) -> ResultValue a
+resultContainerToValue :: ResultContainer (ResultData a m) m -> ResultValue a m
 resultContainerToValue x =
   ResultValue {
     resultValueName   = resultContainerName x,
@@ -456,19 +461,19 @@ resultContainerToValue x =
     resultValueSignal = resultContainerSignal x }
 
 -- | Represents the very simulation results.
-type ResultData e = Maybe (Event e)
+type ResultData e m = Maybe (Event m e)
 
 -- | Whether an object containing the results emits a signal notifying about change of data.
-data ResultSignal = EmptyResultSignal
-                    -- ^ There is no signal at all.
-                  | UnknownResultSignal
-                    -- ^ The signal is unknown, but the entity probably changes.
-                  | ResultSignal (Signal ())
-                    -- ^ When the signal is precisely specified.
-                  | ResultSignalMix (Signal ())
-                    -- ^ When the specified signal was combined with unknown signal.
+data ResultSignal m = EmptyResultSignal
+                      -- ^ There is no signal at all.
+                    | UnknownResultSignal
+                      -- ^ The signal is unknown, but the entity probably changes.
+                    | ResultSignal (Signal m ())
+                      -- ^ When the signal is precisely specified.
+                    | ResultSignalMix (Signal m ())
+                      -- ^ When the specified signal was combined with unknown signal.
 
-instance Monoid ResultSignal where
+instance MonadComp m => Monoid (ResultSignal m) where
 
   mempty = EmptyResultSignal
 
@@ -490,7 +495,7 @@ instance Monoid ResultSignal where
   mappend (ResultSignalMix x) (ResultSignalMix y) = ResultSignalMix (x <> y)
 
 -- | Construct a new result signal by the specified optional pure signal.
-maybeResultSignal :: Maybe (Signal ()) -> ResultSignal
+maybeResultSignal :: Maybe (Signal m ()) -> ResultSignal m
 maybeResultSignal (Just x) = ResultSignal x
 maybeResultSignal Nothing  = EmptyResultSignal
 
@@ -501,16 +506,16 @@ instance ResultItemable (ResultValue Int) where
   resultItemSignal = resultValueSignal
   
   resultItemToIntValue = id
-  resultItemToIntListValue = fmap return
-  resultItemToIntStatsValue = fmap returnSamplingStats
+  resultItemToIntListValue = mapResultValue return
+  resultItemToIntStatsValue = mapResultValue returnSamplingStats
   resultItemToIntTimingStatsValue = voidResultValue
 
-  resultItemToDoubleValue = fmap fromIntegral
-  resultItemToDoubleListValue = fmap (return . fromIntegral)
-  resultItemToDoubleStatsValue = fmap (returnSamplingStats . fromIntegral)
+  resultItemToDoubleValue = mapResultValue fromIntegral
+  resultItemToDoubleListValue = mapResultValue (return . fromIntegral)
+  resultItemToDoubleStatsValue = mapResultValue (returnSamplingStats . fromIntegral)
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -527,11 +532,11 @@ instance ResultItemable (ResultValue Double) where
   resultItemToIntTimingStatsValue = voidResultValue
   
   resultItemToDoubleValue = id
-  resultItemToDoubleListValue = fmap return
-  resultItemToDoubleStatsValue = fmap returnSamplingStats
+  resultItemToDoubleListValue = mapResultValue return
+  resultItemToDoubleStatsValue = mapResultValue returnSamplingStats
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -544,15 +549,15 @@ instance ResultItemable (ResultValue [Int]) where
   
   resultItemToIntValue = voidResultValue
   resultItemToIntListValue = id
-  resultItemToIntStatsValue = fmap listSamplingStats
+  resultItemToIntStatsValue = mapResultValue listSamplingStats
   resultItemToIntTimingStatsValue = voidResultValue
 
   resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = fmap (map fromIntegral)
-  resultItemToDoubleStatsValue = fmap (fromIntSamplingStats . listSamplingStats)
+  resultItemToDoubleListValue = mapResultValue (map fromIntegral)
+  resultItemToDoubleStatsValue = mapResultValue (fromIntSamplingStats . listSamplingStats)
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -570,10 +575,10 @@ instance ResultItemable (ResultValue [Double]) where
   
   resultItemToDoubleValue = voidResultValue
   resultItemToDoubleListValue = id
-  resultItemToDoubleStatsValue = fmap listSamplingStats
+  resultItemToDoubleStatsValue = mapResultValue listSamplingStats
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -591,10 +596,10 @@ instance ResultItemable (ResultValue (SamplingStats Int)) where
 
   resultItemToDoubleValue = voidResultValue
   resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = fmap fromIntSamplingStats
+  resultItemToDoubleStatsValue = mapResultValue fromIntSamplingStats
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = samplingStatsResultSource
   resultItemSummary = samplingStatsResultSummary
@@ -615,7 +620,7 @@ instance ResultItemable (ResultValue (SamplingStats Double)) where
   resultItemToDoubleStatsValue = id
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = samplingStatsResultSource
   resultItemSummary = samplingStatsResultSummary
@@ -634,14 +639,14 @@ instance ResultItemable (ResultValue (TimingStats Int)) where
   resultItemToDoubleValue = voidResultValue
   resultItemToDoubleListValue = voidResultValue
   resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = fmap fromIntTimingStats
+  resultItemToDoubleTimingStatsValue = mapResultValue fromIntTimingStats
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = timingStatsResultSource
   resultItemSummary = timingStatsResultSummary
 
-instance ResultItemable (ResultValue (TimingStats Double)) where
+instance ResultItemable (ResultValue  (TimingStats Double)) where
 
   resultItemName = resultValueName
   resultItemId = resultValueId
@@ -657,7 +662,7 @@ instance ResultItemable (ResultValue (TimingStats Double)) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = id
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
   
   resultItemExpansion = timingStatsResultSource
   resultItemSummary = timingStatsResultSummary
@@ -678,7 +683,7 @@ instance ResultItemable (ResultValue Bool) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -699,7 +704,7 @@ instance ResultItemable (ResultValue String) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -720,7 +725,7 @@ instance ResultItemable (ResultValue ()) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -741,7 +746,7 @@ instance ResultItemable (ResultValue FCFS) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -762,7 +767,7 @@ instance ResultItemable (ResultValue LCFS) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -783,7 +788,7 @@ instance ResultItemable (ResultValue SIRO) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -804,13 +809,13 @@ instance ResultItemable (ResultValue StaticPriorities) where
   resultItemToDoubleStatsValue = voidResultValue
   resultItemToDoubleTimingStatsValue = voidResultValue
 
-  resultItemToStringValue = fmap show
+  resultItemToStringValue = mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
 
 -- | Flatten the result source.
-flattenResultSource :: ResultSource -> [ResultItem]
+flattenResultSource :: ResultSource m -> [ResultItem m]
 flattenResultSource (ResultItemSource x) = [x]
 flattenResultSource (ResultObjectSource x) =
   concat $ map (flattenResultSource . resultPropertySource) $ resultObjectProperties x
@@ -819,14 +824,14 @@ flattenResultSource (ResultVectorSource x) =
 flattenResultSource (ResultSeparatorSource x) = []
 
 -- | Return the result source name.
-resultSourceName :: ResultSource -> ResultName
+resultSourceName :: ResultSource m -> ResultName
 resultSourceName (ResultItemSource (ResultItem x)) = resultItemName x
 resultSourceName (ResultObjectSource x) = resultObjectName x
 resultSourceName (ResultVectorSource x) = resultVectorName x
 resultSourceName (ResultSeparatorSource x) = []
 
 -- | Expand the result source returning a more detailed version expanding the properties as possible.
-expandResultSource :: ResultSource -> ResultSource
+expandResultSource :: MonadComp m => ResultSource m -> ResultSource m
 expandResultSource (ResultItemSource (ResultItem x)) = resultItemExpansion x
 expandResultSource (ResultObjectSource x) =
   ResultObjectSource $
@@ -843,86 +848,86 @@ expandResultSource (ResultVectorSource x) =
 expandResultSource z@(ResultSeparatorSource x) = z
 
 -- | Return a summarised and usually more short version of the result source expanding the main properties or excluding auxiliary properties if required.
-resultSourceSummary :: ResultSource -> ResultSource
+resultSourceSummary :: MonadComp m => ResultSource m -> ResultSource m
 resultSourceSummary (ResultItemSource (ResultItem x)) = resultItemSummary x
 resultSourceSummary (ResultObjectSource x) = resultObjectSummary x
 resultSourceSummary (ResultVectorSource x) = resultVectorSummary x
 resultSourceSummary z@(ResultSeparatorSource x) = z
 
 -- | Return a signal emitted by the source.
-resultSourceSignal :: ResultSource -> ResultSignal
+resultSourceSignal :: MonadComp m => ResultSource m -> ResultSignal m
 resultSourceSignal (ResultItemSource (ResultItem x)) = resultItemSignal x
 resultSourceSignal (ResultObjectSource x) = resultObjectSignal x
 resultSourceSignal (ResultVectorSource x) = resultVectorSignal x
 resultSourceSignal (ResultSeparatorSource x) = EmptyResultSignal
 
 -- | Represent the result source as integer numbers.
-resultSourceToIntValues :: ResultSource -> [ResultValue Int]
+resultSourceToIntValues :: MonadComp m => ResultSource m -> [ResultValue Int m]
 resultSourceToIntValues = map (\(ResultItem x) -> resultItemToIntValue x) . flattenResultSource
 
 -- | Represent the result source as lists of integer numbers.
-resultSourceToIntListValues :: ResultSource -> [ResultValue [Int]]
+resultSourceToIntListValues :: MonadComp m => ResultSource m -> [ResultValue [Int] m]
 resultSourceToIntListValues = map (\(ResultItem x) -> resultItemToIntListValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on integer numbers.
-resultSourceToIntStatsValues :: ResultSource -> [ResultValue (SamplingStats Int)]
+resultSourceToIntStatsValues :: MonadComp m => ResultSource m -> [ResultValue (SamplingStats Int) m]
 resultSourceToIntStatsValues = map (\(ResultItem x) -> resultItemToIntStatsValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on integer numbers and optimised for fast aggregation.
-resultSourceToIntStatsEitherValues :: ResultSource -> [ResultValue (Either Int (SamplingStats Int))]
+resultSourceToIntStatsEitherValues :: MonadComp m => ResultSource m -> [ResultValue (Either Int (SamplingStats Int)) m]
 resultSourceToIntStatsEitherValues = map (\(ResultItem x) -> resultItemToIntStatsEitherValue x) . flattenResultSource
 
 -- | Represent the result source as timing statistics based on integer numbers.
-resultSourceToIntTimingStatsValues :: ResultSource -> [ResultValue (TimingStats Int)]
+resultSourceToIntTimingStatsValues :: MonadComp m => ResultSource m -> [ResultValue (TimingStats Int) m]
 resultSourceToIntTimingStatsValues = map (\(ResultItem x) -> resultItemToIntTimingStatsValue x) . flattenResultSource
 
 -- | Represent the result source as double floating point numbers.
-resultSourceToDoubleValues :: ResultSource -> [ResultValue Double]
+resultSourceToDoubleValues :: MonadComp m => ResultSource m -> [ResultValue Double m]
 resultSourceToDoubleValues = map (\(ResultItem x) -> resultItemToDoubleValue x) . flattenResultSource
 
 -- | Represent the result source as lists of double floating point numbers.
-resultSourceToDoubleListValues :: ResultSource -> [ResultValue [Double]]
+resultSourceToDoubleListValues :: MonadComp m => ResultSource m -> [ResultValue [Double] m]
 resultSourceToDoubleListValues = map (\(ResultItem x) -> resultItemToDoubleListValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on double floating point numbers.
-resultSourceToDoubleStatsValues :: ResultSource -> [ResultValue (SamplingStats Double)]
+resultSourceToDoubleStatsValues :: MonadComp m => ResultSource m -> [ResultValue (SamplingStats Double) m]
 resultSourceToDoubleStatsValues = map (\(ResultItem x) -> resultItemToDoubleStatsValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on double floating point numbers and optimised for fast aggregation.
-resultSourceToDoubleStatsEitherValues :: ResultSource -> [ResultValue (Either Double (SamplingStats Double))]
+resultSourceToDoubleStatsEitherValues :: MonadComp m => ResultSource m -> [ResultValue (Either Double (SamplingStats Double)) m]
 resultSourceToDoubleStatsEitherValues = map (\(ResultItem x) -> resultItemToDoubleStatsEitherValue x) . flattenResultSource
 
 -- | Represent the result source as timing statistics based on double floating point numbers.
-resultSourceToDoubleTimingStatsValues :: ResultSource -> [ResultValue (TimingStats Double)]
+resultSourceToDoubleTimingStatsValues :: MonadComp m => ResultSource m -> [ResultValue (TimingStats Double) m]
 resultSourceToDoubleTimingStatsValues = map (\(ResultItem x) -> resultItemToDoubleTimingStatsValue x) . flattenResultSource
 
 -- | Represent the result source as string values.
-resultSourceToStringValues :: ResultSource -> [ResultValue String]
+resultSourceToStringValues :: MonadComp m => ResultSource m -> [ResultValue String m]
 resultSourceToStringValues = map (\(ResultItem x) -> resultItemToStringValue x) . flattenResultSource
 
 -- | It contains the results of simulation.
-data Results =
-  Results { resultSourceMap :: ResultSourceMap,
+data Results m =
+  Results { resultSourceMap :: ResultSourceMap m,
             -- ^ The sources of simulation results as a map of associated names.
-            resultSourceList :: [ResultSource]
+            resultSourceList :: [ResultSource m]
             -- ^ The sources of simulation results as an ordered list.
           }
 
 -- | It transforms the results of simulation.
-type ResultTransform = Results -> Results
+type ResultTransform m = Results m -> Results m
 
 -- | It representes the predefined signals provided by every simulation model.
-data ResultPredefinedSignals =
-  ResultPredefinedSignals { resultSignalInIntegTimes :: Signal Double,
+data ResultPredefinedSignals m =
+  ResultPredefinedSignals { resultSignalInIntegTimes :: Signal m Double,
                             -- ^ The signal triggered in the integration time points.
-                            resultSignalInStartTime :: Signal Double,
+                            resultSignalInStartTime :: Signal m Double,
                             -- ^ The signal triggered in the start time.
-                            resultSignalInStopTime :: Signal Double
+                            resultSignalInStopTime :: Signal m Double
                             -- ^ The signal triggered in the stop time.
                           }
 
 -- | Create the predefined signals provided by every simulation model.
-newResultPredefinedSignals :: Simulation ResultPredefinedSignals
+newResultPredefinedSignals :: MonadComp m => Simulation m (ResultPredefinedSignals m)
 newResultPredefinedSignals = runDynamicsInStartTime $ runEventWith EarlierEvents d where
   d = do signalInIntegTimes <- newSignalInIntegTimes
          signalInStartTime  <- newSignalInStartTime
@@ -931,78 +936,78 @@ newResultPredefinedSignals = runDynamicsInStartTime $ runEventWith EarlierEvents
                                           resultSignalInStartTime  = signalInStartTime,
                                           resultSignalInStopTime   = signalInStopTime }
 
-instance Monoid Results where
+instance Monoid (Results m) where
 
   mempty      = results mempty
   mappend x y = results $ resultSourceList x <> resultSourceList y
 
 -- | Prepare the simulation results.
-results :: [ResultSource] -> Results
+results :: [ResultSource m] -> Results m
 results ms =
   Results { resultSourceMap  = M.fromList $ map (\x -> (resultSourceName x, x)) ms,
             resultSourceList = ms }
 
 -- | Represent the results as integer numbers.
-resultsToIntValues :: Results -> [ResultValue Int]
+resultsToIntValues :: MonadComp m => Results m -> [ResultValue Int m]
 resultsToIntValues = concat . map resultSourceToIntValues . resultSourceList
 
 -- | Represent the results as lists of integer numbers.
-resultsToIntListValues :: Results -> [ResultValue [Int]]
+resultsToIntListValues :: MonadComp m => Results m -> [ResultValue [Int] m]
 resultsToIntListValues = concat . map resultSourceToIntListValues . resultSourceList
 
 -- | Represent the results as statistics based on integer numbers.
-resultsToIntStatsValues :: Results -> [ResultValue (SamplingStats Int)]
+resultsToIntStatsValues :: MonadComp m => Results m -> [ResultValue (SamplingStats Int) m]
 resultsToIntStatsValues = concat . map resultSourceToIntStatsValues . resultSourceList
 
 -- | Represent the results as statistics based on integer numbers and optimised for fast aggregation.
-resultsToIntStatsEitherValues :: Results -> [ResultValue (Either Int (SamplingStats Int))]
+resultsToIntStatsEitherValues :: MonadComp m => Results m -> [ResultValue (Either Int (SamplingStats Int)) m]
 resultsToIntStatsEitherValues = concat . map resultSourceToIntStatsEitherValues . resultSourceList
 
 -- | Represent the results as timing statistics based on integer numbers.
-resultsToIntTimingStatsValues :: Results -> [ResultValue (TimingStats Int)]
+resultsToIntTimingStatsValues :: MonadComp m => Results m -> [ResultValue (TimingStats Int) m]
 resultsToIntTimingStatsValues = concat . map resultSourceToIntTimingStatsValues . resultSourceList
 
 -- | Represent the results as double floating point numbers.
-resultsToDoubleValues :: Results -> [ResultValue Double]
+resultsToDoubleValues :: MonadComp m => Results m -> [ResultValue Double m]
 resultsToDoubleValues = concat . map resultSourceToDoubleValues . resultSourceList
 
 -- | Represent the results as lists of double floating point numbers.
-resultsToDoubleListValues :: Results -> [ResultValue [Double]]
+resultsToDoubleListValues :: MonadComp m => Results m -> [ResultValue [Double] m]
 resultsToDoubleListValues = concat . map resultSourceToDoubleListValues . resultSourceList
 
 -- | Represent the results as statistics based on double floating point numbers.
-resultsToDoubleStatsValues :: Results -> [ResultValue (SamplingStats Double)]
+resultsToDoubleStatsValues :: MonadComp m => Results m -> [ResultValue (SamplingStats Double) m]
 resultsToDoubleStatsValues = concat . map resultSourceToDoubleStatsValues . resultSourceList
 
 -- | Represent the results as statistics based on double floating point numbers and optimised for fast aggregation.
-resultsToDoubleStatsEitherValues :: Results -> [ResultValue (Either Double (SamplingStats Double))]
+resultsToDoubleStatsEitherValues :: MonadComp m => Results m -> [ResultValue (Either Double (SamplingStats Double)) m]
 resultsToDoubleStatsEitherValues = concat . map resultSourceToDoubleStatsEitherValues . resultSourceList
 
 -- | Represent the results as timing statistics based on double floating point numbers.
-resultsToDoubleTimingStatsValues :: Results -> [ResultValue (TimingStats Double)]
+resultsToDoubleTimingStatsValues :: MonadComp m => Results m -> [ResultValue (TimingStats Double) m]
 resultsToDoubleTimingStatsValues = concat . map resultSourceToDoubleTimingStatsValues . resultSourceList
 
 -- | Represent the results as string values.
-resultsToStringValues :: Results -> [ResultValue String]
+resultsToStringValues :: MonadComp m => Results m -> [ResultValue String m]
 resultsToStringValues = concat . map resultSourceToStringValues . resultSourceList
 
 -- | Return a signal emitted by the specified results.
-resultSignal :: Results -> ResultSignal
+resultSignal :: MonadComp m => Results m -> ResultSignal m
 resultSignal = mconcat . map resultSourceSignal . resultSourceList
 
 -- | Return an expanded version of the simulation results expanding the properties as possible, which
 -- takes place for expanding statistics to show the count, average, deviation, minimum, maximum etc.
 -- as separate values.
-expandResults :: ResultTransform
+expandResults :: MonadComp m => ResultTransform m
 expandResults = results . map expandResultSource . resultSourceList
 
 -- | Return a short version of the simulation results, i.e. their summary, expanding the main properties
 -- or excluding auxiliary properties if required.
-resultSummary :: ResultTransform
+resultSummary :: MonadComp m => ResultTransform m
 resultSummary = results . map resultSourceSummary . resultSourceList
 
 -- | Take a result by its name.
-resultByName :: ResultName -> ResultTransform
+resultByName :: ResultName -> ResultTransform m
 resultByName name rs =
   case M.lookup name (resultSourceMap rs) of
     Just x -> results [x]
@@ -1011,8 +1016,10 @@ resultByName name rs =
       "Not found result source with name " ++ name ++
       ": resultByName"
 
--- | Take a result from the object with the specified property label.
-resultByProperty :: ResultName -> ResultTransform
+-- | Take a result from the object with the specified property label,
+-- but it is more preferrable to refer to the property by its 'ResultId'
+-- identifier with help of the 'resultById' function.
+resultByProperty :: ResultName -> ResultTransform m
 resultByProperty label rs = flip composeResults rs loop
   where
     loop x =
@@ -1037,8 +1044,48 @@ resultByProperty label rs = flip composeResults rs loop
           " is neither object, nor vector " ++
           ": resultByProperty"
 
+-- | Take a result from the object with the specified identifier. It can identify
+-- an item, object property, the object iself, vector or its elements.
+resultById :: ResultId -> ResultTransform m
+resultById i rs = flip composeResults rs loop
+  where
+    loop x =
+      case x of
+        ResultItemSource (ResultItem s) ->
+          if resultItemId s == i
+          then [x]
+          else error $
+               "Expected to find item with Id = " ++ show i ++
+               ", while the item " ++ resultItemName s ++
+               " has actual Id = " ++ show (resultItemId s) ++
+               ": resultById"
+        ResultObjectSource s ->
+          if resultObjectId s == i
+          then [x]
+          else let ps =
+                     flip filter (resultObjectProperties s) $ \p ->
+                     resultPropertyId p == i
+               in case ps of
+                 [] ->
+                   error $
+                   "Not found property with Id = " ++ show i ++
+                   " for object " ++ resultObjectName s ++
+                   " that has actual Id = " ++ show (resultObjectId s) ++
+                   ": resultById"
+                 ps ->
+                   map resultPropertySource ps
+        ResultVectorSource s ->
+          if resultVectorId s == i
+          then [x]
+          else concat $ map loop $ A.elems $ resultVectorItems s
+        x ->
+          error $
+          "Result source " ++ resultSourceName x ++
+          " is neither item, nor object, nor vector " ++
+          ": resultById"
+
 -- | Take a result from the vector by the specified integer index.
-resultByIndex :: Int -> ResultTransform
+resultByIndex :: Int -> ResultTransform m
 resultByIndex index rs = flip composeResults rs loop
   where
     loop x =
@@ -1052,7 +1099,7 @@ resultByIndex index rs = flip composeResults rs loop
           ": resultByIndex"
 
 -- | Take a result from the vector by the specified string subscript.
-resultBySubscript :: ResultName -> ResultTransform
+resultBySubscript :: ResultName -> ResultTransform m
 resultBySubscript subscript rs = flip composeResults rs loop
   where
     loop x =
@@ -1078,17 +1125,17 @@ resultBySubscript subscript rs = flip composeResults rs loop
           ": resultBySubscript"
 
 -- | Compose the results using the specified transformation function.
-composeResults :: (ResultSource -> [ResultSource]) -> ResultTransform
+composeResults :: (ResultSource m -> [ResultSource m]) -> ResultTransform m
 composeResults f =
   results . concat . map f . resultSourceList
 
 -- | Concatenate the results using the specified list of transformation functions.
-concatResults :: [ResultTransform] -> ResultTransform
+concatResults :: [ResultTransform m] -> ResultTransform m
 concatResults trs rs =
   results $ concat $ map (\tr -> resultSourceList $ tr rs) trs
 
 -- | Append the results using the specified transformation functions.
-appendResults :: ResultTransform -> ResultTransform -> ResultTransform
+appendResults :: ResultTransform m -> ResultTransform m -> ResultTransform m
 appendResults x y =
   concatResults [x, y]
 
@@ -1098,7 +1145,7 @@ appendResults x y =
 -- The signal returned is triggered when the source signal is triggered.
 -- The pure signal is also triggered in the integration time points
 -- if the source signal is unknown or it was combined with any unknown signal.
-pureResultSignal :: ResultPredefinedSignals -> ResultSignal -> Signal ()
+pureResultSignal :: MonadComp m => ResultPredefinedSignals m -> ResultSignal m -> Signal m ()
 pureResultSignal rs EmptyResultSignal =
   void (resultSignalInStartTime rs)
 pureResultSignal rs UnknownResultSignal =
@@ -1109,19 +1156,19 @@ pureResultSignal rs (ResultSignalMix s) =
   void (resultSignalInIntegTimes rs) <> s
 
 -- | Defines a final result extract: its name, values and other data.
-data ResultExtract e =
+data ResultExtract e m =
   ResultExtract { resultExtractName   :: ResultName,
                   -- ^ The result name.
                   resultExtractId     :: ResultId,
                   -- ^ The result identifier.
-                  resultExtractData   :: Event e,
+                  resultExtractData   :: Event m e,
                   -- ^ The result values.
-                  resultExtractSignal :: ResultSignal
+                  resultExtractSignal :: ResultSignal m
                   -- ^ Whether the result emits a signal.
                 }
 
 -- | Extract the results as integer values, or raise a conversion error.
-extractIntResults :: Results -> [ResultExtract Int]
+extractIntResults :: MonadComp m => Results m -> [ResultExtract Int m]
 extractIntResults rs = flip map (resultsToIntValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1136,7 +1183,7 @@ extractIntResults rs = flip map (resultsToIntValues rs) $ \x ->
       ResultExtract n i a s
 
 -- | Extract the results as lists of integer values, or raise a conversion error.
-extractIntListResults :: Results -> [ResultExtract [Int]]
+extractIntListResults :: MonadComp m => Results m -> [ResultExtract [Int] m]
 extractIntListResults rs = flip map (resultsToIntListValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1152,7 +1199,7 @@ extractIntListResults rs = flip map (resultsToIntListValues rs) $ \x ->
 
 -- | Extract the results as statistics based on integer values,
 -- or raise a conversion error.
-extractIntStatsResults :: Results -> [ResultExtract (SamplingStats Int)]
+extractIntStatsResults :: MonadComp m => Results m -> [ResultExtract (SamplingStats Int) m]
 extractIntStatsResults rs = flip map (resultsToIntStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1168,7 +1215,7 @@ extractIntStatsResults rs = flip map (resultsToIntStatsValues rs) $ \x ->
 
 -- | Extract the results as statistics based on integer values and optimised
 -- for fast aggregation, or raise a conversion error.
-extractIntStatsEitherResults :: Results -> [ResultExtract (Either Int (SamplingStats Int))]
+extractIntStatsEitherResults :: MonadComp m => Results m -> [ResultExtract (Either Int (SamplingStats Int)) m]
 extractIntStatsEitherResults rs = flip map (resultsToIntStatsEitherValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1184,7 +1231,7 @@ extractIntStatsEitherResults rs = flip map (resultsToIntStatsEitherValues rs) $ 
 
 -- | Extract the results as timing statistics based on integer values,
 -- or raise a conversion error.
-extractIntTimingStatsResults :: Results -> [ResultExtract (TimingStats Int)]
+extractIntTimingStatsResults :: MonadComp m => Results m -> [ResultExtract (TimingStats Int) m]
 extractIntTimingStatsResults rs = flip map (resultsToIntTimingStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1199,7 +1246,7 @@ extractIntTimingStatsResults rs = flip map (resultsToIntTimingStatsValues rs) $ 
       ResultExtract n i a s
 
 -- | Extract the results as double floating point values, or raise a conversion error.
-extractDoubleResults :: Results -> [ResultExtract Double]
+extractDoubleResults :: MonadComp m => Results m -> [ResultExtract Double m]
 extractDoubleResults rs = flip map (resultsToDoubleValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1215,7 +1262,7 @@ extractDoubleResults rs = flip map (resultsToDoubleValues rs) $ \x ->
 
 -- | Extract the results as lists of double floating point values,
 -- or raise a conversion error.
-extractDoubleListResults :: Results -> [ResultExtract [Double]]
+extractDoubleListResults :: MonadComp m => Results m -> [ResultExtract [Double] m]
 extractDoubleListResults rs = flip map (resultsToDoubleListValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1231,7 +1278,7 @@ extractDoubleListResults rs = flip map (resultsToDoubleListValues rs) $ \x ->
 
 -- | Extract the results as statistics based on double floating point values,
 -- or raise a conversion error.
-extractDoubleStatsResults :: Results -> [ResultExtract (SamplingStats Double)]
+extractDoubleStatsResults :: MonadComp m => Results m -> [ResultExtract (SamplingStats Double) m]
 extractDoubleStatsResults rs = flip map (resultsToDoubleStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1247,7 +1294,7 @@ extractDoubleStatsResults rs = flip map (resultsToDoubleStatsValues rs) $ \x ->
 
 -- | Extract the results as statistics based on double floating point values
 -- and optimised for fast aggregation, or raise a conversion error.
-extractDoubleStatsEitherResults :: Results -> [ResultExtract (Either Double (SamplingStats Double))]
+extractDoubleStatsEitherResults :: MonadComp m => Results m -> [ResultExtract (Either Double (SamplingStats Double)) m]
 extractDoubleStatsEitherResults rs = flip map (resultsToDoubleStatsEitherValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1263,7 +1310,7 @@ extractDoubleStatsEitherResults rs = flip map (resultsToDoubleStatsEitherValues 
 
 -- | Extract the results as timing statistics based on double floating point values,
 -- or raise a conversion error.
-extractDoubleTimingStatsResults :: Results -> [ResultExtract (TimingStats Double)]
+extractDoubleTimingStatsResults :: MonadComp m => Results m -> [ResultExtract (TimingStats Double) m]
 extractDoubleTimingStatsResults rs = flip map (resultsToDoubleTimingStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1278,7 +1325,7 @@ extractDoubleTimingStatsResults rs = flip map (resultsToDoubleTimingStatsValues 
       ResultExtract n i a s
 
 -- | Extract the results as string values, or raise a conversion error.
-extractStringResults :: Results -> [ResultExtract String]
+extractStringResults :: MonadComp m => Results m -> [ResultExtract String m]
 extractStringResults rs = flip map (resultsToStringValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1293,23 +1340,23 @@ extractStringResults rs = flip map (resultsToStringValues rs) $ \x ->
       ResultExtract n i a s
 
 -- | Represents a computation that can return the simulation data.
-class ResultComputing m where
+class MonadComp m => ResultComputing t m where
 
   -- | Compute data with the results of simulation.
-  computeResultData :: m a -> ResultData a
+  computeResultData :: t m a -> ResultData a m
 
   -- | Return the signal triggered when data change if such a signal exists.
-  computeResultSignal :: m a -> ResultSignal
+  computeResultSignal :: t m a -> ResultSignal m
 
 -- | Return a new result value by the specified name, identifier and computation.
-computeResultValue :: ResultComputing m
+computeResultValue :: ResultComputing t m
                       => ResultName
                       -- ^ the result name
                       -> ResultId
                       -- ^ the result identifier
-                      -> m a
+                      -> t m a
                       -- ^ the result computation
-                      -> ResultValue a
+                      -> ResultValue a m
 computeResultValue name i m =
   ResultValue {
     resultValueName   = name,
@@ -1317,65 +1364,53 @@ computeResultValue name i m =
     resultValueData   = computeResultData m,
     resultValueSignal = computeResultSignal m }
 
--- | Represents a computation that can return the simulation data.
-data ResultComputation a =
-  ResultComputation { resultComputationData :: ResultData a,
-                      -- ^ Return data from the computation.
-                      resultComputationSignal :: ResultSignal
-                      -- ^ Return a signal from the computation.
-                    }
-
-instance ResultComputing ResultComputation where
-
-  computeResultData = resultComputationData
-  computeResultSignal = resultComputationSignal
-
-instance ResultComputing Parameter where
+instance MonadComp m => ResultComputing Parameter m where
 
   computeResultData = Just . liftParameter
   computeResultSignal = const UnknownResultSignal
 
-instance ResultComputing Simulation where
+instance MonadComp m => ResultComputing Simulation m where
 
   computeResultData = Just . liftSimulation
   computeResultSignal = const UnknownResultSignal
 
-instance ResultComputing Dynamics where
+instance MonadComp m => ResultComputing Dynamics m where
 
   computeResultData = Just . liftDynamics
   computeResultSignal = const UnknownResultSignal
 
-instance ResultComputing Event where
+instance MonadComp m => ResultComputing Event m where
 
   computeResultData = Just . id
   computeResultSignal = const UnknownResultSignal
 
-instance ResultComputing Ref where
+instance MonadComp m => ResultComputing Ref m where
 
   computeResultData = Just . readRef
   computeResultSignal = ResultSignal . refChanged_
 
-instance ResultComputing LR.Ref where
+instance MonadComp m => ResultComputing LR.Ref m where
 
   computeResultData = Just . LR.readRef
   computeResultSignal = const UnknownResultSignal
 
-instance ResultComputing Var where
+instance MonadComp m => ResultComputing Var m where
 
   computeResultData = Just . readVar
   computeResultSignal = ResultSignal . varChanged_
 
-instance ResultComputing Signalable where
+instance MonadComp m => ResultComputing Signalable m where
 
   computeResultData = Just . readSignalable
   computeResultSignal = ResultSignal . signalableChanged_
       
 -- | Return a source by the specified statistics.
-samplingStatsResultSource :: (ResultItemable (ResultValue a),
+samplingStatsResultSource :: (MonadComp m,
+                              ResultItemable (ResultValue a),
                               ResultItemable (ResultValue (SamplingStats a)))
-                             => ResultValue (SamplingStats a)
+                             => ResultValue (SamplingStats a) m
                              -- ^ the statistics
-                             -> ResultSource
+                             -> ResultSource m
 samplingStatsResultSource x =
   ResultObjectSource $
   ResultObject {
@@ -1396,19 +1431,21 @@ samplingStatsResultSource x =
     c = resultValueToContainer x
 
 -- | Return the summary by the specified statistics.
-samplingStatsResultSummary :: ResultItemable (ResultValue (SamplingStats a))
-                              => ResultValue (SamplingStats a)
+samplingStatsResultSummary :: (MonadComp m,
+                               ResultItemable (ResultValue (SamplingStats a)))
+                              => ResultValue (SamplingStats a) m
                               -- ^ the statistics
-                           -> ResultSource
+                              -> ResultSource m
 samplingStatsResultSummary = ResultItemSource . ResultItem . resultItemToStringValue 
   
 -- | Return a source by the specified timing statistics.
-timingStatsResultSource :: (TimingData a,
+timingStatsResultSource :: (MonadComp m,
+                            TimingData a,
                             ResultItemable (ResultValue a),
                             ResultItemable (ResultValue (TimingStats a)))
-                           => ResultValue (TimingStats a)
+                           => ResultValue (TimingStats a) m
                            -- ^ the statistics
-                           -> ResultSource
+                           -> ResultSource m
 timingStatsResultSource x =
   ResultObjectSource $
   ResultObject {
@@ -1434,20 +1471,23 @@ timingStatsResultSource x =
     c = resultValueToContainer x
 
 -- | Return the summary by the specified timing statistics.
-timingStatsResultSummary :: (TimingData a, ResultItemable (ResultValue (TimingStats a)))
-                            => ResultValue (TimingStats a) 
+timingStatsResultSummary :: (MonadComp m,
+                             TimingData a,
+                             ResultItemable (ResultValue (TimingStats a)))
+                            => ResultValue (TimingStats a) m 
                             -- ^ the statistics
-                            -> ResultSource
+                            -> ResultSource m
 timingStatsResultSummary = ResultItemSource . ResultItem . resultItemToStringValue
   
 -- | Return a source by the specified finite queue.
-queueResultSource :: (Show si, Show sm, Show so,
+queueResultSource :: (MonadComp m,
+                      Show si, Show sm, Show so,
                       ResultItemable (ResultValue si),
                       ResultItemable (ResultValue sm),
                       ResultItemable (ResultValue so))
-                     => ResultContainer (Q.Queue si qi sm qm so qo a)
+                     => ResultContainer (Q.Queue m si sm so a) m
                      -- ^ the queue container
-                     -> ResultSource
+                     -> ResultSource m
 queueResultSource c =
   ResultObjectSource $
   ResultObject {
@@ -1482,10 +1522,11 @@ queueResultSource c =
       resultContainerProperty c "queueRate" QueueRateId Q.queueRate Q.queueRateChanged_ ] }
 
 -- | Return the summary by the specified finite queue.
-queueResultSummary :: (Show si, Show sm, Show so)
-                      => ResultContainer (Q.Queue si qi sm qm so qo a)
+queueResultSummary :: (MonadComp m,
+                       Show si, Show sm, Show so)
+                      => ResultContainer (Q.Queue m si sm so a) m
                       -- ^ the queue container
-                      -> ResultSource
+                      -> ResultSource m
 queueResultSummary c =
   ResultObjectSource $
   ResultObject {
@@ -1507,12 +1548,13 @@ queueResultSummary c =
       resultContainerProperty c "queueRate" QueueRateId Q.queueRate Q.queueRateChanged_ ] }
 
 -- | Return a source by the specified infinite queue.
-infiniteQueueResultSource :: (Show sm, Show so,
+infiniteQueueResultSource :: (MonadComp m,
+                              Show sm, Show so,
                               ResultItemable (ResultValue sm),
                               ResultItemable (ResultValue so))
-                             => ResultContainer (IQ.Queue sm qm so qo a)
+                             => ResultContainer (IQ.Queue m sm so a) m
                              -- ^ the queue container
-                             -> ResultSource
+                             -> ResultSource m
 infiniteQueueResultSource c =
   ResultObjectSource $
   ResultObject {
@@ -1538,10 +1580,11 @@ infiniteQueueResultSource c =
       resultContainerProperty c "queueRate" QueueRateId IQ.queueRate IQ.queueRateChanged_ ] }
 
 -- | Return the summary by the specified infinite queue.
-infiniteQueueResultSummary :: (Show sm, Show so)
-                              => ResultContainer (IQ.Queue sm qm so qo a)
+infiniteQueueResultSummary :: (MonadComp m,
+                               Show sm, Show so)
+                              => ResultContainer (IQ.Queue m sm so a) m
                               -- ^ the queue container
-                              -> ResultSource
+                              -> ResultSource m
 infiniteQueueResultSummary c =
   ResultObjectSource $
   ResultObject {
@@ -1559,9 +1602,10 @@ infiniteQueueResultSummary c =
       resultContainerProperty c "queueRate" QueueRateId IQ.queueRate IQ.queueRateChanged_ ] }
   
 -- | Return a source by the specified arrival timer.
-arrivalTimerResultSource :: ResultContainer ArrivalTimer
+arrivalTimerResultSource :: MonadComp m
+                            => ResultContainer (ArrivalTimer m) m
                             -- ^ the arrival timer container
-                            -> ResultSource
+                            -> ResultSource m
 arrivalTimerResultSource c =
   ResultObjectSource $
   ResultObject {
@@ -1574,9 +1618,10 @@ arrivalTimerResultSource c =
       resultContainerProperty c "processingTime" ArrivalProcessingTimeId arrivalProcessingTime arrivalProcessingTimeChanged_ ] }
 
 -- | Return the summary by the specified arrival timer.
-arrivalTimerResultSummary :: ResultContainer ArrivalTimer
+arrivalTimerResultSummary :: MonadComp m
+                             => ResultContainer (ArrivalTimer m) m
                              -- ^ the arrival timer container
-                             -> ResultSource
+                             -> ResultSource m
 arrivalTimerResultSummary c =
   ResultObjectSource $
   ResultObject {
@@ -1589,10 +1634,11 @@ arrivalTimerResultSummary c =
       resultContainerProperty c "processingTime" ArrivalProcessingTimeId arrivalProcessingTime arrivalProcessingTimeChanged_ ] }
 
 -- | Return a source by the specified server.
-serverResultSource :: (Show s, ResultItemable (ResultValue s))
-                      => ResultContainer (Server s a b)
+serverResultSource :: (MonadComp m,
+                       Show s, ResultItemable (ResultValue s))
+                      => ResultContainer (Server m s a b) m
                       -- ^ the server container
-                      -> ResultSource
+                      -> ResultSource m
 serverResultSource c =
   ResultObjectSource $
   ResultObject {
@@ -1615,9 +1661,10 @@ serverResultSource c =
       resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
 
 -- | Return the summary by the specified server.
-serverResultSummary :: ResultContainer (Server s a b)
+serverResultSummary :: MonadComp m
+                       => ResultContainer (Server m s a b) m
                        -- ^ the server container
-                       -> ResultSource
+                       -> ResultSource m
 serverResultSummary c =
   ResultObjectSource $
   ResultObject {
@@ -1635,71 +1682,71 @@ serverResultSummary c =
       resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
 
 -- | Return an arbitrary text as a separator source.
-textResultSource :: String -> ResultSource
+textResultSource :: String -> ResultSource m
 textResultSource text =
   ResultSeparatorSource $
   ResultSeparator { resultSeparatorText = text }
 
 -- | Return the source of the modeling time.
-timeResultSource :: ResultSource
+timeResultSource :: MonadComp m => ResultSource m
 timeResultSource = resultSource' "t" TimeId time
                          
 -- | Make an integer subscript
 intSubscript :: Int -> ResultName
 intSubscript i = "[" ++ show i ++ "]"
 
-instance ResultComputing m => ResultProvider (m Double) where
+instance ResultComputing t m => ResultProvider (t m Double) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m [Double]) where
+instance ResultComputing t m => ResultProvider (t m [Double]) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m (SamplingStats Double)) where
+instance ResultComputing t m => ResultProvider (t m (SamplingStats Double)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m (TimingStats Double)) where
+instance ResultComputing t m => ResultProvider (t m (TimingStats Double)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m Int) where
+instance ResultComputing t m => ResultProvider (t m Int) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m [Int]) where
+instance ResultComputing t m => ResultProvider (t m [Int]) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m (SamplingStats Int)) where
+instance ResultComputing t m => ResultProvider (t m (SamplingStats Int)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m (TimingStats Int)) where
+instance ResultComputing t m => ResultProvider (t m (TimingStats Int)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m String) where
+instance ResultComputing t m => ResultProvider (t m String) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultProvider p => ResultProvider [p] where
+instance ResultProvider p m => ResultProvider [p] m where
 
   resultSource' name i m =
     resultSource' name i $ ResultListWithSubscript m subscript where
       subscript = map snd $ zip m $ map intSubscript [0..]
 
-instance (Show i, Ix i, ResultProvider p) => ResultProvider (A.Array i p) where
+instance (Show i, Ix i, ResultProvider p m) => ResultProvider (A.Array i p) m where
 
   resultSource' name i m =
     resultSource' name i $ ResultListWithSubscript items subscript where
@@ -1708,7 +1755,7 @@ instance (Show i, Ix i, ResultProvider p) => ResultProvider (A.Array i p) where
 
 #ifndef __HASTE__
 
-instance ResultProvider p => ResultProvider (V.Vector p) where
+instance ResultProvider p m => ResultProvider (V.Vector p) m where
   
   resultSource' name i m =
     resultSource' name i $ ResultVectorWithSubscript m subscript where
@@ -1732,7 +1779,7 @@ data ResultVectorWithSubscript p =
 
 #endif
 
-instance ResultProvider p => ResultProvider (ResultListWithSubscript p) where
+instance ResultProvider p m => ResultProvider (ResultListWithSubscript p) m where
 
   resultSource' name i (ResultListWithSubscript xs ys) =
     ResultVectorSource $
@@ -1754,7 +1801,7 @@ instance ResultProvider p => ResultProvider (ResultListWithSubscript p) where
         in resultSource' name' (VectorItemId y) x
       items' = map resultSourceSummary items
     
-instance (Show i, Ix i, ResultProvider p) => ResultProvider (ResultArrayWithSubscript i p) where
+instance (Show i, Ix i, ResultProvider p m) => ResultProvider (ResultArrayWithSubscript i p) m where
 
   resultSource' name i (ResultArrayWithSubscript xs ys) =
     resultSource' name i $ ResultListWithSubscript items subscript where
@@ -1763,7 +1810,7 @@ instance (Show i, Ix i, ResultProvider p) => ResultProvider (ResultArrayWithSubs
       
 #ifndef __HASTE__
 
-instance ResultProvider p => ResultProvider (ResultVectorWithSubscript p) where
+instance ResultProvider p m => ResultProvider (ResultVectorWithSubscript p) m where
 
   resultSource' name i (ResultVectorWithSubscript xs ys) =
     ResultVectorSource $
@@ -1789,53 +1836,55 @@ instance ResultProvider p => ResultProvider (ResultVectorWithSubscript p) where
 
 #endif
 
-instance (Ix i, Show i, ResultComputing m) => ResultProvider (m (A.Array i Double)) where
+instance (Ix i, Show i, ResultComputing t m) => ResultProvider (t m (A.Array i Double)) m where
 
   resultSource' name i m =
-    ResultItemSource $ ResultItem $ fmap A.elems $ computeResultValue name i m
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
 
-instance (Ix i, Show i, ResultComputing m) => ResultProvider (m (A.Array i Int)) where
+instance (Ix i, Show i, ResultComputing t m) => ResultProvider (t m (A.Array i Int)) m where
 
   resultSource' name i m =
-    ResultItemSource $ ResultItem $ fmap A.elems $ computeResultValue name i m
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
 
 #ifndef __HASTE__
 
-instance ResultComputing m => ResultProvider (m (V.Vector Double)) where
+instance ResultComputing t m => ResultProvider (t m (V.Vector Double)) m where
 
   resultSource' name i m =
-    ResultItemSource $ ResultItem $ fmap V.toList $ computeResultValue name i m
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
 
-instance ResultComputing m => ResultProvider (m (V.Vector Int)) where
+instance ResultComputing t m => ResultProvider (t m (V.Vector Int)) m where
 
   resultSource' name i m =
-    ResultItemSource $ ResultItem $ fmap V.toList $ computeResultValue name i m
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
 
 #endif
 
-instance (Show si, Show sm, Show so,
+instance (MonadComp m,
+          Show si, Show sm, Show so,
           ResultItemable (ResultValue si),
           ResultItemable (ResultValue sm),
           ResultItemable (ResultValue so))
-         => ResultProvider (Q.Queue si qi sm qm so qo a) where
+         => ResultProvider (Q.Queue m si sm so a) m where
 
   resultSource' name i m =
     queueResultSource $ ResultContainer name i m (ResultSignal $ Q.queueChanged_ m)
 
-instance (Show sm, Show so,
+instance (MonadComp m,
+          Show sm, Show so,
           ResultItemable (ResultValue sm),
           ResultItemable (ResultValue so))
-         => ResultProvider (IQ.Queue sm qm so qo a) where
+         => ResultProvider (IQ.Queue m sm so a) m where
 
   resultSource' name i m =
     infiniteQueueResultSource $ ResultContainer name i m (ResultSignal $ IQ.queueChanged_ m)
 
-instance ResultProvider ArrivalTimer where
+instance MonadComp m => ResultProvider (ArrivalTimer m) m where
 
   resultSource' name i m =
     arrivalTimerResultSource $ ResultContainer name i m (ResultSignal $ arrivalProcessingTimeChanged_ m)
 
-instance (Show s, ResultItemable (ResultValue s)) => ResultProvider (Server s a b) where
+instance (MonadComp m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Server m s a b) m where
 
   resultSource' name i m =
     serverResultSource $ ResultContainer name i m (ResultSignal $ serverChanged_ m)
