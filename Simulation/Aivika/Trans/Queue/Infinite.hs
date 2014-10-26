@@ -71,7 +71,6 @@ module Simulation.Aivika.Trans.Queue.Infinite
         -- * Overall Signal
         queueChanged_) where
 
-import Data.IORef
 import Data.Monoid
 
 import Control.Monad

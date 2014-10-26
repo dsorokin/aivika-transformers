@@ -38,8 +38,6 @@ module Simulation.Aivika.Trans.Internal.Specs
         integStopPoint,
         pointAt) where
 
-import Data.IORef
-
 import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.Generator
 
