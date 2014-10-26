@@ -3,11 +3,11 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Arrow
 
-import Simulation.Aivika
+import Simulation.Aivika.Trans
 
 specs = Specs 0 10 1 RungeKutta4 SimpleGenerator
 
-model :: Simulation ()
+model :: Simulation IO ()
 model =
   do let swap (x, y) = (y, x)
          -- k = loop (arr swap)

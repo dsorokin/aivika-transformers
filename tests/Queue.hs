@@ -2,15 +2,15 @@
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika
-import Simulation.Aivika.Queue
+import Simulation.Aivika.Trans
+import Simulation.Aivika.Trans.Queue
 
 specs = Specs 0 1 0.1 RungeKutta4 SimpleGenerator
 
 n1 = 10
 n2 = 3
 
-model :: Simulation ()
+model :: Simulation IO ()
 model =
   do q <-
        runEventInStartTime $
