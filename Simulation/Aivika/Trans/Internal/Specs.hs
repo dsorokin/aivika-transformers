@@ -149,16 +149,6 @@ class EventQueueing m where
   newEventQueue :: Session m -> Specs m -> m (EventQueue m)
 
   -- | Enqueue the event which must be actuated at the specified time.
-  --
-  -- The events are processed when calling the 'runEvent' function. So,
-  -- if you want to insist on their immediate execution then you can apply
-  -- something like
-  --
-  -- @
-  --   liftDynamics $ runEvent IncludingCurrentEvents $ return ()
-  -- @
-  --
-  -- although this is generally not good idea.  
   enqueueEvent :: Double -> Event m () -> Event m ()
 
   -- | Run the 'EventT' computation in the current simulation time
