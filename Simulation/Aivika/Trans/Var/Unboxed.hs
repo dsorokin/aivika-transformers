@@ -18,6 +18,7 @@ module Simulation.Aivika.Trans.Var.Unboxed
         varChanged_,
         newVar,
         readVar,
+        varMemo,
         writeVar,
         modifyVar,
         freezeVar) where
