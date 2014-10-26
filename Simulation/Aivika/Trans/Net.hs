@@ -60,7 +60,7 @@ import Simulation.Aivika.Trans.Resource
 import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Circuit
-import Simulation.Aivika.Trans.Internal.Arrival
+import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents the net as an automaton working within the 'Process' computation.
 newtype Net m a b =

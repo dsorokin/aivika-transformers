@@ -49,7 +49,6 @@ import Control.Monad.Fix
 import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.ProtoRef
 import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Internal.Arrival
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
@@ -60,6 +59,7 @@ import Simulation.Aivika.Trans.SystemDynamics
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Processor
+import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents a circuit synchronized with the event queue.
 -- Besides, it allows creating the recursive links with help of

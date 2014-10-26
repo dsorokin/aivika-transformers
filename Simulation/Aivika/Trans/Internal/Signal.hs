@@ -67,7 +67,7 @@ import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
-import Simulation.Aivika.Trans.Internal.Arrival
+import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | The signal source that can publish its signal.
 data SignalSource m a =

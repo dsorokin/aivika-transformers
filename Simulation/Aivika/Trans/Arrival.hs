@@ -34,7 +34,7 @@ import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Signal
-import Simulation.Aivika.Trans.Internal.Arrival
+import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Accumulates the statistics about that how long the arrived events are processed.
 data ArrivalTimer m =

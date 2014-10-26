@@ -82,7 +82,7 @@ import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Resource
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Queue.Infinite
-import Simulation.Aivika.Trans.Internal.Arrival
+import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents an infinite stream of data in time,
 -- some kind of never-ending cons cell.

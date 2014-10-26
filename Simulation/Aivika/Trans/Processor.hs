@@ -57,7 +57,7 @@ import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Signal
-import Simulation.Aivika.Trans.Internal.Arrival
+import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents a processor of simulation data.
 newtype Processor m a b =
