@@ -1,6 +1,7 @@
 
 import Control.Monad
 import Control.Monad.Trans
+import Control.Exception
 
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.Queue
@@ -45,7 +46,7 @@ model =
                         putStrLn $ show xs
               m2 =
                 liftIO $ putStrLn "Finalization"
-              m3 e =
+              m3 (SomeException e) =
                 liftIO $ putStrLn "An error has happened"
           finallyProcess
             (catchProcess m1 m3)
