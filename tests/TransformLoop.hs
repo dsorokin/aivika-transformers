@@ -7,7 +7,7 @@ import Simulation.Aivika.Trans
 
 specs = Specs 0 10 1 RungeKutta4 SimpleGenerator
 
-model :: Simulation IO Results
+model :: Simulation IO (Results IO)
 model =
   do let swap (x, y) = (y, x)
          -- k = loop (arr swap)
