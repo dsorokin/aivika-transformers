@@ -112,7 +112,8 @@ library
                      mtl >= 2.1.1,
                      array >= 0.3.0.0,
                      containers >= 0.4.0.0,
-                     random >= 1.0.0.3
+                     random >= 1.0.0.3,
+                     aivika >= 2.0
 
     if !flag(haste-inst)
        build-depends:   vector >= 0.10.0.1
