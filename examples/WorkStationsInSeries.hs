@@ -16,8 +16,8 @@ import Control.Monad.Trans
 import Control.Arrow
 import Control.Category (id, (.))
 
-import Simulation.Aivika
-import Simulation.Aivika.Queue
+import Simulation.Aivika.Trans
+import Simulation.Aivika.Trans.Queue
 
 -- | The simulation specs.
 specs = Specs { spcStartTime = 0.0,
@@ -52,6 +52,7 @@ workStationCount1 = 1
 workStationCount2 = 1
 
 -- create a work station (server) with the exponential processing time
+newWorkStationExponential :: MonadComp m => Double -> Simulation m (Server m () a a)
 newWorkStationExponential meanTime =
   newServer $ \a ->
   do holdProcess =<<
@@ -59,11 +60,7 @@ newWorkStationExponential meanTime =
         randomExponential meanTime)
      return a
 
--- interpose the prefetch processor between two processors
-interposePrefetchProcessor x y = 
-  x >>> prefetchProcessor >>> y
-
-model :: Simulation Results
+model :: MonadComp m => Simulation m (Results m)
 model = do
   -- it will gather the statistics of the processing time
   arrivalTimer <- newArrivalTimer
@@ -97,10 +94,10 @@ model = do
   let entireProcessor =
         queueProcessor1 >>>
         processorParallel (map serverProcessor workStation1s) >>>
-        -- foldr1 interposePrefetchProcessor (map serverProcessor workStation1s) >>>
+        -- processorSeq (map serverProcessor workStation1s) >>>
         queueProcessor2 >>>
         processorParallel (map serverProcessor workStation2s) >>>
-        -- foldr1 interposePrefetchProcessor (map serverProcessor workStation2s) >>>
+        -- processorSeq (map serverProcessor workStation2s) >>>
         arrivalTimerProcessor arrivalTimer
   -- start simulating the model
   runProcessInStartTime $
@@ -128,7 +125,7 @@ model = do
      "arrivalTimer" "The arrival timer"
      arrivalTimer]
 
-modelSummary :: Simulation Results
+modelSummary :: MonadComp m => Simulation m (Results m)
 modelSummary =
   fmap resultSummary model
 
