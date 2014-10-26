@@ -19,7 +19,7 @@
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika
+import Simulation.Aivika.Trans
 
 ackRate = 1.0 / 1.0  -- reciprocal of the acknowledge mean time
 toPeriod = 0.5       -- timeout period
@@ -30,7 +30,7 @@ specs = Specs { spcStartTime = 0.0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
      
-model :: Simulation Double
+model :: MonadComp m => Simulation m Double
 model =
   do -- number of messages sent
      nMsgs <- newRef 0
@@ -40,8 +40,7 @@ model =
 
      nodePid <- newProcessId
      
-     let node :: Process ()
-         node =
+     let node =
            do liftEvent $ modifyRef nMsgs $ (+) 1
               -- create the process ID
               timeoutPid <- liftSimulation newProcessId
@@ -59,7 +58,6 @@ model =
                      else cancelProcessWithId timeoutPid
               node
               
-         timeout :: Process ()
          timeout =
            do holdProcess toPeriod
               liftEvent $ interruptProcess nodePid
