@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         2.0
+version:         1.5
 synopsis:        Computation transformers for Aivika
 description:
     The package adds the monad and other computation transformers to 
@@ -113,7 +113,7 @@ library
                      array >= 0.3.0.0,
                      containers >= 0.4.0.0,
                      random >= 1.0.0.3,
-                     aivika >= 2.0
+                     aivika >= 1.5
 
     if !flag(haste-inst)
        build-depends:   vector >= 0.10.0.1
