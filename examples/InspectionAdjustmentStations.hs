@@ -15,11 +15,12 @@ import Prelude hiding (id, (.))
 
 import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.Fix
 import Control.Arrow
 import Control.Category (id, (.))
 
-import Simulation.Aivika
-import Simulation.Aivika.Queue.Infinite
+import Simulation.Aivika.Trans
+import Simulation.Aivika.Trans.Queue.Infinite
 
 -- | The simulation specs.
 specs = Specs { spcStartTime = 0.0,
@@ -56,6 +57,7 @@ maxAdjustmentTime = 40
 adjustmentStationCount = 1
 
 -- create an inspection station (server)
+newInspectionStation :: MonadComp m => Simulation m (Server m () a (Either a a))
 newInspectionStation =
   newServer $ \a ->
   do holdProcess =<<
@@ -69,6 +71,7 @@ newInspectionStation =
        else return $ Left a 
 
 -- create an adjustment station (server)
+newAdjustmentStation :: MonadComp m => Simulation m (Server m () a a)
 newAdjustmentStation =
   newServer $ \a ->
   do holdProcess =<<
@@ -76,7 +79,7 @@ newAdjustmentStation =
         randomUniform minAdjustmentTime maxAdjustmentTime)
      return a
   
-model :: Simulation Results
+model :: (MonadComp m, MonadFix m) => Simulation m (Results m)
 model = mdo
   -- to count the arrived TV sets for inspecting and adjusting
   inputArrivalTimer <- newArrivalTimer
@@ -152,7 +155,7 @@ model = mdo
      "adjustmentStations" "the adjustment stations"
      adjustmentStations]
 
-modelSummary :: Simulation Results
+modelSummary :: (MonadComp m, MonadFix m) => Simulation m (Results m)
 modelSummary = fmap resultSummary model
 
 main =
