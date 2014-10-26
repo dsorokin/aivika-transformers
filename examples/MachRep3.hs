@@ -16,7 +16,7 @@
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika
+import Simulation.Aivika.Trans
 
 meanUpTime = 1.0
 meanRepairTime = 0.5
@@ -27,7 +27,7 @@ specs = Specs { spcStartTime = 0.0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
      
-model :: Simulation Results
+model :: MonadComp m => Simulation m (Results m)
 model =
   do -- number of machines currently up
      nUp <- newRef 2
@@ -40,8 +40,7 @@ model =
      pid1 <- newProcessId
      pid2 <- newProcessId
      
-     let machine :: ProcessId -> Process ()
-         machine pid =
+     let machine pid =
            do upTime <-
                 liftParameter $
                 randomExponential meanUpTime

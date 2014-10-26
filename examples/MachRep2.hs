@@ -20,7 +20,7 @@
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika
+import Simulation.Aivika.Trans
 
 meanUpTime = 1.0
 meanRepairTime = 0.5
@@ -31,7 +31,7 @@ specs = Specs { spcStartTime = 0.0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
      
-model :: Simulation Results
+model :: MonadComp m => Simulation m (Results m)
 model =
   do -- number of times the machines have broken down
      nRep <- newRef 0 
@@ -45,8 +45,7 @@ model =
      
      repairPerson <- newFCFSResource 1
      
-     let machine :: Process ()
-         machine =
+     let machine =
            do upTime <-
                 liftParameter $
                 randomExponential meanUpTime
@@ -78,13 +77,13 @@ model =
               y <- liftDynamics time
               return $ x / (2 * y)
 
-         immedProp :: Event Double
          immedProp =
            do n <- readRef nRep
               nImmed <- readRef nImmedRep
-              return $
-                fromIntegral nImmed /
-                fromIntegral n
+              let x :: Double
+                  x = fromIntegral nImmed /
+                      fromIntegral n
+              return x
 
      return $
        results
