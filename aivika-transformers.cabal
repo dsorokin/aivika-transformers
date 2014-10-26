@@ -13,7 +13,7 @@ license-file:    LICENSE
 copyright:       (c) 2009-2014. David Sorokin <david.sorokin@gmail.com>
 author:          David Sorokin
 maintainer:      David Sorokin <david.sorokin@gmail.com>
-homepage:        http://github.com/dsorokin/aivika
+homepage:        http://github.com/dsorokin/aivika-transformers
 cabal-version:   >= 1.10
 build-type:      Simple
 tested-with:     GHC == 7.8.3
@@ -138,4 +138,4 @@ library
 source-repository head
 
     type:     git
-    location: https://github.com/dsorokin/aivika
+    location: https://github.com/dsorokin/aivika-transformers
