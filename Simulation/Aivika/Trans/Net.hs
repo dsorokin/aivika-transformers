@@ -218,7 +218,7 @@ processorNet x =
               liftComp $ writeProtoRef refB Nothing
               releaseResource writingB
               return (b, Net $ \a -> releaseResource conting >> loop a)
-     spawnProcess CancelTogether $
+     spawnProcess $
        consume $ runProcessor x (Cons input)
      loop a
 

@@ -30,6 +30,8 @@ module Simulation.Aivika.Trans.Task
         -- * Spawning Tasks
         spawnTask,
         spawnTaskUsingId,
+        spawnTaskWith,
+        spawnTaskUsingIdWith,
         -- * Enqueueing Task
         enqueueTask,
         enqueueTaskUsingId) where
@@ -150,17 +152,26 @@ enqueueTask time p =
 
 -- | Run using the specified identifier a child process in background and return
 -- immediately the corresponded task.
-spawnTaskUsingId :: MonadComp m => ContCancellation -> ProcessId m -> Process m a -> Process m (Task m a)
-spawnTaskUsingId cancellation pid p =
+spawnTaskUsingId :: MonadComp m => ProcessId m -> Process m a -> Process m (Task m a)
+spawnTaskUsingId = spawnTaskUsingIdWith CancelTogether
+
+-- | Run a child process in background and return immediately the corresponded task.
+spawnTask :: MonadComp m => Process m a -> Process m (Task m a)
+spawnTask = spawnTaskWith CancelTogether
+
+-- | Run using the specified identifier a child process in background and return
+-- immediately the corresponded task.
+spawnTaskUsingIdWith :: MonadComp m => ContCancellation -> ProcessId m -> Process m a -> Process m (Task m a)
+spawnTaskUsingIdWith cancellation pid p =
   do (t, m) <- liftEvent $ newTaskUsingId pid p
-     spawnProcessUsingId cancellation pid m
+     spawnProcessUsingIdWith cancellation pid m
      return t
 
 -- | Run a child process in background and return immediately the corresponded task.
-spawnTask :: MonadComp m => ContCancellation -> Process m a -> Process m (Task m a)
-spawnTask cancellation p =
+spawnTaskWith :: MonadComp m => ContCancellation -> Process m a -> Process m (Task m a)
+spawnTaskWith cancellation p =
   do pid <- liftSimulation newProcessId
-     spawnTaskUsingId cancellation pid p
+     spawnTaskUsingIdWith cancellation pid p
 
 -- | Return an outer process that behaves like the task itself except for one thing:
 -- if the outer process is cancelled then it is not enough to cancel the task. 
