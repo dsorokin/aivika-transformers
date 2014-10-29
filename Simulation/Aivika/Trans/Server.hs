@@ -107,8 +107,6 @@ data Server m s a b =
          }
 
 -- | Create a new server that can provide output @b@ by input @a@.
--- Also it returns the corresponded processor that being applied
--- updates the server state.
 newServer :: MonadComp m
              => (a -> Process m b)
              -- ^ provide an output by the specified input
@@ -119,8 +117,7 @@ newServer provide =
      return (s, b)
 
 -- | Create a new server that can provide output @b@ by input @a@
--- starting from state @s@. Also it returns the corresponded processor
--- that being applied updates the server state.
+-- starting from state @s@.
 newStateServer :: MonadComp m
                   => (s -> a -> Process m (s, b))
                   -- ^ provide a new state and output by the specified 
@@ -169,8 +166,8 @@ newStateServer provide state =
 -- in the chain. This is not always that thing you might need.
 --
 -- To model a sequence of the server processors working independently, you
--- should separate them with help of the 'prefetchProcessor' that plays a role
--- of a small one-place buffer in that case.
+-- should use the 'processorSeq' function which separates the processors with help of
+-- the 'prefetchProcessor' that plays a role of a small one-place buffer in that case.
 --
 -- The queue processors usually have the prefetching capabilities per se, where
 -- the items are already stored in the queue. Therefore, the server processor
