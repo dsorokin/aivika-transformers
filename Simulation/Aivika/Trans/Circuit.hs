@@ -18,6 +18,10 @@
 module Simulation.Aivika.Trans.Circuit
        (-- * The Circuit Arrow
         Circuit(..),
+        iterateCircuitInIntegTimes,
+        iterateCircuitInIntegTimes_,
+        iterateCircuitInTimes,
+        iterateCircuitInTimes_,
         -- * Circuit Primitives
         arrCircuit,
         accumCircuit,
@@ -58,7 +62,9 @@ import Simulation.Aivika.Trans.Transform
 import Simulation.Aivika.Trans.SystemDynamics
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Stream
+import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Processor
+import Simulation.Aivika.Trans.Task
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents a circuit synchronized with the event queue.
@@ -383,3 +389,60 @@ circuitTransform cir = Transform start
            runEvent (runCircuit cir a)
          writeProtoRef ref cir'
          return b
+
+-- | Iterate the circuit in the specified time points.
+iterateCircuitInPoints_ :: MonadComp m => [Point m] -> Circuit m a a -> a -> Event m ()
+iterateCircuitInPoints_ [] cir a = return ()
+iterateCircuitInPoints_ (p : ps) cir a =
+  enqueueEvent (pointTime p) $
+  Event $ \p' ->
+  do (a', cir') <- invokeEvent p $ runCircuit cir a
+     invokeEvent p $ iterateCircuitInPoints_ ps cir' a'
+
+-- | Iterate the circuit in the specified time points returning a task
+-- which completes after the final output of the circuit is received.
+iterateCircuitInPoints :: MonadComp m => [Point m] -> Circuit m a a -> a -> Event m (Task m a)
+iterateCircuitInPoints ps cir a =
+  do let loop [] cir a source = triggerSignal source a
+         loop (p : ps) cir a source =
+           enqueueEvent (pointTime p) $
+           Event $ \p' ->
+           do (a', cir') <- invokeEvent p $ runCircuit cir a
+              invokeEvent p $ loop ps cir' a' source
+     source <- liftSimulation newSignalSource
+     loop ps cir a source
+     runTask $ processAwait $ publishSignal source
+
+-- | Iterate the circuit in the integration time points.
+iterateCircuitInIntegTimes_ :: MonadComp m => Circuit m a a -> a -> Event m ()
+iterateCircuitInIntegTimes_ cir a =
+  Event $ \p ->
+  do let ps = integPoints $ pointRun p
+     invokeEvent p $ 
+       iterateCircuitInPoints_ ps cir a
+
+-- | Iterate the circuit in the specified time points.
+iterateCircuitInTimes_ :: MonadComp m => [Double] -> Circuit m a a -> a -> Event m ()
+iterateCircuitInTimes_ ts cir a =
+  Event $ \p ->
+  do let ps = map (pointAt $ pointRun p) ts
+     invokeEvent p $ 
+       iterateCircuitInPoints_ ps cir a 
+
+-- | Iterate the circuit in the integration time points returning a task
+-- which completes after the final output of the circuit is received.
+iterateCircuitInIntegTimes :: MonadComp m => Circuit m a a -> a -> Event m (Task m a)
+iterateCircuitInIntegTimes cir a =
+  Event $ \p ->
+  do let ps = integPoints $ pointRun p
+     invokeEvent p $ 
+       iterateCircuitInPoints ps cir a
+
+-- | Iterate the circuit in the specified time points returning a task
+-- which completes after the final output of the circuit is received.
+iterateCircuitInTimes :: MonadComp m => [Double] -> Circuit m a a -> a -> Event m (Task m a)
+iterateCircuitInTimes ts cir a =
+  Event $ \p ->
+  do let ps = map (pointAt $ pointRun p) ts
+     invokeEvent p $ 
+       iterateCircuitInPoints ps cir a 
