@@ -27,6 +27,7 @@
 module Simulation.Aivika.Trans.Net
        (-- * Net Arrow
         Net(..),
+        iterateNet,
         -- * Net Primitives
         emptyNet,
         arrNet,
@@ -243,3 +244,9 @@ delayNet :: MonadComp m => a -> Net m a a
 delayNet a0 =
   Net $ \a ->
   return (a0, delayNet a)
+
+-- | Iterate infinitely using the specified initial value.
+iterateNet :: MonadComp m => Net m a a -> a -> Process m ()
+iterateNet (Net f) a =
+  do (a', x) <- f a
+     iterateNet x a'
