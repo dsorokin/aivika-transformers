@@ -133,6 +133,7 @@ import qualified Simulation.Aivika.Trans.Queue as Q
 import qualified Simulation.Aivika.Trans.Queue.Infinite as IQ
 import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
+import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Results.Locale
 
 -- | A name used for indentifying the results when generating output.
@@ -1681,6 +1682,49 @@ serverResultSummary c =
       resultContainerProperty c "processingFactor" ServerProcessingFactorId serverProcessingFactor serverProcessingFactorChanged_,
       resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
 
+-- | Return a source by the specified activity.
+activityResultSource :: (MonadComp m,
+                         Show s, ResultItemable (ResultValue s))
+                        => ResultContainer (Activity m s a b) m
+                        -- ^ the activity container
+                        -> ResultSource m
+activityResultSource c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = ActivityId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = activityResultSummary c,
+    resultObjectProperties = [
+      resultContainerConstProperty c "initState" ActivityInitStateId activityInitState,
+      resultContainerProperty c "state" ActivityStateId activityState activityStateChanged_,
+      resultContainerProperty c "totalUtilisationTime" ActivityTotalUtilisationTimeId activityTotalUtilisationTime activityTotalUtilisationTimeChanged_,
+      resultContainerProperty c "totalIdleTime" ActivityTotalIdleTimeId activityTotalIdleTime activityTotalIdleTimeChanged_,
+      resultContainerProperty c "utilisationTime" ActivityUtilisationTimeId activityUtilisationTime activityUtilisationTimeChanged_,
+      resultContainerProperty c "idleTime" ActivityIdleTimeId activityIdleTime activityIdleTimeChanged_,
+      resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
+      resultContainerProperty c "idleFactor" ActivityIdleTimeId activityIdleFactor activityIdleFactorChanged_ ] }
+
+-- | Return a summary by the specified activity.
+activityResultSummary :: MonadComp m
+                         => ResultContainer (Activity m s a b) m
+                         -- ^ the activity container
+                         -> ResultSource m
+activityResultSummary c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = ActivityId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = activityResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "utilisationTime" ActivityUtilisationTimeId activityUtilisationTime activityUtilisationTimeChanged_,
+      resultContainerProperty c "idleTime" ActivityIdleTimeId activityIdleTime activityIdleTimeChanged_,
+      resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
+      resultContainerProperty c "idleFactor" ActivityIdleTimeId activityIdleFactor activityIdleFactorChanged_ ] }
+
 -- | Return an arbitrary text as a separator source.
 textResultSource :: String -> ResultSource m
 textResultSource text =
@@ -1888,3 +1932,8 @@ instance (MonadComp m, Show s, ResultItemable (ResultValue s)) => ResultProvider
 
   resultSource' name i m =
     serverResultSource $ ResultContainer name i m (ResultSignal $ serverChanged_ m)
+
+instance (MonadComp m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Activity m s a b) m where
+
+  resultSource' name i m =
+    activityResultSource $ ResultContainer name i m (ResultSignal $ activityChanged_ m)
