@@ -475,7 +475,7 @@ iterateCircuitInPoints ps cir a =
 iterateCircuitInIntegTimes_ :: MonadComp m => Circuit m a a -> a -> Event m ()
 iterateCircuitInIntegTimes_ cir a =
   Event $ \p ->
-  do let ps = integPoints $ pointRun p
+  do let ps = nextIntegPoints (pointRun p) (pointIteration p + 1)
      invokeEvent p $ 
        iterateCircuitInPoints_ ps cir a
 
@@ -492,7 +492,7 @@ iterateCircuitInTimes_ ts cir a =
 iterateCircuitInIntegTimes :: MonadComp m => Circuit m a a -> a -> Event m (Task m a)
 iterateCircuitInIntegTimes cir a =
   Event $ \p ->
-  do let ps = integPoints $ pointRun p
+  do let ps = nextIntegPoints (pointRun p) (pointIteration p + 1)
      invokeEvent p $ 
        iterateCircuitInPoints ps cir a
 
@@ -523,7 +523,7 @@ iterateCircuitInPointsMaybe (p : ps) cir a =
 iterateCircuitInIntegTimesMaybe :: MonadComp m => Circuit m a (Maybe a) -> a -> Event m ()
 iterateCircuitInIntegTimesMaybe cir a =
   Event $ \p ->
-  do let ps = integPoints $ pointRun p
+  do let ps = nextIntegPoints (pointRun p) (pointIteration p + 1)
      invokeEvent p $ 
        iterateCircuitInPointsMaybe ps cir a
 
@@ -561,7 +561,7 @@ iterateCircuitInPointsEither ps cir a =
 iterateCircuitInIntegTimesEither :: MonadComp m => Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
 iterateCircuitInIntegTimesEither cir a =
   Event $ \p ->
-  do let ps = integPoints $ pointRun p
+  do let ps = nextIntegPoints (pointRun p) (pointIteration p + 1)
      invokeEvent p $ 
        iterateCircuitInPointsEither ps cir a
 
