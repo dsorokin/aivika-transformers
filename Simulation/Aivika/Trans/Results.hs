@@ -1704,7 +1704,7 @@ activityResultSource c =
       resultContainerProperty c "utilisationTime" ActivityUtilisationTimeId activityUtilisationTime activityUtilisationTimeChanged_,
       resultContainerProperty c "idleTime" ActivityIdleTimeId activityIdleTime activityIdleTimeChanged_,
       resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
-      resultContainerProperty c "idleFactor" ActivityIdleTimeId activityIdleFactor activityIdleFactorChanged_ ] }
+      resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_ ] }
 
 -- | Return a summary by the specified activity.
 activityResultSummary :: MonadComp m
@@ -1723,7 +1723,7 @@ activityResultSummary c =
       resultContainerProperty c "utilisationTime" ActivityUtilisationTimeId activityUtilisationTime activityUtilisationTimeChanged_,
       resultContainerProperty c "idleTime" ActivityIdleTimeId activityIdleTime activityIdleTimeChanged_,
       resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
-      resultContainerProperty c "idleFactor" ActivityIdleTimeId activityIdleFactor activityIdleFactorChanged_ ] }
+      resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_ ] }
 
 -- | Return an arbitrary text as a separator source.
 textResultSource :: String -> ResultSource m
