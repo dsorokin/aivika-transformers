@@ -48,6 +48,8 @@ module Simulation.Aivika.Trans.Signal
         Signalable(..),
         signalableChanged,
         emptySignalable,
-        appendSignalable) where
+        appendSignalable,
+        -- * Debugging
+        traceSignal) where
 
 import Simulation.Aivika.Trans.Internal.Signal

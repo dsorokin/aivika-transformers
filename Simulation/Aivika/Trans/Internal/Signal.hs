@@ -49,7 +49,9 @@ module Simulation.Aivika.Trans.Internal.Signal
         Signalable(..),
         signalableChanged,
         emptySignalable,
-        appendSignalable) where
+        appendSignalable,
+        -- * Debugging
+        traceSignal) where
 
 import Data.Monoid
 import Data.List
@@ -394,3 +396,9 @@ arrivalSignal m =
                                      case t0 of
                                        Nothing -> Nothing
                                        Just t0 -> Just (t - t0) } }
+
+-- | Show the debug message with the current simulation time.
+traceSignal :: MonadComp m => String -> Signal m a -> Signal m a 
+traceSignal message m =
+  Signal { handleSignal = \h ->
+            handleSignal m $ traceEvent message . h }
