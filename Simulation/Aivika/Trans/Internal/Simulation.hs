@@ -22,7 +22,10 @@ module Simulation.Aivika.Trans.Internal.Simulation
         finallySimulation,
         throwSimulation,
         -- * Memoization
-        memoSimulation) where
+        memoSimulation,
+        -- * Exceptions
+        SimulationException(..),
+        SimulationAbort(..)) where
 
 import Control.Exception
 import Control.Monad
@@ -37,6 +40,8 @@ import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
+
+import Simulation.Aivika.Simulation (SimulationException, SimulationAbort)
 
 instance Monad m => Monad (Simulation m) where
 

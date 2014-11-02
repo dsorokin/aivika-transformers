@@ -130,6 +130,7 @@ library
                         ExistentialQuantification,
                         TypeFamilies,
                         TypeSynonymInstances,
+                        DeriveDataTypeable,
                         CPP
                      
     ghc-options:     -O2
