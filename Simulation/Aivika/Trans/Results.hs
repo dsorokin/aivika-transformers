@@ -1480,6 +1480,90 @@ timingStatsResultSummary :: (MonadComp m,
                             -> ResultSource m
 timingStatsResultSummary = ResultItemSource . ResultItem . resultItemToStringValue
   
+-- | Return a source by the specified counter.
+samplingCounterResultSource :: (MonadComp m,
+                                ResultItemable (ResultValue a),
+                                ResultItemable (ResultValue (SamplingStats a)))
+                               => ResultValue (SamplingCounter a) m
+                               -- ^ the counter
+                               -> ResultSource m
+samplingCounterResultSource x =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName      = resultValueName x,
+    resultObjectId        = resultValueId x,
+    resultObjectTypeId    = SamplingCounterId,
+    resultObjectSignal    = resultValueSignal x,
+    resultObjectSummary   = samplingCounterResultSummary x,
+    resultObjectProperties = [
+      resultContainerMapProperty c "value" SamplingCounterValueId samplingCounterValue,
+      resultContainerMapProperty c "stats" SamplingCounterStatsId samplingCounterStats ] }
+  where
+    c = resultValueToContainer x
+      
+-- | Return a source by the specified counter.
+samplingCounterResultSummary :: (MonadComp m,
+                                 ResultItemable (ResultValue a),
+                                 ResultItemable (ResultValue (SamplingStats a)))
+                                => ResultValue (SamplingCounter a) m
+                                -- ^ the counter
+                                -> ResultSource m
+samplingCounterResultSummary x =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName      = resultValueName x,
+    resultObjectId        = resultValueId x,
+    resultObjectTypeId    = SamplingCounterId,
+    resultObjectSignal    = resultValueSignal x,
+    resultObjectSummary   = samplingCounterResultSummary x,
+    resultObjectProperties = [
+      resultContainerMapProperty c "value" SamplingCounterValueId samplingCounterValue,
+      resultContainerMapProperty c "stats" SamplingCounterStatsId samplingCounterStats ] }
+  where
+    c = resultValueToContainer x
+      
+-- | Return a source by the specified counter.
+timingCounterResultSource :: (MonadComp m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultValue (TimingCounter a) m
+                             -- ^ the counter
+                             -> ResultSource m
+timingCounterResultSource x =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName      = resultValueName x,
+    resultObjectId        = resultValueId x,
+    resultObjectTypeId    = TimingCounterId,
+    resultObjectSignal    = resultValueSignal x,
+    resultObjectSummary   = timingCounterResultSummary x,
+    resultObjectProperties = [
+      resultContainerMapProperty c "value" TimingCounterValueId timingCounterValue,
+      resultContainerMapProperty c "stats" TimingCounterStatsId timingCounterStats ] }
+  where
+    c = resultValueToContainer x
+      
+-- | Return a source by the specified counter.
+timingCounterResultSummary :: (MonadComp m,
+                               ResultItemable (ResultValue a),
+                               ResultItemable (ResultValue (TimingStats a)))
+                              => ResultValue (TimingCounter a) m
+                              -- ^ the counter
+                              -> ResultSource m
+timingCounterResultSummary x =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName      = resultValueName x,
+    resultObjectId        = resultValueId x,
+    resultObjectTypeId    = TimingCounterId,
+    resultObjectSignal    = resultValueSignal x,
+    resultObjectSummary   = timingCounterResultSummary x,
+    resultObjectProperties = [
+      resultContainerMapProperty c "value" TimingCounterValueId timingCounterValue,
+      resultContainerMapProperty c "stats" TimingCounterStatsId timingCounterStats ] }
+  where
+    c = resultValueToContainer x
+  
 -- | Return a source by the specified finite queue.
 queueResultSource :: (MonadComp m,
                       Show si, Show sm, Show so,
@@ -1759,6 +1843,16 @@ instance ResultComputing t m => ResultProvider (t m (TimingStats Double)) m wher
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
+instance ResultComputing t m => ResultProvider (t m (SamplingCounter Double)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance ResultComputing t m => ResultProvider (t m (TimingCounter Double)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
+
 instance ResultComputing t m => ResultProvider (t m Int) m where
 
   resultSource' name i m =
@@ -1778,6 +1872,16 @@ instance ResultComputing t m => ResultProvider (t m (TimingStats Int)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
+
+instance ResultComputing t m => ResultProvider (t m (SamplingCounter Int)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance ResultComputing t m => ResultProvider (t m (TimingCounter Int)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
 
 instance ResultComputing t m => ResultProvider (t m String) m where
 

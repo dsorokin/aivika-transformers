@@ -27,6 +27,20 @@ module Simulation.Aivika.Trans.Statistics
         timingStatsDeviation,
         timingStatsSummary,
         returnTimingStats,
-        fromIntTimingStats) where
+        fromIntTimingStats,
+        -- * Simple Counter
+        SamplingCounter(..),
+        emptySamplingCounter,
+        incSamplingCounter,
+        decSamplingCounter,
+        resetSamplingCounter,
+        returnSamplingCounter,
+        -- * Timing Counter
+        TimingCounter(..),
+        emptyTimingCounter,
+        incTimingCounter,
+        decTimingCounter,
+        resetTimingCounter,
+        returnTimingCounter) where
 
 import Simulation.Aivika.Statistics
