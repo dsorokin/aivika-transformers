@@ -43,7 +43,9 @@ module Simulation.Aivika.Trans.Processor
         arrivalProcessor,
         -- * Integrating with Signals
         signalProcessor,
-        processorSignaling) where
+        processorSignaling,
+        -- * Debugging
+        traceProcessor) where
 
 import qualified Control.Category as C
 import Control.Arrow
@@ -472,3 +474,15 @@ arrivalProcessor = Processor arrivalStream
 -- | A processor that delays the input stream by one step using the specified initial value.
 delayProcessor :: MonadComp m => a -> Processor m a a
 delayProcessor a0 = Processor $ delayStream a0
+
+-- | Show the debug message with the current simulation time.
+traceProcessor :: MonadComp m
+                  => Maybe String
+                  -- ^ the request message
+                  -> Maybe String
+                  -- ^ the response message
+                  -> Processor m a b
+                  -- ^ a processor
+                  -> Processor m a b
+traceProcessor request response (Processor f) =
+  Processor $ traceStream request response . f 

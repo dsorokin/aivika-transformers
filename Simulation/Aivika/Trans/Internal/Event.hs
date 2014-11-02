@@ -36,7 +36,9 @@ module Simulation.Aivika.Trans.Internal.Event
         memoEvent,
         memoEventInTime,
         -- * Disposable
-        DisposableEvent(..)) where
+        DisposableEvent(..),
+        -- * Debugging
+        traceEvent) where
 
 import Data.Monoid
 
@@ -45,6 +47,8 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
 import Control.Applicative
+
+import Debug.Trace (trace)
 
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Session
@@ -275,3 +279,10 @@ instance Monad m => Monoid (DisposableEvent m) where
 
   {-# INLINE mappend #-}
   mappend (DisposableEvent x) (DisposableEvent y) = DisposableEvent $ x >> y
+
+-- | Show the debug message with the current simulation time.
+traceEvent :: MonadComp m => String -> Event m a -> Event m a
+traceEvent message m =
+  Event $ \p ->
+  trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
+  invokeEvent p m

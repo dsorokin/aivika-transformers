@@ -35,7 +35,8 @@ module Simulation.Aivika.Trans.Internal.Cont
         resumeECont,
         contCanceled,
         contFreeze,
-        contAwait) where
+        contAwait,
+        traceCont) where
 
 import Data.Array
 import Data.Monoid
@@ -44,6 +45,8 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Applicative
+
+import Debug.Trace (trace)
 
 import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.ProtoRef
@@ -685,3 +688,14 @@ contAwait signal =
                                   Just c  ->
                                     invokeEvent p $ resumeCont c a
      writeProtoRef r $ Just h          
+
+-- | Show the debug message with the current simulation time.
+traceCont :: MonadComp m => String -> Cont m a -> Cont m a
+traceCont message (Cont m) =
+  Cont $ \c ->
+  Event $ \p ->
+  do z <- contCanceled c
+     if z
+       then cancelCont p c
+       else trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
+            invokeEvent p $ m c

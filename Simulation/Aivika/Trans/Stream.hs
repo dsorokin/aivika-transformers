@@ -60,7 +60,9 @@ module Simulation.Aivika.Trans.Stream
         rightStream,
         replaceLeftStream,
         replaceRightStream,
-        partitionEitherStream) where
+        partitionEitherStream,
+        -- * Debugging
+        traceStream) where
 
 import Data.Maybe
 import Data.Monoid
@@ -548,3 +550,25 @@ arrivalStream s = Cons $ loop s Nothing where
 -- | Delay the stream by one step using the specified initial value.
 delayStream :: MonadComp m => a -> Stream m a -> Stream m a
 delayStream a0 s = Cons $ return (a0, s)
+
+-- | Show the debug message with the current simulation time.
+traceStream :: MonadComp m
+               => Maybe String
+               -- ^ the request message
+               -> Maybe String
+               -- ^ the response message
+               -> Stream m a
+               -- ^ a stream
+               -> Stream m a
+traceStream request response s = Cons $ loop s where
+  loop s = do (a, xs) <-
+                case request of
+                  Nothing -> runStream s
+                  Just message ->
+                    traceProcess message $
+                    runStream s
+              case response of
+                Nothing -> return (a, Cons $ loop xs)
+                Just message ->
+                  traceProcess message $
+                  return (a, Cons $ loop xs)

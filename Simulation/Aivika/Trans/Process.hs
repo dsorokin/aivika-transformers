@@ -79,6 +79,8 @@ module Simulation.Aivika.Trans.Process
         -- * Memoizing Process
         memoProcess,
         -- * Never Ending Process
-        neverProcess) where
+        neverProcess,
+        -- * Debugging
+        traceProcess) where
 
 import Simulation.Aivika.Trans.Internal.Process

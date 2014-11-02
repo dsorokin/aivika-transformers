@@ -27,13 +27,17 @@ module Simulation.Aivika.Trans.Internal.Dynamics
         time,
         isTimeInteg,
         integIteration,
-        integPhase) where
+        integPhase,
+        -- * Debugging
+        traceDynamics) where
 
 import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
 import Control.Applicative
+
+import Debug.Trace (trace)
 
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Comp
@@ -268,3 +272,10 @@ integIteration = Dynamics $ return . pointIteration
 integPhase :: Monad m => Dynamics m Int
 {-# INLINE integPhase #-}
 integPhase = Dynamics $ return . pointPhase
+
+-- | Show the debug message with the current simulation time.
+traceDynamics :: Monad m => String -> Dynamics m a -> Dynamics m a
+traceDynamics message m =
+  Dynamics $ \p ->
+  trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
+  invokeDynamics p m

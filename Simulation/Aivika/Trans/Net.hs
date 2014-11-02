@@ -42,7 +42,9 @@ module Simulation.Aivika.Trans.Net
         delayNet,
         -- * Interchanging Nets with Processors
         netProcessor,
-        processorNet) where
+        processorNet,
+        -- * Debugging
+        traceNet) where
 
 import qualified Control.Category as C
 import Control.Arrow
@@ -270,3 +272,26 @@ iterateNetEither (Net f) a =
      case ba' of
        Left b'  -> return b'
        Right a' -> iterateNetEither x a'
+
+-- | Show the debug message with the current simulation time.
+traceNet :: MonadComp m
+            => Maybe String
+            -- ^ the request message
+            -> Maybe String
+            -- ^ the response message
+            -> Net m a b
+            -- ^ a net
+            -> Net m a b
+traceNet request response x = Net $ loop x where
+  loop x a =
+    do (b, x') <-
+         case request of
+           Nothing -> runNet x a
+           Just message -> 
+             traceProcess message $
+             runNet x a
+       case response of
+         Nothing -> return (b, Net $ loop x')
+         Just message ->
+           traceProcess message $
+           return (b, Net $ loop x') 
