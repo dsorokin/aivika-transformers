@@ -11,8 +11,11 @@
 module Simulation.Aivika.Trans.Server
        (-- * Server
         Server,
+        ServerInterruption(..),
         newServer,
         newStateServer,
+        newInterruptibleServer,
+        newInterruptibleStateServer,
         -- * Processing
         serverProcessor,
         -- * Server Properties and Activities
@@ -52,6 +55,7 @@ module Simulation.Aivika.Trans.Server
         serverOutputWaitFactorChanged_,
         -- * Basic Signals
         serverInputReceived,
+        serverTaskInterrupted,
         serverTaskProcessed,
         serverOutputProvided,
         -- * Overall Signal
@@ -59,6 +63,7 @@ module Simulation.Aivika.Trans.Server
 
 import Data.Monoid
 
+import Control.Monad
 import Control.Arrow
 
 import Simulation.Aivika.Trans.Session
@@ -77,6 +82,8 @@ import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Statistics
 
+import Simulation.Aivika.Server (ServerInterruption(..))
+
 -- | It models a server that takes @a@ and provides @b@ having state @s@ within underlying computation @m@.
 data Server m s a b =
   Server { serverInitState :: s,
@@ -85,6 +92,8 @@ data Server m s a b =
            -- ^ The current state of the server.
            serverProcess :: s -> a -> Process m (s, b),
            -- ^ Provide @b@ by specified @a@.
+           serverProcessInterruptible :: Bool,
+           -- ^ Whether the process is interruptible.
            serverTotalInputWaitTimeRef :: ProtoRef m Double,
            -- ^ The counted total time spent in awating the input.
            serverTotalProcessingTimeRef :: ProtoRef m Double,
@@ -99,6 +108,8 @@ data Server m s a b =
            -- ^ The statistics for the time spent for delivering the output.
            serverInputReceivedSource :: SignalSource m a,
            -- ^ A signal raised when the server recieves a new input to process.
+           serverTaskInterruptedSource :: SignalSource m (ServerInterruption a),
+           -- ^ A signal raised when the task was interrupted.
            serverTaskProcessedSource :: SignalSource m (a, b),
            -- ^ A signal raised when the input is processed and
            -- the output is prepared for deliverying.
@@ -107,17 +118,22 @@ data Server m s a b =
          }
 
 -- | Create a new server that can provide output @b@ by input @a@.
+--
+-- By default, it is assumed that the server cannot be interrupted,
+-- because the handling of possible task interruption is rather costly
+-- operation.
 newServer :: MonadComp m
              => (a -> Process m b)
              -- ^ provide an output by the specified input
              -> Simulation m (Server m () a b)
-newServer provide =
-  flip newStateServer () $ \s a ->
-  do b <- provide a
-     return (s, b)
+newServer = newInterruptibleServer False
 
 -- | Create a new server that can provide output @b@ by input @a@
 -- starting from state @s@.
+--
+-- By default, it is assumed that the server cannot be interrupted,
+-- because the handling of possible task interruption is rather costly
+-- operation.
 newStateServer :: MonadComp m
                   => (s -> a -> Process m (s, b))
                   -- ^ provide a new state and output by the specified 
@@ -125,7 +141,32 @@ newStateServer :: MonadComp m
                   -> s
                   -- ^ the initial state
                   -> Simulation m (Server m s a b)
-newStateServer provide state =
+newStateServer = newInterruptibleStateServer False
+
+-- | Create a new interruptible server that can provide output @b@ by input @a@.
+newInterruptibleServer :: MonadComp m
+                          => Bool
+                          -- ^ whether the server can be interrupted
+                          -> (a -> Process m b)
+                          -- ^ provide an output by the specified input
+                          -> Simulation m (Server m () a b)
+newInterruptibleServer interruptible provide =
+  flip (newInterruptibleStateServer interruptible) () $ \s a ->
+  do b <- provide a
+     return (s, b)
+
+-- | Create a new interruptible server that can provide output @b@ by input @a@
+-- starting from state @s@.
+newInterruptibleStateServer :: MonadComp m
+                               => Bool
+                               -- ^ whether the server can be interrupted
+                               -> (s -> a -> Process m (s, b))
+                               -- ^ provide a new state and output by the specified 
+                               -- old state and input
+                               -> s
+                               -- ^ the initial state
+                               -> Simulation m (Server m s a b)
+newInterruptibleStateServer interruptible provide state =
   do sn <- liftParameter simulationSession
      r0 <- liftComp $ newProtoRef sn state
      r1 <- liftComp $ newProtoRef sn 0
@@ -137,9 +178,11 @@ newStateServer provide state =
      s1 <- newSignalSource
      s2 <- newSignalSource
      s3 <- newSignalSource
+     s4 <- newSignalSource
      let server = Server { serverInitState = state,
                            serverStateRef = r0,
                            serverProcess = provide,
+                           serverProcessInterruptible = interruptible,
                            serverTotalInputWaitTimeRef = r1,
                            serverTotalProcessingTimeRef = r2,
                            serverTotalOutputWaitTimeRef = r3,
@@ -147,8 +190,9 @@ newStateServer provide state =
                            serverProcessingTimeRef = r5,
                            serverOutputWaitTimeRef = r6,
                            serverInputReceivedSource = s1,
-                           serverTaskProcessedSource = s2,
-                           serverOutputProvidedSource = s3 }
+                           serverTaskInterruptedSource = s2,
+                           serverTaskProcessedSource = s3,
+                           serverOutputProvidedSource = s4 }
      return server
 
 -- | Return a processor for the specified server.
@@ -198,7 +242,10 @@ serverProcessor server =
                      addSamplingStats (t1 - t0)
               triggerSignal (serverInputReceivedSource server) a
          -- provide the service
-         (s', b) <- serverProcess server s a
+         (s', b) <-
+           if serverProcessInterruptible server
+           then serverProcessInterrupting server s a
+           else serverProcess server s a
          t2 <- liftDynamics time
          liftEvent $
            do liftComp $
@@ -208,6 +255,24 @@ serverProcessor server =
                      addSamplingStats (t2 - t1)
               triggerSignal (serverTaskProcessedSource server) (a, b)
          return (b, loop s' (Just (t2, a, b)) xs')
+
+-- | Process the input with ability to handle a possible interruption.
+serverProcessInterrupting :: MonadComp m => Server m s a b -> s -> a -> Process m (s, b)
+serverProcessInterrupting server s a =
+  do pid <- processId
+     t1  <- liftDynamics time
+     finallyProcess
+       (serverProcess server s a)
+       (liftEvent $
+        do cancelled <- processCancelled pid
+           when cancelled $
+             do t2 <- liftDynamics time
+                liftComp $
+                  do modifyProtoRef' (serverTotalProcessingTimeRef server) (+ (t2 - t1))
+                     modifyProtoRef' (serverProcessingTimeRef server) $
+                       addSamplingStats (t2 - t1)
+                let x = ServerInterruption a t1 t2
+                triggerSignal (serverTaskInterruptedSource server) x)
 
 -- | Return the current state of the server.
 --
@@ -451,6 +516,10 @@ serverOutputWaitFactorChanged_ server =
 serverInputReceived :: MonadComp m => Server m s a b -> Signal m a
 serverInputReceived = publishSignal . serverInputReceivedSource
 
+-- | Raised when the task processing by the server was interrupted.
+serverTaskInterrupted :: MonadComp m => Server m s a b -> Signal m (ServerInterruption a)
+serverTaskInterrupted = publishSignal . serverTaskInterruptedSource
+
 -- | Raised when the server has just processed the task.
 serverTaskProcessed :: MonadComp m => Server m s a b -> Signal m (a, b)
 serverTaskProcessed = publishSignal . serverTaskProcessedSource
@@ -463,6 +532,7 @@ serverOutputProvided = publishSignal . serverOutputProvidedSource
 serverChanged_ :: MonadComp m => Server m s a b -> Signal m ()
 serverChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
+  mapSignal (const ()) (serverTaskInterrupted server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
   mapSignal (const ()) (serverOutputProvided server)
 
