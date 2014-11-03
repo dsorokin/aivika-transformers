@@ -12,8 +12,11 @@
 module Simulation.Aivika.Trans.Activity
        (-- * Activity
         Activity,
+        ActivityInterruption(..),
         newActivity,
         newStateActivity,
+        newInterruptibleActivity,
+        newInterruptibleStateActivity,
         -- * Processing
         activityNet,
         -- * Activity Properties
@@ -45,11 +48,13 @@ module Simulation.Aivika.Trans.Activity
         -- * Basic Signals
         activityUtilising,
         activityUtilised,
+        activityInterrupted,
         -- * Overall Signal
         activityChanged_) where
 
 import Data.Monoid
 
+import Control.Monad
 import Control.Monad.Trans
 import Control.Arrow
 
@@ -69,6 +74,8 @@ import Simulation.Aivika.Trans.Net
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Statistics
 
+import Simulation.Aivika.Activity (ActivityInterruption(..))
+
 -- | Like 'Server' it models an activity that takes @a@ and provides @b@ having state @s@.
 -- But unlike the former the activity is destined for simulation within 'Net' computation.
 data Activity m s a b =
@@ -78,6 +85,8 @@ data Activity m s a b =
              -- ^ The current state of the activity.
              activityProcess :: s -> a -> Process m (s, b),
              -- ^ Provide @b@ by specified @a@.
+             activityProcessInterruptible :: Bool,
+             -- ^ Whether the process is interruptible.
              activityTotalUtilisationTimeRef :: ProtoRef m Double,
              -- ^ The counted total time of utilising the activity.
              activityTotalIdleTimeRef :: ProtoRef m Double,
@@ -88,22 +97,29 @@ data Activity m s a b =
              -- ^ The statistics for the time, when the activity was idle.
              activityUtilisingSource :: SignalSource m a,
              -- ^ A signal raised when starting to utilise the activity.
-             activityUtilisedSource :: SignalSource m (a, b)
+             activityUtilisedSource :: SignalSource m (a, b),
              -- ^ A signal raised when the activity has been utilised.
+             activityInterruptedSource :: SignalSource m (ActivityInterruption a)
+             -- ^ A signal raised when the utilisation was interrupted.
            }
 
 -- | Create a new activity that can provide output @b@ by input @a@.
+--
+-- By default, it is assumed that the activity utilisation cannot be interrupted,
+-- because the handling of possible task interruption is rather costly
+-- operation.
 newActivity :: MonadComp m
                => (a -> Process m b)
                -- ^ provide an output by the specified input
                -> Simulation m (Activity m () a b)
-newActivity provide =
-  flip newStateActivity () $ \s a ->
-  do b <- provide a
-     return (s, b)
+newActivity = newInterruptibleActivity False
 
 -- | Create a new activity that can provide output @b@ by input @a@
 -- starting from state @s@.
+--
+-- By default, it is assumed that the activity utilisation cannot be interrupted,
+-- because the handling of possible task interruption is rather costly
+-- operation.
 newStateActivity :: MonadComp m
                     => (s -> a -> Process m (s, b))
                     -- ^ provide a new state and output by the specified 
@@ -111,7 +127,32 @@ newStateActivity :: MonadComp m
                     -> s
                     -- ^ the initial state
                     -> Simulation m (Activity m s a b)
-newStateActivity provide state =
+newStateActivity = newInterruptibleStateActivity False
+
+-- | Create a new interruptible activity that can provide output @b@ by input @a@.
+newInterruptibleActivity :: MonadComp m
+                            => Bool
+                            -- ^ whether the activity can be interrupted
+                            -> (a -> Process m b)
+                            -- ^ provide an output by the specified input
+                            -> Simulation m (Activity m () a b)
+newInterruptibleActivity interruptible provide =
+  flip (newInterruptibleStateActivity interruptible) () $ \s a ->
+  do b <- provide a
+     return (s, b)
+
+-- | Create a new activity that can provide output @b@ by input @a@
+-- starting from state @s@.
+newInterruptibleStateActivity :: MonadComp m
+                                 => Bool
+                                 -- ^ whether the activity can be interrupted
+                                 -> (s -> a -> Process m (s, b))
+                                 -- ^ provide a new state and output by the specified 
+                                 -- old state and input
+                                 -> s
+                                 -- ^ the initial state
+                                 -> Simulation m (Activity m s a b)
+newInterruptibleStateActivity interruptible provide state =
   do sn <- liftParameter simulationSession
      r0 <- liftComp $ newProtoRef sn state
      r1 <- liftComp $ newProtoRef sn 0
@@ -120,15 +161,18 @@ newStateActivity provide state =
      r4 <- liftComp $ newProtoRef sn emptySamplingStats
      s1 <- newSignalSource
      s2 <- newSignalSource
+     s3 <- newSignalSource
      return Activity { activityInitState = state,
                        activityStateRef = r0,
                        activityProcess = provide,
+                       activityProcessInterruptible = interruptible,
                        activityTotalUtilisationTimeRef = r1,
                        activityTotalIdleTimeRef = r2,
                        activityUtilisationTimeRef = r3,
                        activityIdleTimeRef = r4,
                        activityUtilisingSource = s1,
-                       activityUtilisedSource = s2 }
+                       activityUtilisedSource = s2,
+                       activityInterruptedSource = s3 }
 
 -- | Return a network computation for the specified activity.
 --
@@ -158,7 +202,9 @@ activityNet act = Net $ loop (activityInitState act) Nothing
                        addSamplingStats (t0 - t')
               triggerSignal (activityUtilisingSource act) a
          -- utilise the activity
-         (s', b) <- activityProcess act s a
+         (s', b) <- if activityProcessInterruptible act
+                    then activityProcessInterrupting act s a
+                    else activityProcess act s a
          t1 <- liftDynamics time
          liftEvent $
            do liftComp $
@@ -168,6 +214,24 @@ activityNet act = Net $ loop (activityInitState act) Nothing
                      addSamplingStats (t1 - t0)
               triggerSignal (activityUtilisedSource act) (a, b)
          return (b, Net $ loop s' (Just t1))
+
+-- | Process the input with ability to handle a possible interruption.
+activityProcessInterrupting :: MonadComp m => Activity m s a b -> s -> a -> Process m (s, b)
+activityProcessInterrupting act s a =
+  do pid <- processId
+     t0  <- liftDynamics time
+     finallyProcess
+       (activityProcess act s a)
+       (liftEvent $
+        do cancelled <- processCancelled pid
+           when cancelled $
+             do t1 <- liftDynamics time
+                liftComp $
+                  do modifyProtoRef' (activityTotalUtilisationTimeRef act) (+ (t1 - t0))
+                     modifyProtoRef' (activityUtilisationTimeRef act) $
+                       addSamplingStats (t1 - t0)
+                let x = ActivityInterruption a t0 t1
+                triggerSignal (activityInterruptedSource act) x)
 
 -- | Return the current state of the activity.
 --
@@ -336,11 +400,16 @@ activityUtilising = publishSignal . activityUtilisingSource
 activityUtilised :: Activity m s a b -> Signal m (a, b)
 activityUtilised = publishSignal . activityUtilisedSource
 
+-- | Raised when the task utilisation by the activity was interrupted.
+activityInterrupted :: Activity m s a b -> Signal m (ActivityInterruption a)
+activityInterrupted = publishSignal . activityInterruptedSource
+
 -- | Signal whenever any property of the activity changes.
 activityChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
 activityChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
-  mapSignal (const ()) (activityUtilised act)
+  mapSignal (const ()) (activityUtilised act) <>
+  mapSignal (const ()) (activityInterrupted act)
 
 -- | Return the summary for the activity with desciption of its
 -- properties using the specified indent.
