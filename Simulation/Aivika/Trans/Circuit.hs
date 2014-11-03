@@ -578,7 +578,7 @@ iterateCircuitInTimesEither ts cir a =
      invokeEvent p $ 
        iterateCircuitInPointsEither ps cir a
 
--- | Show the debug message with the current simulation time.
+-- | Show the debug messages with the current simulation time.
 traceCircuit :: MonadComp m
                 => Maybe String
                 -- ^ the request message

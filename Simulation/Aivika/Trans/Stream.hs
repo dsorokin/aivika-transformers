@@ -551,7 +551,7 @@ arrivalStream s = Cons $ loop s Nothing where
 delayStream :: MonadComp m => a -> Stream m a -> Stream m a
 delayStream a0 s = Cons $ return (a0, s)
 
--- | Show the debug message with the current simulation time.
+-- | Show the debug messages with the current simulation time.
 traceStream :: MonadComp m
                => Maybe String
                -- ^ the request message

@@ -475,7 +475,7 @@ arrivalProcessor = Processor arrivalStream
 delayProcessor :: MonadComp m => a -> Processor m a a
 delayProcessor a0 = Processor $ delayStream a0
 
--- | Show the debug message with the current simulation time.
+-- | Show the debug messages with the current simulation time.
 traceProcessor :: MonadComp m
                   => Maybe String
                   -- ^ the request message
