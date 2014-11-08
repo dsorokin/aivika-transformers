@@ -52,6 +52,7 @@ module Simulation.Aivika.Trans.Stream
         apStreamM,
         filterStream,
         filterStreamM,
+        singletonStream,
         -- * Integrating with Signals
         signalStream,
         streamSignal,
@@ -550,6 +551,10 @@ arrivalStream s = Cons $ loop s Nothing where
 -- | Delay the stream by one step using the specified initial value.
 delayStream :: MonadComp m => a -> Stream m a -> Stream m a
 delayStream a0 s = Cons $ return (a0, s)
+
+-- | Return a stream consisting of exactly one element and inifinite tail.
+singletonStream :: MonadComp m => a -> Stream m a
+singletonStream a = Cons $ return (a, emptyStream)
 
 -- | Show the debug messages with the current simulation time.
 traceStream :: MonadComp m
