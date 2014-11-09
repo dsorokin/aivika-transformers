@@ -40,5 +40,4 @@ module Simulation.Aivika.Trans.Event
         -- * Debugging
         traceEvent) where
 
-import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Event

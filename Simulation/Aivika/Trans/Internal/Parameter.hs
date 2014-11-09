@@ -17,7 +17,9 @@
 --
 module Simulation.Aivika.Trans.Internal.Parameter
        (-- * Parameter
+        Parameter(..),
         ParameterLift(..),
+        invokeParameter,
         runParameter,
         runParameters,
         -- * Error Handling
@@ -55,6 +57,7 @@ import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Comp.IO
+import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 
 instance Monad m => Monad (Parameter m) where

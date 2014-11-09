@@ -14,7 +14,9 @@
 -- 
 module Simulation.Aivika.Trans.Internal.Simulation
        (-- * Simulation
+        Simulation(..),
         SimulationLift(..),
+        invokeSimulation,
         runSimulation,
         runSimulations,
         -- * Error Handling
@@ -38,6 +40,7 @@ import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.ProtoRef
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 

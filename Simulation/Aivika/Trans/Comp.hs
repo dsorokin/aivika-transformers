@@ -25,7 +25,7 @@ import Simulation.Aivika.Trans.ProtoRef
 import Simulation.Aivika.Trans.ProtoArray
 import Simulation.Aivika.Trans.Unboxed
 import Simulation.Aivika.Trans.Generator
-import Simulation.Aivika.Trans.Internal.Specs
+import Simulation.Aivika.Trans.Internal.Types
 
 -- | A prototype of the type class of monads based on which the simulation monads can be built. 
 class (Monad m,

@@ -30,5 +30,4 @@ module Simulation.Aivika.Trans.Dynamics
         -- * Debugging
         traceDynamics) where
 
-import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Dynamics

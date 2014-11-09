@@ -21,7 +21,7 @@ import qualified Simulation.Aivika.Trans.PriorityQueue as PQ
 import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.ProtoRef
 import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Internal.Specs
+import Simulation.Aivika.Trans.Internal.Types
 
 -- | A template-based implementation of the 'EventQueueing' class type.
 class ProtoMonadComp m => TemplateEventQueueing m 

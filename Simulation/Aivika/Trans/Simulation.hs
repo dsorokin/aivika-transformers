@@ -25,5 +25,4 @@ module Simulation.Aivika.Trans.Simulation
         SimulationException(..),
         SimulationAbort(..)) where
 
-import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation

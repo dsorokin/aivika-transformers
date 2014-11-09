@@ -13,7 +13,9 @@
 --
 module Simulation.Aivika.Trans.Internal.Dynamics
        (-- * Dynamics
+        Dynamics(..),
         DynamicsLift(..),
+        invokeDynamics,
         runDynamicsInStartTime,
         runDynamicsInStopTime,
         runDynamicsInIntegTimes,
@@ -41,6 +43,7 @@ import Debug.Trace (trace)
 
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation

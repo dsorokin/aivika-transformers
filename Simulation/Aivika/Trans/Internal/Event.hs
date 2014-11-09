@@ -14,10 +14,14 @@
 --
 module Simulation.Aivika.Trans.Internal.Event
        (-- * Event Monad
+        Event(..),
         EventLift(..),
+        EventProcessing(..),
+        invokeEvent,
         runEventInStartTime,
         runEventInStopTime,
         -- * Event Queue
+        EventQueueing(..),
         enqueueEventWithCancellation,
         enqueueEventWithTimes,
         enqueueEventWithPoints,
@@ -54,6 +58,7 @@ import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.ProtoRef
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
