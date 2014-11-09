@@ -52,7 +52,7 @@ import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Cont
 import Simulation.Aivika.Trans.Internal.Process
-import Simulation.Aivika.Trans.Internal.Signal
+import Simulation.Aivika.Trans.Signal
 
 -- | The task represents a process that was already started in background.
 data Task m a =

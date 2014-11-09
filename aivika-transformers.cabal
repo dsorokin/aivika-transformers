@@ -105,7 +105,6 @@ library
                      Simulation.Aivika.Trans.Internal.Event
                      Simulation.Aivika.Trans.Internal.Parameter
                      Simulation.Aivika.Trans.Internal.Process
-                     Simulation.Aivika.Trans.Internal.Signal
                      Simulation.Aivika.Trans.Internal.Simulation
                      Simulation.Aivika.Trans.Internal.Specs
                      

@@ -35,7 +35,7 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
-import Simulation.Aivika.Trans.Internal.Signal
+import Simulation.Aivika.Trans.Signal
 
 --
 -- Agent-based Modeling

@@ -58,7 +58,7 @@ import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
-import Simulation.Aivika.Trans.Internal.Signal
+import Simulation.Aivika.Trans.Signal
 
 -- | It defines how the parent and child computations should be cancelled.
 data ContCancellation = CancelTogether

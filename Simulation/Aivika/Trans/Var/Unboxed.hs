@@ -31,7 +31,6 @@ import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
-import Simulation.Aivika.Trans.Internal.Signal
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Unboxed

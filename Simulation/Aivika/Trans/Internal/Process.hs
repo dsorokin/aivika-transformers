@@ -97,7 +97,7 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Cont
-import Simulation.Aivika.Trans.Internal.Signal
+import Simulation.Aivika.Trans.Signal
 
 -- | Represents a process identifier.
 data ProcessId m = 
