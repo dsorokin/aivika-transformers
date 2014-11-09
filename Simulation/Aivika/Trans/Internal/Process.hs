@@ -301,7 +301,7 @@ cancelProcessWithId :: MonadComp m => ProcessId m -> Event m ()
 cancelProcessWithId pid = contCancellationInitiate (processCancelSource pid)
 
 -- | The process cancels itself.
-cancelProcess :: (MonadComp m, MonadIO m) => Process m a
+cancelProcess :: MonadComp m => Process m a
 cancelProcess =
   do pid <- processId
      liftEvent $ cancelProcessWithId pid
@@ -410,7 +410,7 @@ finallyProcess (Process m) (Process m') =
 -- functions like the stated one that use the 'throw' function but within the 'IO' computation,
 -- which allows already handling the exception.
 throwProcess :: (MonadComp m, Exception e) => e -> Process m a
-throwProcess = liftIO . throw
+throwProcess = liftEvent . throw
 
 -- | Execute the specified computations in parallel within
 -- the current computation and return their results. The cancellation
@@ -574,7 +574,7 @@ zip3ProcessParallel x y z =
 -- | Unzip the process using memoization so that the both returned
 -- processes could be applied independently, although they will refer
 -- to the same pair of values.
-unzipProcess :: (MonadComp m, MonadIO m) => Process m (a, b) -> Simulation m (Process m a, Process m b)
+unzipProcess :: MonadComp m => Process m (a, b) -> Simulation m (Process m a, Process m b)
 unzipProcess xy =
   do xy' <- memoProcess xy
      return (fmap fst xy', fmap snd xy')
@@ -589,7 +589,7 @@ unzipProcess xy =
 --
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
-timeoutProcess :: (MonadComp m, MonadIO m) => Double -> Process m a -> Process m (Maybe a)
+timeoutProcess :: MonadComp m => Double -> Process m a -> Process m (Maybe a)
 timeoutProcess timeout p =
   do pid <- liftSimulation newProcessId
      timeoutProcessUsingId timeout pid p
@@ -604,7 +604,7 @@ timeoutProcess timeout p =
 --
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
-timeoutProcessUsingId :: (MonadComp m, MonadIO m) => Double -> ProcessId m -> Process m a -> Process m (Maybe a)
+timeoutProcessUsingId :: MonadComp m => Double -> ProcessId m -> Process m a -> Process m (Maybe a)
 timeoutProcessUsingId timeout pid p =
   do s <- liftSimulation newSignalSource
      timeoutPid <- liftSimulation newProcessId
