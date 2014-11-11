@@ -58,11 +58,14 @@ library
                      Simulation.Aivika.Trans.Dynamics
                      Simulation.Aivika.Trans.Dynamics.Extra
                      Simulation.Aivika.Trans.Dynamics.Memo
+                     Simulation.Aivika.Trans.Dynamics.Memo.IO
                      Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
+                     Simulation.Aivika.Trans.Dynamics.Memo.Unboxed.IO
                      Simulation.Aivika.Trans.Dynamics.Random
                      Simulation.Aivika.Trans.Event
                      Simulation.Aivika.Trans.Exception
                      Simulation.Aivika.Trans.Generator
+                     Simulation.Aivika.Trans.Monad.SD
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random

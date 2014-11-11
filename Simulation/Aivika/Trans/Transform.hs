@@ -30,12 +30,12 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.Fix
 
-import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
-import Simulation.Aivika.Trans.Dynamics.Memo
-import Simulation.Aivika.Trans.Unboxed
+import qualified Simulation.Aivika.Trans.Dynamics.Memo as M
+import qualified Simulation.Aivika.Trans.Dynamics.Memo.Unboxed as MU
 import Simulation.Aivika.Trans.SystemDynamics
+import Simulation.Aivika.Trans.Monad.SD
 
 -- | It allows representing an analogous circuit as an opposite to
 -- the digital one.
@@ -50,32 +50,32 @@ newtype Transform m a b =
               -- ^ Run the transform.
             }
 
-instance MonadComp m => C.Category (Transform m) where
+instance Monad m => C.Category (Transform m) where
 
   id = Transform return
   
   (Transform g) . (Transform f) =
     Transform $ \a -> f a >>= g
 
-instance MonadComp m => Arrow (Transform m) where
+instance MonadSD m => Arrow (Transform m) where
 
   arr f = Transform $ return . fmap f
 
   first (Transform f) =
     Transform $ \bd ->
-    do (b, d) <- unzip0Dynamics bd
+    do (b, d) <- M.unzip0Dynamics bd
        c <- f b
        return $ liftM2 (,) c d 
 
   second (Transform f) =
     Transform $ \db ->
-    do (d, b) <- unzip0Dynamics db
+    do (d, b) <- M.unzip0Dynamics db
        c <- f b
        return $ liftM2 (,) d c
 
   (Transform f) *** (Transform g) =
     Transform $ \bb' ->
-    do (b, b') <- unzip0Dynamics bb'
+    do (b, b') <- M.unzip0Dynamics bb'
        c  <- f b
        c' <- g b'
        return $ liftM2 (,) c c'
@@ -86,23 +86,23 @@ instance MonadComp m => Arrow (Transform m) where
        c' <- g b
        return $ liftM2 (,) c c'
 
-instance (MonadComp m, MonadFix m) => ArrowLoop (Transform m) where
+instance (MonadSD m, MonadFix m) => ArrowLoop (Transform m) where
 
   loop (Transform f) =
     Transform $ \b ->
     mdo let bd = liftM2 (,) b d
         cd <- f bd
-        (c, d) <- unzip0Dynamics cd
+        (c, d) <- M.unzip0Dynamics cd
         return c
 
 -- | A transform that returns the current modeling time.
-timeTransform :: MonadComp m => Transform m a Double
+timeTransform :: Monad m => Transform m a Double
 timeTransform = Transform $ const $ return time
 
 -- | Return a delayed transform by the specified lag time and initial value.
 --
 -- This is actually the 'delayI' function wrapped in the 'Transform' type. 
-delayTransform :: MonadComp m
+delayTransform :: MonadSD m
                   => Dynamics m Double     -- ^ the lag time
                   -> Dynamics m a       -- ^ the initial value
                   -> Transform m a a    -- ^ the delayed transform
@@ -113,7 +113,7 @@ delayTransform lagTime init =
 -- by the specified initial value.
 --
 -- This is actually the 'integ' function wrapped in the 'Transform' type. 
-integTransform :: (MonadComp m, MonadFix m)
+integTransform :: (MonadSD m, MonadFix m)
                   => Dynamics m Double
                   -- ^ the initial value
                   -> Transform m Double Double
@@ -122,7 +122,7 @@ integTransform init = Transform $ \diff -> integ diff init
   
 -- | Like 'integTransform' but allows either setting a new 'Left' value of the integral,
 -- or updating it by the specified 'Right' derivative.
-integTransformEither :: (MonadComp m, MonadFix m)
+integTransformEither :: (MonadSD m, MonadFix m)
                         => Dynamics m Double
                         -- ^ the initial value
                         -> Transform m (Either Double Double) Double
@@ -133,7 +133,7 @@ integTransformEither init = Transform $ \diff -> integEither diff init
 -- by the specified initial value.
 --
 -- This is actually the 'diffsum' function wrapped in the 'Transform' type. 
-sumTransform :: (MonadComp m, MonadFix m, Num a, Unboxed m a)
+sumTransform :: (MonadSD m, MonadFix m, Num a, MU.MonadMemo m a)
                 => Dynamics m a
                 -- ^ the initial value
                 -> Transform m a a
@@ -142,7 +142,7 @@ sumTransform init = Transform $ \diff -> diffsum diff init
 
 -- | Like 'sumTransform' but allows either setting a new 'Left' value of the sum,
 -- or updating it by the specified 'Right' difference.
-sumTransformEither :: (MonadComp m, MonadFix m, Num a, Unboxed m a)
+sumTransformEither :: (MonadSD m, MonadFix m, Num a, MU.MonadMemo m a)
                       => Dynamics m a
                       -- ^ the initial value
                       -> Transform m (Either a a) a

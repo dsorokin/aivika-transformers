@@ -13,122 +13,40 @@
 --
 
 module Simulation.Aivika.Trans.Dynamics.Memo
-       (memoDynamics,
-        memo0Dynamics,
-        iterateDynamics,
+       (MonadMemo(..),
         unzipDynamics,
         unzip0Dynamics) where
 
 import Control.Monad
+import Control.Monad.Trans
 
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.ProtoArray
-import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Internal.Specs
-import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
-import Simulation.Aivika.Trans.Dynamics.Extra
 
--- | Memoize and order the computation in the integration time points using 
--- the interpolation that knows of the Runge-Kutta method. The values are
--- calculated sequentially starting from 'starttime'.
-memoDynamics :: MonadComp m => Dynamics m e -> Simulation m (Dynamics m e)
-{-# INLINABLE memoDynamics #-}
-memoDynamics (Dynamics m) = 
-  Simulation $ \r ->
-  do let sc  = runSpecs r
-         s   = runSession r
-         phs = 1 + integPhaseHiBnd sc
-         ns  = 1 + integIterationHiBnd sc
-     arr   <- newProtoArray_ s (ns * phs)
-     nref  <- newProtoRef s 0
-     phref <- newProtoRef s 0
-     let r p = 
-           do let n  = pointIteration p
-                  ph = pointPhase p
-                  i  = n * phs + ph
-                  loop n' ph' = 
-                    if (n' > n) || ((n' == n) && (ph' > ph)) 
-                    then 
-                      readProtoArray arr i
-                    else 
-                      let p' = p { pointIteration = n', pointPhase = ph',
-                                   pointTime = basicTime sc n' ph' }
-                          i' = n' * phs + ph'
-                      in do a <- m p'
-                            a `seq` writeProtoArray arr i' a
-                            if ph' >= phs - 1 
-                              then do writeProtoRef phref 0
-                                      writeProtoRef nref (n' + 1)
-                                      loop (n' + 1) 0
-                              else do writeProtoRef phref (ph' + 1)
-                                      loop n' (ph' + 1)
-              n'  <- readProtoRef nref
-              ph' <- readProtoRef phref
-              loop n' ph'
-     return $ interpolateDynamics $ Dynamics r
+-- | A monad with the support of memoisation.
+class Monad m => MonadMemo m where 
 
--- | Memoize and order the computation in the integration time points using 
--- the 'discreteDynamics' interpolation. It consumes less memory than the 'memoDynamics'
--- function but it is not aware of the Runge-Kutta method. There is a subtle
--- difference when we request for values in the intermediate time points
--- that are used by this method to integrate. In general case you should 
--- prefer the 'memo0Dynamics' function above 'memoDynamics'.
-memo0Dynamics :: MonadComp m => Dynamics m e -> Simulation m (Dynamics m e)
-{-# INLINABLE memo0Dynamics #-}
-memo0Dynamics (Dynamics m) = 
-  Simulation $ \r ->
-  do let sc = runSpecs r
-         s  = runSession r
-         ns = 1 + integIterationHiBnd sc
-     arr  <- newProtoArray_ s ns
-     nref <- newProtoRef s 0
-     let r p =
-           do let sc = pointSpecs p
-                  n  = pointIteration p
-                  loop n' = 
-                    if n' > n
-                    then 
-                      readProtoArray arr n
-                    else 
-                      let p' = p { pointIteration = n', pointPhase = 0,
-                                   pointTime = basicTime sc n' 0 }
-                      in do a <- m p'
-                            a `seq` writeProtoArray arr n' a
-                            writeProtoRef nref (n' + 1)
-                            loop (n' + 1)
-              n' <- readProtoRef nref
-              loop n'
-     return $ discreteDynamics $ Dynamics r
+  -- | Memoize and order the computation in the integration time points using 
+  -- the interpolation that knows of the Runge-Kutta method. The values are
+  -- calculated sequentially starting from 'starttime'.
+  memoDynamics :: Dynamics m e -> Simulation m (Dynamics m e)
 
--- | Iterate sequentially the dynamic process with side effects in 
--- the integration time points. It is equivalent to a call of the
--- 'memo0Dynamics' function but significantly more efficient, for the array 
--- is not created.
-iterateDynamics :: MonadComp m => Dynamics m () -> Simulation m (Dynamics m ())
-{-# INLINABLE iterateDynamics #-}
-iterateDynamics (Dynamics m) = 
-  Simulation $ \r ->
-  do let sc = runSpecs r
-         s  = runSession r
-     nref <- newProtoRef s 0
-     let r p =
-           do let sc = pointSpecs p
-                  n  = pointIteration p
-                  loop n' = 
-                    unless (n' > n) $
-                    let p' = p { pointIteration = n', pointPhase = 0,
-                                 pointTime = basicTime sc n' 0 }
-                    in do a <- m p'
-                          a `seq` writeProtoRef nref (n' + 1)
-                          loop (n' + 1)
-              n' <- readProtoRef nref
-              loop n'
-     return $ discreteDynamics $ Dynamics r
+  -- | Memoize and order the computation in the integration time points using 
+  -- the 'discreteDynamics' interpolation. It consumes less memory than the 'memoDynamics'
+  -- function but it is not aware of the Runge-Kutta method. There is a subtle
+  -- difference when we request for values in the intermediate time points
+  -- that are used by this method to integrate. In general case you should 
+  -- prefer the 'memo0Dynamics' function above 'memoDynamics'.
+  memo0Dynamics :: Dynamics m e -> Simulation m (Dynamics m e)
+
+  -- | Iterate sequentially the dynamic process with side effects in 
+  -- the integration time points. It is equivalent to a call of the
+  -- 'memo0Dynamics' function but significantly more efficient, for the array 
+  -- is not created.
+  iterateDynamics :: Dynamics m () -> Simulation m (Dynamics m ())
 
 -- | Memoize and unzip the computation of pairs, applying the 'memoDynamics' function.
-unzipDynamics :: MonadComp m => Dynamics m (a, b) -> Simulation m (Dynamics m a, Dynamics m b)
+unzipDynamics :: MonadMemo m => Dynamics m (a, b) -> Simulation m (Dynamics m a, Dynamics m b)
 unzipDynamics m =
   Simulation $ \r ->
   do m' <- invokeSimulation r (memoDynamics m)
@@ -143,7 +61,7 @@ unzipDynamics m =
      return (ma, mb)
 
 -- | Memoize and unzip the computation of pairs, applying the 'memo0Dynamics' function.
-unzip0Dynamics :: MonadComp m => Dynamics m (a, b) -> Simulation m (Dynamics m a, Dynamics m b)
+unzip0Dynamics :: MonadMemo m => Dynamics m (a, b) -> Simulation m (Dynamics m a, Dynamics m b)
 unzip0Dynamics m =
   Simulation $ \r ->
   do m' <- invokeSimulation r (memo0Dynamics m)

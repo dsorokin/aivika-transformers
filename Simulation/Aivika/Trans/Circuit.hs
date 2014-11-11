@@ -73,6 +73,7 @@ import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Task
+import Simulation.Aivika.Trans.Monad.SD
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents a circuit synchronized with the event queue.
@@ -430,7 +431,7 @@ sumCircuitEither init = start
 --
 -- This procedure consumes memory as the underlying memoization allocates
 -- an array to store the calculated values.
-circuitTransform :: MonadComp m => Circuit m a b -> Transform m a b
+circuitTransform :: MonadSD m => Circuit m a b -> Transform m a b
 circuitTransform cir = Transform start
   where
     start m =
