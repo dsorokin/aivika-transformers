@@ -2,7 +2,7 @@
 -- |
 -- Module     : Simulation.Aivika.Trans.Event
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
--- License    : BSD3
+-- License    : GPL
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3
