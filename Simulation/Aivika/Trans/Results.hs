@@ -126,7 +126,7 @@ import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Statistics.Accumulator
 import Simulation.Aivika.Trans.Ref
-import qualified Simulation.Aivika.Trans.Ref.Plain as LR
+import qualified Simulation.Aivika.Trans.Ref.Base as B
 import Simulation.Aivika.Trans.Var
 import Simulation.Aivika.Trans.QueueStrategy
 import qualified Simulation.Aivika.Trans.Queue as Q
@@ -135,6 +135,7 @@ import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Results.Locale
+import Simulation.Aivika.Trans.Monad.DES
 
 -- | A name used for indentifying the results when generating output.
 type ResultName = String
@@ -1385,14 +1386,14 @@ instance MonadComp m => ResultComputing Event m where
   computeResultData = Just . id
   computeResultSignal = const UnknownResultSignal
 
-instance MonadComp m => ResultComputing Ref m where
+instance MonadDES m => ResultComputing Ref m where
 
   computeResultData = Just . readRef
   computeResultSignal = ResultSignal . refChanged_
 
-instance MonadComp m => ResultComputing LR.Ref m where
+instance MonadDES m => ResultComputing B.Ref m where
 
-  computeResultData = Just . LR.readRef
+  computeResultData = Just . B.readRef
   computeResultSignal = const UnknownResultSignal
 
 instance MonadComp m => ResultComputing Var m where
@@ -1687,7 +1688,7 @@ infiniteQueueResultSummary c =
       resultContainerProperty c "queueRate" QueueRateId IQ.queueRate IQ.queueRateChanged_ ] }
   
 -- | Return a source by the specified arrival timer.
-arrivalTimerResultSource :: MonadComp m
+arrivalTimerResultSource :: MonadDES m
                             => ResultContainer (ArrivalTimer m) m
                             -- ^ the arrival timer container
                             -> ResultSource m
@@ -1703,7 +1704,7 @@ arrivalTimerResultSource c =
       resultContainerProperty c "processingTime" ArrivalProcessingTimeId arrivalProcessingTime arrivalProcessingTimeChanged_ ] }
 
 -- | Return the summary by the specified arrival timer.
-arrivalTimerResultSummary :: MonadComp m
+arrivalTimerResultSummary :: MonadDES m
                              => ResultContainer (ArrivalTimer m) m
                              -- ^ the arrival timer container
                              -> ResultSource m
@@ -2027,7 +2028,7 @@ instance (MonadComp m,
   resultSource' name i m =
     infiniteQueueResultSource $ ResultContainer name i m (ResultSignal $ IQ.queueChanged_ m)
 
-instance MonadComp m => ResultProvider (ArrivalTimer m) m where
+instance MonadDES m => ResultProvider (ArrivalTimer m) m where
 
   resultSource' name i m =
     arrivalTimerResultSource $ ResultContainer name i m (ResultSignal $ arrivalProcessingTimeChanged_ m)

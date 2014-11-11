@@ -34,6 +34,7 @@ import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Signal
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Accumulates the statistics about that how long the arrived events are processed.
@@ -42,7 +43,7 @@ data ArrivalTimer m =
                  arrivalProcessingTimeChangedSource :: SignalSource m () }
 
 -- | Create a new timer that measures how long the arrived events are processed.
-newArrivalTimer :: MonadComp m => Simulation m (ArrivalTimer m)
+newArrivalTimer :: MonadDES m => Simulation m (ArrivalTimer m)
 {-# INLINE newArrivalTimer #-}
 newArrivalTimer =
   do r <- newRef emptySamplingStats
@@ -51,27 +52,26 @@ newArrivalTimer =
                            arrivalProcessingTimeChangedSource = s }
 
 -- | Return the statistics about that how long the arrived events were processed.
-arrivalProcessingTime :: MonadComp m => ArrivalTimer m -> Event m (SamplingStats Double)
+arrivalProcessingTime :: MonadDES m => ArrivalTimer m -> Event m (SamplingStats Double)
 {-# INLINE arrivalProcessingTime #-}
 arrivalProcessingTime = readRef . arrivalProcessingTimeRef
 
 -- | Return a signal raised when the the processing time statistics changes.
-arrivalProcessingTimeChanged :: MonadComp m => ArrivalTimer m -> Signal m (SamplingStats Double)
+arrivalProcessingTimeChanged :: MonadDES m => ArrivalTimer m -> Signal m (SamplingStats Double)
 {-# INLINE arrivalProcessingTimeChanged #-}
 arrivalProcessingTimeChanged timer =
   mapSignalM (const $ arrivalProcessingTime timer) (arrivalProcessingTimeChanged_ timer)
 
 -- | Return a signal raised when the the processing time statistics changes.
-arrivalProcessingTimeChanged_ :: MonadComp m => ArrivalTimer m -> Signal m ()
+arrivalProcessingTimeChanged_ :: MonadDES m => ArrivalTimer m -> Signal m ()
 {-# INLINE arrivalProcessingTimeChanged_ #-}
 arrivalProcessingTimeChanged_ timer =
   publishSignal (arrivalProcessingTimeChangedSource timer)
 
 -- | Return a processor that actually measures how much time has passed from
 -- the time of arriving the events.
-arrivalTimerProcessor :: MonadComp m => ArrivalTimer m -> Processor m (Arrival a) (Arrival a)
+arrivalTimerProcessor :: MonadDES m => ArrivalTimer m -> Processor m (Arrival a) (Arrival a)
 {-# INLINABLE arrivalTimerProcessor #-}
-{-# SPECIALISE arrivalTimerProcessor :: ArrivalTimer IO -> Processor IO (Arrival a) (Arrival a) #-}
 arrivalTimerProcessor timer =
   Processor $ \xs -> Cons $ loop xs where
     loop xs =
