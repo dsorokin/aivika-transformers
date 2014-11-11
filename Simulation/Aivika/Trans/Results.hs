@@ -1566,7 +1566,7 @@ timingCounterResultSummary x =
     c = resultValueToContainer x
   
 -- | Return a source by the specified finite queue.
-queueResultSource :: (MonadComp m,
+queueResultSource :: (MonadDES m,
                       Show si, Show sm, Show so,
                       ResultItemable (ResultValue si),
                       ResultItemable (ResultValue sm),
@@ -1608,7 +1608,7 @@ queueResultSource c =
       resultContainerProperty c "queueRate" QueueRateId Q.queueRate Q.queueRateChanged_ ] }
 
 -- | Return the summary by the specified finite queue.
-queueResultSummary :: (MonadComp m,
+queueResultSummary :: (MonadDES m,
                        Show si, Show sm, Show so)
                       => ResultContainer (Q.Queue m si sm so a) m
                       -- ^ the queue container
@@ -2009,7 +2009,7 @@ instance ResultComputing t m => ResultProvider (t m (V.Vector Int)) m where
 
 #endif
 
-instance (MonadComp m,
+instance (MonadDES m,
           Show si, Show sm, Show so,
           ResultItemable (ResultValue si),
           ResultItemable (ResultValue sm),
