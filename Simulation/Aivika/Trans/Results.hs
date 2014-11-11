@@ -1768,7 +1768,7 @@ serverResultSummary c =
       resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
 
 -- | Return a source by the specified activity.
-activityResultSource :: (MonadComp m,
+activityResultSource :: (MonadDES m,
                          Show s, ResultItemable (ResultValue s))
                         => ResultContainer (Activity m s a b) m
                         -- ^ the activity container
@@ -1792,7 +1792,7 @@ activityResultSource c =
       resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_ ] }
 
 -- | Return a summary by the specified activity.
-activityResultSummary :: MonadComp m
+activityResultSummary :: MonadDES m
                          => ResultContainer (Activity m s a b) m
                          -- ^ the activity container
                          -> ResultSource m
@@ -2038,7 +2038,7 @@ instance (MonadDES m, Show s, ResultItemable (ResultValue s)) => ResultProvider 
   resultSource' name i m =
     serverResultSource $ ResultContainer name i m (ResultSignal $ serverChanged_ m)
 
-instance (MonadComp m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Activity m s a b) m where
+instance (MonadDES m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Activity m s a b) m where
 
   resultSource' name i m =
     activityResultSource $ ResultContainer name i m (ResultSignal $ activityChanged_ m)

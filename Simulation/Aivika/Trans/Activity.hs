@@ -58,9 +58,8 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Arrow
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
@@ -81,19 +80,19 @@ import Simulation.Aivika.Activity (ActivityInterruption(..))
 data Activity m s a b =
   Activity { activityInitState :: s,
              -- ^ The initial state of the activity.
-             activityStateRef :: ProtoRef m s,
+             activityStateRef :: Ref m s,
              -- ^ The current state of the activity.
              activityProcess :: s -> a -> Process m (s, b),
              -- ^ Provide @b@ by specified @a@.
              activityProcessInterruptible :: Bool,
              -- ^ Whether the process is interruptible.
-             activityTotalUtilisationTimeRef :: ProtoRef m Double,
+             activityTotalUtilisationTimeRef :: Ref m Double,
              -- ^ The counted total time of utilising the activity.
-             activityTotalIdleTimeRef :: ProtoRef m Double,
+             activityTotalIdleTimeRef :: Ref m Double,
              -- ^ The counted total time, when the activity was idle.
-             activityUtilisationTimeRef :: ProtoRef m (SamplingStats Double),
+             activityUtilisationTimeRef :: Ref m (SamplingStats Double),
              -- ^ The statistics for the utilisation time.
-             activityIdleTimeRef :: ProtoRef m (SamplingStats Double),
+             activityIdleTimeRef :: Ref m (SamplingStats Double),
              -- ^ The statistics for the time, when the activity was idle.
              activityUtilisingSource :: SignalSource m a,
              -- ^ A signal raised when starting to utilise the activity.
@@ -108,7 +107,7 @@ data Activity m s a b =
 -- By default, it is assumed that the activity utilisation cannot be interrupted,
 -- because the handling of possible task interruption is rather costly
 -- operation.
-newActivity :: MonadComp m
+newActivity :: MonadDES m
                => (a -> Process m b)
                -- ^ provide an output by the specified input
                -> Simulation m (Activity m () a b)
@@ -120,7 +119,7 @@ newActivity = newInterruptibleActivity False
 -- By default, it is assumed that the activity utilisation cannot be interrupted,
 -- because the handling of possible task interruption is rather costly
 -- operation.
-newStateActivity :: MonadComp m
+newStateActivity :: MonadDES m
                     => (s -> a -> Process m (s, b))
                     -- ^ provide a new state and output by the specified 
                     -- old state and input
@@ -130,7 +129,7 @@ newStateActivity :: MonadComp m
 newStateActivity = newInterruptibleStateActivity False
 
 -- | Create a new interruptible activity that can provide output @b@ by input @a@.
-newInterruptibleActivity :: MonadComp m
+newInterruptibleActivity :: MonadDES m
                             => Bool
                             -- ^ whether the activity can be interrupted
                             -> (a -> Process m b)
@@ -143,7 +142,7 @@ newInterruptibleActivity interruptible provide =
 
 -- | Create a new activity that can provide output @b@ by input @a@
 -- starting from state @s@.
-newInterruptibleStateActivity :: MonadComp m
+newInterruptibleStateActivity :: MonadDES m
                                  => Bool
                                  -- ^ whether the activity can be interrupted
                                  -> (s -> a -> Process m (s, b))
@@ -153,12 +152,11 @@ newInterruptibleStateActivity :: MonadComp m
                                  -- ^ the initial state
                                  -> Simulation m (Activity m s a b)
 newInterruptibleStateActivity interruptible provide state =
-  do sn <- liftParameter simulationSession
-     r0 <- liftComp $ newProtoRef sn state
-     r1 <- liftComp $ newProtoRef sn 0
-     r2 <- liftComp $ newProtoRef sn 0
-     r3 <- liftComp $ newProtoRef sn emptySamplingStats
-     r4 <- liftComp $ newProtoRef sn emptySamplingStats
+  do r0 <- newRef state
+     r1 <- newRef 0
+     r2 <- newRef 0
+     r3 <- newRef emptySamplingStats
+     r4 <- newRef emptySamplingStats
      s1 <- newSignalSource
      s2 <- newSignalSource
      s3 <- newSignalSource
@@ -187,7 +185,7 @@ newInterruptibleStateActivity interruptible provide state =
 -- whole, where the first activity will take a new task only after the last activity 
 -- finishes its current task and requests for the next one from the previous activity 
 -- in the chain. This is not always that thing you might need.
-activityNet :: MonadComp m => Activity m s a b -> Net m a b
+activityNet :: MonadDES m => Activity m s a b -> Net m a b
 activityNet act = Net $ loop (activityInitState act) Nothing
   where
     loop s r a =
@@ -196,9 +194,8 @@ activityNet act = Net $ loop (activityInitState act) Nothing
            do case r of
                 Nothing -> return ()
                 Just t' ->
-                  liftComp $
-                  do modifyProtoRef' (activityTotalIdleTimeRef act) (+ (t0 - t'))
-                     modifyProtoRef' (activityIdleTimeRef act) $
+                  do modifyRef (activityTotalIdleTimeRef act) (+ (t0 - t'))
+                     modifyRef (activityIdleTimeRef act) $
                        addSamplingStats (t0 - t')
               triggerSignal (activityUtilisingSource act) a
          -- utilise the activity
@@ -207,16 +204,15 @@ activityNet act = Net $ loop (activityInitState act) Nothing
                     else activityProcess act s a
          t1 <- liftDynamics time
          liftEvent $
-           do liftComp $
-                do writeProtoRef (activityStateRef act) $! s'
-                   modifyProtoRef' (activityTotalUtilisationTimeRef act) (+ (t1 - t0))
-                   modifyProtoRef' (activityUtilisationTimeRef act) $
-                     addSamplingStats (t1 - t0)
+           do writeRef (activityStateRef act) $! s'
+              modifyRef (activityTotalUtilisationTimeRef act) (+ (t1 - t0))
+              modifyRef (activityUtilisationTimeRef act) $
+                addSamplingStats (t1 - t0)
               triggerSignal (activityUtilisedSource act) (a, b)
          return (b, Net $ loop s' (Just t1))
 
 -- | Process the input with ability to handle a possible interruption.
-activityProcessInterrupting :: MonadComp m => Activity m s a b -> s -> a -> Process m (s, b)
+activityProcessInterrupting :: MonadDES m => Activity m s a b -> s -> a -> Process m (s, b)
 activityProcessInterrupting act s a =
   do pid <- processId
      t0  <- liftDynamics time
@@ -226,27 +222,26 @@ activityProcessInterrupting act s a =
         do cancelled <- processCancelled pid
            when cancelled $
              do t1 <- liftDynamics time
-                liftComp $
-                  do modifyProtoRef' (activityTotalUtilisationTimeRef act) (+ (t1 - t0))
-                     modifyProtoRef' (activityUtilisationTimeRef act) $
-                       addSamplingStats (t1 - t0)
+                modifyRef (activityTotalUtilisationTimeRef act) (+ (t1 - t0))
+                modifyRef (activityUtilisationTimeRef act) $
+                  addSamplingStats (t1 - t0)
                 let x = ActivityInterruption a t0 t1
                 triggerSignal (activityInterruptedSource act) x)
 
 -- | Return the current state of the activity.
 --
 -- See also 'activityStateChanged' and 'activityStateChanged_'.
-activityState :: MonadComp m => Activity m s a b -> Event m s
+activityState :: MonadDES m => Activity m s a b -> Event m s
 activityState act =
-  Event $ \p -> readProtoRef (activityStateRef act)
+  Event $ \p -> invokeEvent p $ readRef (activityStateRef act)
   
 -- | Signal when the 'activityState' property value has changed.
-activityStateChanged :: MonadComp m => Activity m s a b -> Signal m s
+activityStateChanged :: MonadDES m => Activity m s a b -> Signal m s
 activityStateChanged act =
   mapSignalM (const $ activityState act) (activityStateChanged_ act)
   
 -- | Signal when the 'activityState' property value has changed.
-activityStateChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityStateChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityStateChanged_ act =
   mapSignal (const ()) (activityUtilised act)
 
@@ -256,17 +251,17 @@ activityStateChanged_ act =
 -- to the current simulation time.
 --
 -- See also 'activityTotalUtilisationTimeChanged' and 'activityTotalUtilisationTimeChanged_'.
-activityTotalUtilisationTime :: MonadComp m => Activity m s a b -> Event m Double
+activityTotalUtilisationTime :: MonadDES m => Activity m s a b -> Event m Double
 activityTotalUtilisationTime act =
-  Event $ \p -> readProtoRef (activityTotalUtilisationTimeRef act)
+  Event $ \p -> invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
   
 -- | Signal when the 'activityTotalUtilisationTime' property value has changed.
-activityTotalUtilisationTimeChanged :: MonadComp m => Activity m s a b -> Signal m Double
+activityTotalUtilisationTimeChanged :: MonadDES m => Activity m s a b -> Signal m Double
 activityTotalUtilisationTimeChanged act =
   mapSignalM (const $ activityTotalUtilisationTime act) (activityTotalUtilisationTimeChanged_ act)
   
 -- | Signal when the 'activityTotalUtilisationTime' property value has changed.
-activityTotalUtilisationTimeChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityTotalUtilisationTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityTotalUtilisationTimeChanged_ act =
   mapSignal (const ()) (activityUtilised act)
 
@@ -276,17 +271,17 @@ activityTotalUtilisationTimeChanged_ act =
 -- to the current simulation time.
 --
 -- See also 'activityTotalIdleTimeChanged' and 'activityTotalIdleTimeChanged_'.
-activityTotalIdleTime :: MonadComp m => Activity m s a b -> Event m Double
+activityTotalIdleTime :: MonadDES m => Activity m s a b -> Event m Double
 activityTotalIdleTime act =
-  Event $ \p -> readProtoRef (activityTotalIdleTimeRef act)
+  Event $ \p -> invokeEvent p $ readRef (activityTotalIdleTimeRef act)
   
 -- | Signal when the 'activityTotalIdleTime' property value has changed.
-activityTotalIdleTimeChanged :: MonadComp m => Activity m s a b -> Signal m Double
+activityTotalIdleTimeChanged :: MonadDES m => Activity m s a b -> Signal m Double
 activityTotalIdleTimeChanged act =
   mapSignalM (const $ activityTotalIdleTime act) (activityTotalIdleTimeChanged_ act)
   
 -- | Signal when the 'activityTotalIdleTime' property value has changed.
-activityTotalIdleTimeChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityTotalIdleTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityTotalIdleTimeChanged_ act =
   mapSignal (const ()) (activityUtilising act)
 
@@ -296,17 +291,17 @@ activityTotalIdleTimeChanged_ act =
 -- to the current simulation time.
 --
 -- See also 'activityUtilisationTimeChanged' and 'activityUtilisationTimeChanged_'.
-activityUtilisationTime :: MonadComp m => Activity m s a b -> Event m (SamplingStats Double)
+activityUtilisationTime :: MonadDES m => Activity m s a b -> Event m (SamplingStats Double)
 activityUtilisationTime act =
-  Event $ \p -> readProtoRef (activityUtilisationTimeRef act)
+  Event $ \p -> invokeEvent p $ readRef (activityUtilisationTimeRef act)
   
 -- | Signal when the 'activityUtilisationTime' property value has changed.
-activityUtilisationTimeChanged :: MonadComp m => Activity m s a b -> Signal m (SamplingStats Double)
+activityUtilisationTimeChanged :: MonadDES m => Activity m s a b -> Signal m (SamplingStats Double)
 activityUtilisationTimeChanged act =
   mapSignalM (const $ activityUtilisationTime act) (activityUtilisationTimeChanged_ act)
   
 -- | Signal when the 'activityUtilisationTime' property value has changed.
-activityUtilisationTimeChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityUtilisationTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityUtilisationTimeChanged_ act =
   mapSignal (const ()) (activityUtilised act)
 
@@ -316,17 +311,17 @@ activityUtilisationTimeChanged_ act =
 -- to the current simulation time.
 --
 -- See also 'activityIdleTimeChanged' and 'activityIdleTimeChanged_'.
-activityIdleTime :: MonadComp m => Activity m s a b -> Event m (SamplingStats Double)
+activityIdleTime :: MonadDES m => Activity m s a b -> Event m (SamplingStats Double)
 activityIdleTime act =
-  Event $ \p -> readProtoRef (activityIdleTimeRef act)
+  Event $ \p -> invokeEvent p $ readRef (activityIdleTimeRef act)
   
 -- | Signal when the 'activityIdleTime' property value has changed.
-activityIdleTimeChanged :: MonadComp m => Activity m s a b -> Signal m (SamplingStats Double)
+activityIdleTimeChanged :: MonadDES m => Activity m s a b -> Signal m (SamplingStats Double)
 activityIdleTimeChanged act =
   mapSignalM (const $ activityIdleTime act) (activityIdleTimeChanged_ act)
   
 -- | Signal when the 'activityIdleTime' property value has changed.
-activityIdleTimeChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityIdleTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityIdleTimeChanged_ act =
   mapSignal (const ()) (activityUtilising act)
   
@@ -343,20 +338,20 @@ activityIdleTimeChanged_ act =
 -- it is usually delayed relative to the current simulation time.
 --
 -- See also 'activityUtilisationFactorChanged' and 'activityUtilisationFactorChanged_'.
-activityUtilisationFactor :: MonadComp m => Activity m s a b -> Event m Double
+activityUtilisationFactor :: MonadDES m => Activity m s a b -> Event m Double
 activityUtilisationFactor act =
   Event $ \p ->
-  do x1 <- readProtoRef (activityTotalUtilisationTimeRef act)
-     x2 <- readProtoRef (activityTotalIdleTimeRef act)
+  do x1 <- invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
+     x2 <- invokeEvent p $ readRef (activityTotalIdleTimeRef act)
      return (x1 / (x1 + x2))
   
 -- | Signal when the 'activityUtilisationFactor' property value has changed.
-activityUtilisationFactorChanged :: MonadComp m => Activity m s a b -> Signal m Double
+activityUtilisationFactorChanged :: MonadDES m => Activity m s a b -> Signal m Double
 activityUtilisationFactorChanged act =
   mapSignalM (const $ activityUtilisationFactor act) (activityUtilisationFactorChanged_ act)
   
 -- | Signal when the 'activityUtilisationFactor' property value has changed.
-activityUtilisationFactorChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityUtilisationFactorChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityUtilisationFactorChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
   mapSignal (const ()) (activityUtilised act)
@@ -374,20 +369,20 @@ activityUtilisationFactorChanged_ act =
 -- it is usually delayed relative to the current simulation time.
 --
 -- See also 'activityIdleFactorChanged' and 'activityIdleFactorChanged_'.
-activityIdleFactor :: MonadComp m => Activity m s a b -> Event m Double
+activityIdleFactor :: MonadDES m => Activity m s a b -> Event m Double
 activityIdleFactor act =
   Event $ \p ->
-  do x1 <- readProtoRef (activityTotalUtilisationTimeRef act)
-     x2 <- readProtoRef (activityTotalIdleTimeRef act)
+  do x1 <- invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
+     x2 <- invokeEvent p $ readRef (activityTotalIdleTimeRef act)
      return (x2 / (x1 + x2))
   
 -- | Signal when the 'activityIdleFactor' property value has changed.
-activityIdleFactorChanged :: MonadComp m => Activity m s a b -> Signal m Double
+activityIdleFactorChanged :: MonadDES m => Activity m s a b -> Signal m Double
 activityIdleFactorChanged act =
   mapSignalM (const $ activityIdleFactor act) (activityIdleFactorChanged_ act)
   
 -- | Signal when the 'activityIdleFactor' property value has changed.
-activityIdleFactorChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityIdleFactorChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityIdleFactorChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
   mapSignal (const ()) (activityUtilised act)
@@ -405,7 +400,7 @@ activityInterrupted :: Activity m s a b -> Signal m (ActivityInterruption a)
 activityInterrupted = publishSignal . activityInterruptedSource
 
 -- | Signal whenever any property of the activity changes.
-activityChanged_ :: MonadComp m => Activity m s a b -> Signal m ()
+activityChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
 activityChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
   mapSignal (const ()) (activityUtilised act) <>
@@ -413,15 +408,15 @@ activityChanged_ act =
 
 -- | Return the summary for the activity with desciption of its
 -- properties using the specified indent.
-activitySummary :: MonadComp m => Activity m s a b -> Int -> Event m ShowS
+activitySummary :: MonadDES m => Activity m s a b -> Int -> Event m ShowS
 activitySummary act indent =
   Event $ \p ->
-  do tx1 <- readProtoRef (activityTotalUtilisationTimeRef act)
-     tx2 <- readProtoRef (activityTotalIdleTimeRef act)
+  do tx1 <- invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
+     tx2 <- invokeEvent p $ readRef (activityTotalIdleTimeRef act)
      let xf1 = tx1 / (tx1 + tx2)
          xf2 = tx2 / (tx1 + tx2)
-     xs1 <- readProtoRef (activityUtilisationTimeRef act)
-     xs2 <- readProtoRef (activityIdleTimeRef act)
+     xs1 <- invokeEvent p $ readRef (activityUtilisationTimeRef act)
+     xs2 <- invokeEvent p $ readRef (activityIdleTimeRef act)
      let tab = replicate indent ' '
      return $
        showString tab .
