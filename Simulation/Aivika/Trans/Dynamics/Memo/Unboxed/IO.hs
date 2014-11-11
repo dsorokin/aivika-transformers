@@ -32,7 +32,7 @@ import Simulation.Aivika.Trans.Dynamics.Extra
 newIOUArray_ :: (Ix i, MArray IOUArray e IO) => (i, i) -> IO (IOUArray i e)
 newIOUArray_ = newArray_
 
--- | Defines a new instance.
+-- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
 instance (MonadIO m, MArray IOUArray e IO) => MonadMemo m e where
 
   {-# INLINABLE memoDynamics #-}
