@@ -66,9 +66,8 @@ import Data.Monoid
 import Control.Monad
 import Control.Arrow
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
@@ -88,23 +87,23 @@ import Simulation.Aivika.Server (ServerInterruption(..))
 data Server m s a b =
   Server { serverInitState :: s,
            -- ^ The initial state of the server.
-           serverStateRef :: ProtoRef m s,
+           serverStateRef :: Ref m s,
            -- ^ The current state of the server.
            serverProcess :: s -> a -> Process m (s, b),
            -- ^ Provide @b@ by specified @a@.
            serverProcessInterruptible :: Bool,
            -- ^ Whether the process is interruptible.
-           serverTotalInputWaitTimeRef :: ProtoRef m Double,
+           serverTotalInputWaitTimeRef :: Ref m Double,
            -- ^ The counted total time spent in awating the input.
-           serverTotalProcessingTimeRef :: ProtoRef m Double,
+           serverTotalProcessingTimeRef :: Ref m Double,
            -- ^ The counted total time spent to process the input and prepare the output.
-           serverTotalOutputWaitTimeRef :: ProtoRef m Double,
+           serverTotalOutputWaitTimeRef :: Ref m Double,
            -- ^ The counted total time spent for delivering the output.
-           serverInputWaitTimeRef :: ProtoRef m (SamplingStats Double),
+           serverInputWaitTimeRef :: Ref m (SamplingStats Double),
            -- ^ The statistics for the time spent in awaiting the input.
-           serverProcessingTimeRef :: ProtoRef m (SamplingStats Double),
+           serverProcessingTimeRef :: Ref m (SamplingStats Double),
            -- ^ The statistics for the time spent to process the input and prepare the output.
-           serverOutputWaitTimeRef :: ProtoRef m (SamplingStats Double),
+           serverOutputWaitTimeRef :: Ref m (SamplingStats Double),
            -- ^ The statistics for the time spent for delivering the output.
            serverInputReceivedSource :: SignalSource m a,
            -- ^ A signal raised when the server recieves a new input to process.
@@ -122,7 +121,7 @@ data Server m s a b =
 -- By default, it is assumed that the server cannot be interrupted,
 -- because the handling of possible task interruption is rather costly
 -- operation.
-newServer :: MonadComp m
+newServer :: MonadDES m
              => (a -> Process m b)
              -- ^ provide an output by the specified input
              -> Simulation m (Server m () a b)
@@ -134,7 +133,7 @@ newServer = newInterruptibleServer False
 -- By default, it is assumed that the server cannot be interrupted,
 -- because the handling of possible task interruption is rather costly
 -- operation.
-newStateServer :: MonadComp m
+newStateServer :: MonadDES m
                   => (s -> a -> Process m (s, b))
                   -- ^ provide a new state and output by the specified 
                   -- old state and input
@@ -144,7 +143,7 @@ newStateServer :: MonadComp m
 newStateServer = newInterruptibleStateServer False
 
 -- | Create a new interruptible server that can provide output @b@ by input @a@.
-newInterruptibleServer :: MonadComp m
+newInterruptibleServer :: MonadDES m
                           => Bool
                           -- ^ whether the server can be interrupted
                           -> (a -> Process m b)
@@ -157,7 +156,7 @@ newInterruptibleServer interruptible provide =
 
 -- | Create a new interruptible server that can provide output @b@ by input @a@
 -- starting from state @s@.
-newInterruptibleStateServer :: MonadComp m
+newInterruptibleStateServer :: MonadDES m
                                => Bool
                                -- ^ whether the server can be interrupted
                                -> (s -> a -> Process m (s, b))
@@ -167,14 +166,13 @@ newInterruptibleStateServer :: MonadComp m
                                -- ^ the initial state
                                -> Simulation m (Server m s a b)
 newInterruptibleStateServer interruptible provide state =
-  do sn <- liftParameter simulationSession
-     r0 <- liftComp $ newProtoRef sn state
-     r1 <- liftComp $ newProtoRef sn 0
-     r2 <- liftComp $ newProtoRef sn 0
-     r3 <- liftComp $ newProtoRef sn 0
-     r4 <- liftComp $ newProtoRef sn emptySamplingStats
-     r5 <- liftComp $ newProtoRef sn emptySamplingStats
-     r6 <- liftComp $ newProtoRef sn emptySamplingStats
+  do r0 <- newRef state
+     r1 <- newRef 0
+     r2 <- newRef 0
+     r3 <- newRef 0
+     r4 <- newRef emptySamplingStats
+     r5 <- newRef emptySamplingStats
+     r6 <- newRef emptySamplingStats
      s1 <- newSignalSource
      s2 <- newSignalSource
      s3 <- newSignalSource
@@ -216,7 +214,7 @@ newInterruptibleStateServer interruptible provide state =
 -- The queue processors usually have the prefetching capabilities per se, where
 -- the items are already stored in the queue. Therefore, the server processor
 -- should not be prefetched if it is connected directly to the queue processor.
-serverProcessor :: MonadComp m => Server m s a b -> Processor m a b
+serverProcessor :: MonadDES m => Server m s a b -> Processor m a b
 serverProcessor server =
   Processor $ \xs -> loop (serverInitState server) Nothing xs
   where
@@ -227,19 +225,17 @@ serverProcessor server =
            case r of
              Nothing -> return ()
              Just (t', a', b') ->
-               do liftComp $
-                    do modifyProtoRef' (serverTotalOutputWaitTimeRef server) (+ (t0 - t'))
-                       modifyProtoRef' (serverOutputWaitTimeRef server) $
-                         addSamplingStats (t0 - t')
+               do modifyRef (serverTotalOutputWaitTimeRef server) (+ (t0 - t'))
+                  modifyRef (serverOutputWaitTimeRef server) $
+                    addSamplingStats (t0 - t')
                   triggerSignal (serverOutputProvidedSource server) (a', b')
          -- get input
          (a, xs') <- runStream xs
          t1 <- liftDynamics time
          liftEvent $
-           do liftComp $
-                do modifyProtoRef' (serverTotalInputWaitTimeRef server) (+ (t1 - t0))
-                   modifyProtoRef' (serverInputWaitTimeRef server) $
-                     addSamplingStats (t1 - t0)
+           do modifyRef (serverTotalInputWaitTimeRef server) (+ (t1 - t0))
+              modifyRef (serverInputWaitTimeRef server) $
+                addSamplingStats (t1 - t0)
               triggerSignal (serverInputReceivedSource server) a
          -- provide the service
          (s', b) <-
@@ -248,16 +244,15 @@ serverProcessor server =
            else serverProcess server s a
          t2 <- liftDynamics time
          liftEvent $
-           do liftComp $
-                do writeProtoRef (serverStateRef server) $! s'
-                   modifyProtoRef' (serverTotalProcessingTimeRef server) (+ (t2 - t1))
-                   modifyProtoRef' (serverProcessingTimeRef server) $
-                     addSamplingStats (t2 - t1)
+           do writeRef (serverStateRef server) $! s'
+              modifyRef (serverTotalProcessingTimeRef server) (+ (t2 - t1))
+              modifyRef (serverProcessingTimeRef server) $
+                addSamplingStats (t2 - t1)
               triggerSignal (serverTaskProcessedSource server) (a, b)
          return (b, loop s' (Just (t2, a, b)) xs')
 
 -- | Process the input with ability to handle a possible interruption.
-serverProcessInterrupting :: MonadComp m => Server m s a b -> s -> a -> Process m (s, b)
+serverProcessInterrupting :: MonadDES m => Server m s a b -> s -> a -> Process m (s, b)
 serverProcessInterrupting server s a =
   do pid <- processId
      t1  <- liftDynamics time
@@ -267,27 +262,26 @@ serverProcessInterrupting server s a =
         do cancelled <- processCancelled pid
            when cancelled $
              do t2 <- liftDynamics time
-                liftComp $
-                  do modifyProtoRef' (serverTotalProcessingTimeRef server) (+ (t2 - t1))
-                     modifyProtoRef' (serverProcessingTimeRef server) $
-                       addSamplingStats (t2 - t1)
+                modifyRef (serverTotalProcessingTimeRef server) (+ (t2 - t1))
+                modifyRef (serverProcessingTimeRef server) $
+                  addSamplingStats (t2 - t1)
                 let x = ServerInterruption a t1 t2
                 triggerSignal (serverTaskInterruptedSource server) x)
 
 -- | Return the current state of the server.
 --
 -- See also 'serverStateChanged' and 'serverStateChanged_'.
-serverState :: MonadComp m => Server m s a b -> Event m s
+serverState :: MonadDES m => Server m s a b -> Event m s
 serverState server =
-  Event $ \p -> readProtoRef (serverStateRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverStateRef server)
   
 -- | Signal when the 'serverState' property value has changed.
-serverStateChanged :: MonadComp m => Server m s a b -> Signal m s
+serverStateChanged :: MonadDES m => Server m s a b -> Signal m s
 serverStateChanged server =
   mapSignalM (const $ serverState server) (serverStateChanged_ server)
   
 -- | Signal when the 'serverState' property value has changed.
-serverStateChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverStateChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverStateChanged_ server =
   mapSignal (const ()) (serverTaskProcessed server)
 
@@ -297,17 +291,17 @@ serverStateChanged_ server =
 -- to the current simulation time.
 --
 -- See also 'serverTotalInputWaitTimeChanged' and 'serverTotalInputWaitTimeChanged_'.
-serverTotalInputWaitTime :: MonadComp m => Server m s a b -> Event m Double
+serverTotalInputWaitTime :: MonadDES m => Server m s a b -> Event m Double
 serverTotalInputWaitTime server =
-  Event $ \p -> readProtoRef (serverTotalInputWaitTimeRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
   
 -- | Signal when the 'serverTotalInputWaitTime' property value has changed.
-serverTotalInputWaitTimeChanged :: MonadComp m => Server m s a b -> Signal m Double
+serverTotalInputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
 serverTotalInputWaitTimeChanged server =
   mapSignalM (const $ serverTotalInputWaitTime server) (serverTotalInputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverTotalInputWaitTime' property value has changed.
-serverTotalInputWaitTimeChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverTotalInputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverTotalInputWaitTimeChanged_ server =
   mapSignal (const ()) (serverInputReceived server)
 
@@ -317,17 +311,17 @@ serverTotalInputWaitTimeChanged_ server =
 -- to the current simulation time.
 --
 -- See also 'serverTotalProcessingTimeChanged' and 'serverTotalProcessingTimeChanged_'.
-serverTotalProcessingTime :: MonadComp m => Server m s a b -> Event m Double
+serverTotalProcessingTime :: MonadDES m => Server m s a b -> Event m Double
 serverTotalProcessingTime server =
-  Event $ \p -> readProtoRef (serverTotalProcessingTimeRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
   
 -- | Signal when the 'serverTotalProcessingTime' property value has changed.
-serverTotalProcessingTimeChanged :: MonadComp m => Server m s a b -> Signal m Double
+serverTotalProcessingTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
 serverTotalProcessingTimeChanged server =
   mapSignalM (const $ serverTotalProcessingTime server) (serverTotalProcessingTimeChanged_ server)
   
 -- | Signal when the 'serverTotalProcessingTime' property value has changed.
-serverTotalProcessingTimeChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverTotalProcessingTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverTotalProcessingTimeChanged_ server =
   mapSignal (const ()) (serverTaskProcessed server)
 
@@ -338,17 +332,17 @@ serverTotalProcessingTimeChanged_ server =
 -- to the current simulation time.
 --
 -- See also 'serverTotalOutputWaitTimeChanged' and 'serverTotalOutputWaitTimeChanged_'.
-serverTotalOutputWaitTime :: MonadComp m => Server m s a b -> Event m Double
+serverTotalOutputWaitTime :: MonadDES m => Server m s a b -> Event m Double
 serverTotalOutputWaitTime server =
-  Event $ \p -> readProtoRef (serverTotalOutputWaitTimeRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
   
 -- | Signal when the 'serverTotalOutputWaitTime' property value has changed.
-serverTotalOutputWaitTimeChanged :: MonadComp m => Server m s a b -> Signal m Double
+serverTotalOutputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
 serverTotalOutputWaitTimeChanged server =
   mapSignalM (const $ serverTotalOutputWaitTime server) (serverTotalOutputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverTotalOutputWaitTime' property value has changed.
-serverTotalOutputWaitTimeChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverTotalOutputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverTotalOutputWaitTimeChanged_ server =
   mapSignal (const ()) (serverOutputProvided server)
 
@@ -358,17 +352,17 @@ serverTotalOutputWaitTimeChanged_ server =
 -- to the current simulation time.
 --
 -- See also 'serverInputWaitTimeChanged' and 'serverInputWaitTimeChanged_'.
-serverInputWaitTime :: MonadComp m => Server m s a b -> Event m (SamplingStats Double)
+serverInputWaitTime :: MonadDES m => Server m s a b -> Event m (SamplingStats Double)
 serverInputWaitTime server =
-  Event $ \p -> readProtoRef (serverInputWaitTimeRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverInputWaitTimeRef server)
   
 -- | Signal when the 'serverInputWaitTime' property value has changed.
-serverInputWaitTimeChanged :: MonadComp m => Server m s a b -> Signal m (SamplingStats Double)
+serverInputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
 serverInputWaitTimeChanged server =
   mapSignalM (const $ serverInputWaitTime server) (serverInputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverInputWaitTime' property value has changed.
-serverInputWaitTimeChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverInputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverInputWaitTimeChanged_ server =
   mapSignal (const ()) (serverInputReceived server)
 
@@ -378,17 +372,17 @@ serverInputWaitTimeChanged_ server =
 -- to the current simulation time.
 --
 -- See also 'serverProcessingTimeChanged' and 'serverProcessingTimeChanged_'.
-serverProcessingTime :: MonadComp m => Server m s a b -> Event m (SamplingStats Double)
+serverProcessingTime :: MonadDES m => Server m s a b -> Event m (SamplingStats Double)
 serverProcessingTime server =
-  Event $ \p -> readProtoRef (serverProcessingTimeRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverProcessingTimeRef server)
   
 -- | Signal when the 'serverProcessingTime' property value has changed.
-serverProcessingTimeChanged :: MonadComp m => Server m s a b -> Signal m (SamplingStats Double)
+serverProcessingTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
 serverProcessingTimeChanged server =
   mapSignalM (const $ serverProcessingTime server) (serverProcessingTimeChanged_ server)
   
 -- | Signal when the 'serverProcessingTime' property value has changed.
-serverProcessingTimeChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverProcessingTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverProcessingTimeChanged_ server =
   mapSignal (const ()) (serverTaskProcessed server)
 
@@ -399,17 +393,17 @@ serverProcessingTimeChanged_ server =
 -- to the current simulation time.
 --
 -- See also 'serverOutputWaitTimeChanged' and 'serverOutputWaitTimeChanged_'.
-serverOutputWaitTime :: MonadComp m => Server m s a b -> Event m (SamplingStats Double)
+serverOutputWaitTime :: MonadDES m => Server m s a b -> Event m (SamplingStats Double)
 serverOutputWaitTime server =
-  Event $ \p -> readProtoRef (serverOutputWaitTimeRef server)
+  Event $ \p -> invokeEvent p $ readRef (serverOutputWaitTimeRef server)
   
 -- | Signal when the 'serverOutputWaitTime' property value has changed.
-serverOutputWaitTimeChanged :: MonadComp m => Server m s a b -> Signal m (SamplingStats Double)
+serverOutputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
 serverOutputWaitTimeChanged server =
   mapSignalM (const $ serverOutputWaitTime server) (serverOutputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverOutputWaitTime' property value has changed.
-serverOutputWaitTimeChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverOutputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverOutputWaitTimeChanged_ server =
   mapSignal (const ()) (serverOutputProvided server)
 
@@ -426,21 +420,21 @@ serverOutputWaitTimeChanged_ server =
 -- it is usually delayed relative to the current simulation time.
 --
 -- See also 'serverInputWaitFactorChanged' and 'serverInputWaitFactorChanged_'.
-serverInputWaitFactor :: MonadComp m => Server m s a b -> Event m Double
+serverInputWaitFactor :: MonadDES m => Server m s a b -> Event m Double
 serverInputWaitFactor server =
   Event $ \p ->
-  do x1 <- readProtoRef (serverTotalInputWaitTimeRef server)
-     x2 <- readProtoRef (serverTotalProcessingTimeRef server)
-     x3 <- readProtoRef (serverTotalOutputWaitTimeRef server)
+  do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
+     x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
+     x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
      return (x1 / (x1 + x2 + x3))
   
 -- | Signal when the 'serverInputWaitFactor' property value has changed.
-serverInputWaitFactorChanged :: MonadComp m => Server m s a b -> Signal m Double
+serverInputWaitFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
 serverInputWaitFactorChanged server =
   mapSignalM (const $ serverInputWaitFactor server) (serverInputWaitFactorChanged_ server)
   
 -- | Signal when the 'serverInputWaitFactor' property value has changed.
-serverInputWaitFactorChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverInputWaitFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverInputWaitFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
@@ -459,21 +453,21 @@ serverInputWaitFactorChanged_ server =
 -- it is usually delayed relative to the current simulation time.
 --
 -- See also 'serverProcessingFactorChanged' and 'serverProcessingFactorChanged_'.
-serverProcessingFactor :: MonadComp m => Server m s a b -> Event m Double
+serverProcessingFactor :: MonadDES m => Server m s a b -> Event m Double
 serverProcessingFactor server =
   Event $ \p ->
-  do x1 <- readProtoRef (serverTotalInputWaitTimeRef server)
-     x2 <- readProtoRef (serverTotalProcessingTimeRef server)
-     x3 <- readProtoRef (serverTotalOutputWaitTimeRef server)
+  do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
+     x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
+     x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
      return (x2 / (x1 + x2 + x3))
   
 -- | Signal when the 'serverProcessingFactor' property value has changed.
-serverProcessingFactorChanged :: MonadComp m => Server m s a b -> Signal m Double
+serverProcessingFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
 serverProcessingFactorChanged server =
   mapSignalM (const $ serverProcessingFactor server) (serverProcessingFactorChanged_ server)
   
 -- | Signal when the 'serverProcessingFactor' property value has changed.
-serverProcessingFactorChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverProcessingFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverProcessingFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
@@ -492,44 +486,44 @@ serverProcessingFactorChanged_ server =
 -- it is usually delayed relative to the current simulation time.
 --
 -- See also 'serverOutputWaitFactorChanged' and 'serverOutputWaitFactorChanged_'.
-serverOutputWaitFactor :: MonadComp m => Server m s a b -> Event m Double
+serverOutputWaitFactor :: MonadDES m => Server m s a b -> Event m Double
 serverOutputWaitFactor server =
   Event $ \p ->
-  do x1 <- readProtoRef (serverTotalInputWaitTimeRef server)
-     x2 <- readProtoRef (serverTotalProcessingTimeRef server)
-     x3 <- readProtoRef (serverTotalOutputWaitTimeRef server)
+  do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
+     x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
+     x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
      return (x3 / (x1 + x2 + x3))
   
 -- | Signal when the 'serverOutputWaitFactor' property value has changed.
-serverOutputWaitFactorChanged :: MonadComp m => Server m s a b -> Signal m Double
+serverOutputWaitFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
 serverOutputWaitFactorChanged server =
   mapSignalM (const $ serverOutputWaitFactor server) (serverOutputWaitFactorChanged_ server)
   
 -- | Signal when the 'serverOutputWaitFactor' property value has changed.
-serverOutputWaitFactorChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverOutputWaitFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverOutputWaitFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
   mapSignal (const ()) (serverOutputProvided server)
 
 -- | Raised when the server receives a new input task.
-serverInputReceived :: MonadComp m => Server m s a b -> Signal m a
+serverInputReceived :: MonadDES m => Server m s a b -> Signal m a
 serverInputReceived = publishSignal . serverInputReceivedSource
 
 -- | Raised when the task processing by the server was interrupted.
-serverTaskInterrupted :: MonadComp m => Server m s a b -> Signal m (ServerInterruption a)
+serverTaskInterrupted :: MonadDES m => Server m s a b -> Signal m (ServerInterruption a)
 serverTaskInterrupted = publishSignal . serverTaskInterruptedSource
 
 -- | Raised when the server has just processed the task.
-serverTaskProcessed :: MonadComp m => Server m s a b -> Signal m (a, b)
+serverTaskProcessed :: MonadDES m => Server m s a b -> Signal m (a, b)
 serverTaskProcessed = publishSignal . serverTaskProcessedSource
 
 -- | Raised when the server has just delivered the output.
-serverOutputProvided :: MonadComp m => Server m s a b -> Signal m (a, b)
+serverOutputProvided :: MonadDES m => Server m s a b -> Signal m (a, b)
 serverOutputProvided = publishSignal . serverOutputProvidedSource
 
 -- | Signal whenever any property of the server changes.
-serverChanged_ :: MonadComp m => Server m s a b -> Signal m ()
+serverChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskInterrupted server) <>
@@ -538,18 +532,18 @@ serverChanged_ server =
 
 -- | Return the summary for the server with desciption of its
 -- properties and activities using the specified indent.
-serverSummary :: MonadComp m => Server m s a b -> Int -> Event m ShowS
+serverSummary :: MonadDES m => Server m s a b -> Int -> Event m ShowS
 serverSummary server indent =
   Event $ \p ->
-  do tx1 <- readProtoRef (serverTotalInputWaitTimeRef server)
-     tx2 <- readProtoRef (serverTotalProcessingTimeRef server)
-     tx3 <- readProtoRef (serverTotalOutputWaitTimeRef server)
+  do tx1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
+     tx2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
+     tx3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
      let xf1 = tx1 / (tx1 + tx2 + tx3)
          xf2 = tx2 / (tx1 + tx2 + tx3)
          xf3 = tx3 / (tx1 + tx2 + tx3)
-     xs1 <- readProtoRef (serverInputWaitTimeRef server)
-     xs2 <- readProtoRef (serverProcessingTimeRef server)
-     xs3 <- readProtoRef (serverOutputWaitTimeRef server)
+     xs1 <- invokeEvent p $ readRef (serverInputWaitTimeRef server)
+     xs2 <- invokeEvent p $ readRef (serverProcessingTimeRef server)
+     xs3 <- invokeEvent p $ readRef (serverOutputWaitTimeRef server)
      let tab = replicate indent ' '
      return $
        showString tab .

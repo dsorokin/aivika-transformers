@@ -1634,7 +1634,7 @@ queueResultSummary c =
       resultContainerProperty c "queueRate" QueueRateId Q.queueRate Q.queueRateChanged_ ] }
 
 -- | Return a source by the specified infinite queue.
-infiniteQueueResultSource :: (MonadComp m,
+infiniteQueueResultSource :: (MonadDES m,
                               Show sm, Show so,
                               ResultItemable (ResultValue sm),
                               ResultItemable (ResultValue so))
@@ -1666,7 +1666,7 @@ infiniteQueueResultSource c =
       resultContainerProperty c "queueRate" QueueRateId IQ.queueRate IQ.queueRateChanged_ ] }
 
 -- | Return the summary by the specified infinite queue.
-infiniteQueueResultSummary :: (MonadComp m,
+infiniteQueueResultSummary :: (MonadDES m,
                                Show sm, Show so)
                               => ResultContainer (IQ.Queue m sm so a) m
                               -- ^ the queue container
@@ -1720,7 +1720,7 @@ arrivalTimerResultSummary c =
       resultContainerProperty c "processingTime" ArrivalProcessingTimeId arrivalProcessingTime arrivalProcessingTimeChanged_ ] }
 
 -- | Return a source by the specified server.
-serverResultSource :: (MonadComp m,
+serverResultSource :: (MonadDES m,
                        Show s, ResultItemable (ResultValue s))
                       => ResultContainer (Server m s a b) m
                       -- ^ the server container
@@ -1747,7 +1747,7 @@ serverResultSource c =
       resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
 
 -- | Return the summary by the specified server.
-serverResultSummary :: MonadComp m
+serverResultSummary :: MonadDES m
                        => ResultContainer (Server m s a b) m
                        -- ^ the server container
                        -> ResultSource m
@@ -2019,7 +2019,7 @@ instance (MonadDES m,
   resultSource' name i m =
     queueResultSource $ ResultContainer name i m (ResultSignal $ Q.queueChanged_ m)
 
-instance (MonadComp m,
+instance (MonadDES m,
           Show sm, Show so,
           ResultItemable (ResultValue sm),
           ResultItemable (ResultValue so))
@@ -2033,7 +2033,7 @@ instance MonadDES m => ResultProvider (ArrivalTimer m) m where
   resultSource' name i m =
     arrivalTimerResultSource $ ResultContainer name i m (ResultSignal $ arrivalProcessingTimeChanged_ m)
 
-instance (MonadComp m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Server m s a b) m where
+instance (MonadDES m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Server m s a b) m where
 
   resultSource' name i m =
     serverResultSource $ ResultContainer name i m (ResultSignal $ serverChanged_ m)
