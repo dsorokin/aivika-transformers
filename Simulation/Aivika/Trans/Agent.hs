@@ -29,9 +29,8 @@ module Simulation.Aivika.Trans.Agent
 
 import Control.Monad
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
@@ -42,9 +41,8 @@ import Simulation.Aivika.Trans.Signal
 --
 
 -- | Represents an agent.
-data Agent m = Agent { agentMarker             :: SessionMarker m,
-                       agentModeRef            :: ProtoRef m AgentMode,
-                       agentStateRef           :: ProtoRef m (Maybe (AgentState m)), 
+data Agent m = Agent { agentModeRef            :: Ref m AgentMode,
+                       agentStateRef           :: Ref m (Maybe (AgentState m)), 
                        agentStateChangedSource :: SignalSource m (Maybe (AgentState m)) }
 
 -- | Represents the agent state.
@@ -52,21 +50,20 @@ data AgentState m = AgentState { stateAgent         :: Agent m,
                                  -- ^ Return the corresponded agent.
                                  stateParent        :: Maybe (AgentState m),
                                  -- ^ Return the parent state or 'Nothing'.
-                                 stateMarker        :: SessionMarker m,
-                                 stateActivateRef   :: ProtoRef m (Event m ()),
-                                 stateDeactivateRef :: ProtoRef m (Event m ()),
-                                 stateTransitRef    :: ProtoRef m (Event m (Maybe (AgentState m))),
-                                 stateVersionRef    :: ProtoRef m Int }
+                                 stateActivateRef   :: Ref m (Event m ()),
+                                 stateDeactivateRef :: Ref m (Event m ()),
+                                 stateTransitRef    :: Ref m (Event m (Maybe (AgentState m))),
+                                 stateVersionRef    :: Ref m Int }
                   
 data AgentMode = CreationMode
                | TransientMode
                | ProcessingMode
                       
-instance MonadComp m => Eq (Agent m) where
-  x == y = agentMarker x == agentMarker y
+instance MonadDES m => Eq (Agent m) where
+  x == y = agentStateRef x == agentStateRef y
   
-instance MonadComp m => Eq (AgentState m) where
-  x == y = stateMarker x == stateMarker y
+instance MonadDES m => Eq (AgentState m) where
+  x == y = stateVersionRef x == stateVersionRef y
 
 fullPath :: AgentState m -> [AgentState m] -> [AgentState m]
 fullPath st acc =
@@ -74,7 +71,7 @@ fullPath st acc =
     Nothing  -> st : acc
     Just st' -> fullPath st' (st : acc)
 
-partitionPath :: MonadComp m => [AgentState m] -> [AgentState m] -> ([AgentState m], [AgentState m])
+partitionPath :: MonadDES m => [AgentState m] -> [AgentState m] -> ([AgentState m], [AgentState m])
 partitionPath path1 path2 =
   case (path1, path2) of
     (h1 : t1, [h2]) | h1 == h2 -> 
@@ -84,7 +81,7 @@ partitionPath path1 path2 =
     _ ->
       (reverse path1, path2)
 
-findPath :: MonadComp m => Maybe (AgentState m) -> AgentState m -> ([AgentState m], [AgentState m])
+findPath :: MonadDES m => Maybe (AgentState m) -> AgentState m -> ([AgentState m], [AgentState m])
 findPath Nothing target = ([], fullPath target [])
 findPath (Just source) target
   | stateAgent source /= stateAgent target =
@@ -95,41 +92,41 @@ findPath (Just source) target
     path1 = fullPath source []
     path2 = fullPath target []
 
-traversePath :: MonadComp m => Maybe (AgentState m) -> AgentState m -> Event m ()
+traversePath :: MonadDES m => Maybe (AgentState m) -> AgentState m -> Event m ()
 traversePath source target =
   let (path1, path2) = findPath source target
       agent = stateAgent target
-      activate st p   = invokeEvent p =<< readProtoRef (stateActivateRef st)
-      deactivate st p = invokeEvent p =<< readProtoRef (stateDeactivateRef st)
-      transit st p    = invokeEvent p =<< readProtoRef (stateTransitRef st)
+      activate st p   = invokeEvent p =<< (invokeEvent p $ readRef (stateActivateRef st))
+      deactivate st p = invokeEvent p =<< (invokeEvent p $ readRef (stateDeactivateRef st))
+      transit st p    = invokeEvent p =<< (invokeEvent p $ readRef (stateTransitRef st))
       continue st p   = invokeEvent p $ traversePath (Just target) st
   in Event $ \p ->
        unless (null path1 && null path2) $
-       do writeProtoRef (agentModeRef agent) TransientMode
+       do invokeEvent p $ writeRef (agentModeRef agent) TransientMode
           forM_ path1 $ \st ->
-            do writeProtoRef (agentStateRef agent) (Just st)
+            do invokeEvent p $ writeRef (agentStateRef agent) (Just st)
                deactivate st p
                -- it makes all timeout and timer handlers outdated
-               modifyProtoRef (stateVersionRef st) (1 +)
+               invokeEvent p $ modifyRef (stateVersionRef st) (1 +)
           forM_ path2 $ \st ->
-            do writeProtoRef (agentStateRef agent) (Just st)
+            do invokeEvent p $ writeRef (agentStateRef agent) (Just st)
                activate st p
           st' <- transit target p
           case st' of
             Nothing ->
-              do writeProtoRef (agentModeRef agent) ProcessingMode
+              do invokeEvent p $ writeRef (agentModeRef agent) ProcessingMode
                  triggerAgentStateChanged p agent
             Just st' ->
               continue st' p
 
 -- | Add to the state a timeout handler that will be actuated 
 -- in the specified time period if the state will remain active.
-addTimeout :: MonadComp m => AgentState m -> Double -> Event m () -> Event m ()
+addTimeout :: MonadDES m => AgentState m -> Double -> Event m () -> Event m ()
 addTimeout st dt action =
   Event $ \p ->
-  do v <- readProtoRef (stateVersionRef st)
+  do v <- invokeEvent p $ readRef (stateVersionRef st)
      let m1 = Event $ \p ->
-           do v' <- readProtoRef (stateVersionRef st)
+           do v' <- invokeEvent p $ readRef (stateVersionRef st)
               when (v == v') $
                 invokeEvent p action
          m2 = enqueueEvent (pointTime p + dt) m1
@@ -138,12 +135,12 @@ addTimeout st dt action =
 -- | Add to the state a timer handler that will be actuated
 -- in the specified time period and then repeated again many times,
 -- while the state remains active.
-addTimer :: MonadComp m => AgentState m -> Event m Double -> Event m () -> Event m ()
+addTimer :: MonadDES m => AgentState m -> Event m Double -> Event m () -> Event m ()
 addTimer st dt action =
   Event $ \p ->
-  do v <- readProtoRef (stateVersionRef st)
+  do v <- invokeEvent p $ readRef (stateVersionRef st)
      let m1 = Event $ \p ->
-           do v' <- readProtoRef (stateVersionRef st)
+           do v' <- invokeEvent p $ readRef (stateVersionRef st)
               when (v == v') $
                 do invokeEvent p m2
                    invokeEvent p action
@@ -153,105 +150,89 @@ addTimer st dt action =
      invokeEvent p m2
 
 -- | Create a new state.
-newState :: MonadComp m => Agent m -> Simulation m (AgentState m)
+newState :: MonadDES m => Agent m -> Simulation m (AgentState m)
 newState agent =
-  Simulation $ \r ->
-  do let s = runSession r
-     aref <- newProtoRef s $ return ()
-     dref <- newProtoRef s $ return ()
-     tref <- newProtoRef s $ return Nothing
-     vref <- newProtoRef s 0
-     mrkr <- newSessionMarker s
+  do aref <- newRef $ return ()
+     dref <- newRef $ return ()
+     tref <- newRef $ return Nothing
+     vref <- newRef 0
      return AgentState { stateAgent = agent,
                          stateParent = Nothing,
-                         stateMarker = mrkr,
                          stateActivateRef = aref,
                          stateDeactivateRef = dref,
                          stateTransitRef = tref,
                          stateVersionRef = vref }
 
 -- | Create a child state.
-newSubstate :: MonadComp m => AgentState m -> Simulation m (AgentState m)
+newSubstate :: MonadDES m => AgentState m -> Simulation m (AgentState m)
 newSubstate parent =
-  Simulation $ \r ->
   do let agent = stateAgent parent
-         s = runSession r
-     aref <- newProtoRef s $ return ()
-     dref <- newProtoRef s $ return ()
-     tref <- newProtoRef s $ return Nothing
-     vref <- newProtoRef s 0
-     mrkr <- newSessionMarker s
+     aref <- newRef $ return ()
+     dref <- newRef $ return ()
+     tref <- newRef $ return Nothing
+     vref <- newRef 0
      return AgentState { stateAgent = agent,
                          stateParent = Just parent,
-                         stateMarker = mrkr,
                          stateActivateRef= aref,
                          stateDeactivateRef = dref,
                          stateTransitRef = tref,
                          stateVersionRef = vref }
 
 -- | Create an agent.
-newAgent :: MonadComp m => Simulation m (Agent m)
+newAgent :: MonadDES m => Simulation m (Agent m)
 newAgent =
-  Simulation $ \r ->
-  do let s = runSession r
-     modeRef  <- newProtoRef s CreationMode
-     stateRef <- newProtoRef s Nothing
-     stateChangedSource <- invokeSimulation r newSignalSource
-     mrkr <- newSessionMarker s
-     return Agent { agentMarker = mrkr,
-                    agentModeRef = modeRef,
+  do modeRef  <- newRef CreationMode
+     stateRef <- newRef Nothing
+     stateChangedSource <- newSignalSource
+     return Agent { agentModeRef = modeRef,
                     agentStateRef = stateRef, 
                     agentStateChangedSource = stateChangedSource }
 
 -- | Return the selected active state.
-selectedState :: MonadComp m => Agent m -> Event m (Maybe (AgentState m))
-selectedState agent =
-  Event $ \p -> readProtoRef (agentStateRef agent)
+selectedState :: MonadDES m => Agent m -> Event m (Maybe (AgentState m))
+selectedState agent = readRef (agentStateRef agent)
                    
 -- | Select the state. The activation and selection are repeated while
 -- there is the transition state defined by 'setStateTransition'.
-selectState :: MonadComp m => AgentState m -> Event m ()
+selectState :: MonadDES m => AgentState m -> Event m ()
 selectState st =
   Event $ \p ->
   do let agent = stateAgent st
-     mode <- readProtoRef (agentModeRef agent)
+     mode <- invokeEvent p $ readRef (agentModeRef agent)
      case mode of
        CreationMode ->
-         do x0 <- readProtoRef (agentStateRef agent)
+         do x0 <- invokeEvent p $ readRef (agentStateRef agent)
             invokeEvent p $ traversePath x0 st
        TransientMode ->
          error $
          "Use the setStateTransition function to define " ++
          "the transition state: activateState."
        ProcessingMode ->
-         do x0 @ (Just st0) <- readProtoRef (agentStateRef agent)
+         do x0 @ (Just st0) <- invokeEvent p $ readRef (agentStateRef agent)
             invokeEvent p $ traversePath x0 st
 
 -- | Set the activation computation for the specified state.
-setStateActivation :: MonadComp m => AgentState m -> Event m () -> Simulation m ()
+setStateActivation :: MonadDES m => AgentState m -> Event m () -> Event m ()
 setStateActivation st action =
-  Simulation $ \r ->
-  writeProtoRef (stateActivateRef st) action
+  writeRef (stateActivateRef st) action
   
 -- | Set the deactivation computation for the specified state.
-setStateDeactivation :: MonadComp m => AgentState m -> Event m () -> Simulation m ()
+setStateDeactivation :: MonadDES m => AgentState m -> Event m () -> Event m ()
 setStateDeactivation st action =
-  Simulation $ \r ->
-  writeProtoRef (stateDeactivateRef st) action
+  writeRef (stateDeactivateRef st) action
   
 -- | Set the transition state which will be next and which is used only
 -- when selecting the state directly with help of 'selectState'.
 -- If the state was activated intermediately, when selecting
 -- another state, then this computation is not used.
-setStateTransition :: MonadComp m => AgentState m -> Event m (Maybe (AgentState m)) -> Simulation m ()
+setStateTransition :: MonadDES m => AgentState m -> Event m (Maybe (AgentState m)) -> Event m ()
 setStateTransition st action =
-  Simulation $ \r ->
-  writeProtoRef (stateTransitRef st) action
+  writeRef (stateTransitRef st) action
   
 -- | Trigger the signal when the agent state changes.
-triggerAgentStateChanged :: MonadComp m => Point m -> Agent m -> m ()
+triggerAgentStateChanged :: MonadDES m => Point m -> Agent m -> m ()
 triggerAgentStateChanged p agent =
-  do st <- readProtoRef (agentStateRef agent)
+  do st <- invokeEvent p $ readRef (agentStateRef agent)
      invokeEvent p $ triggerSignal (agentStateChangedSource agent) st
 
 -- | Return a signal that notifies about every change of the selected state.
@@ -260,6 +241,6 @@ selectedStateChanged agent =
   publishSignal (agentStateChangedSource agent)
 
 -- | Return a signal that notifies about every change of the selected state.
-selectedStateChanged_ :: MonadComp m => Agent m -> Signal m ()
+selectedStateChanged_ :: MonadDES m => Agent m -> Signal m ()
 selectedStateChanged_ agent =
   mapSignal (const ()) $ selectedStateChanged agent
