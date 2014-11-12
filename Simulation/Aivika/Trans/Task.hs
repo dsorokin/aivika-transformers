@@ -42,9 +42,8 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Exception
 
-import Simulation.Aivika.Trans.Specs
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
@@ -59,7 +58,7 @@ data Task m a =
   Task { taskId :: ProcessId m,
          -- ^ Return an identifier for the process that was launched
          -- in background for this task.
-         taskResultRef :: ProtoRef m (Maybe (TaskResult a)),
+         taskResultRef :: Ref m (Maybe (TaskResult a)),
          -- ^ It contains the result of the computation.
          taskResultReceived :: Signal m (TaskResult a)
          -- ^ Return a signal that notifies about receiving
@@ -76,68 +75,66 @@ data TaskResult a = TaskCompleted a
                     -- ^ the task was cancelled
 
 -- | Try to get the task result immediately without suspension.
-tryGetTaskResult :: MonadComp m => Task m a -> Event m (Maybe (TaskResult a))
-tryGetTaskResult t =
-  Event $ \p -> readProtoRef (taskResultRef t)
+tryGetTaskResult :: MonadDES m => Task m a -> Event m (Maybe (TaskResult a))
+tryGetTaskResult t = readRef (taskResultRef t)
 
 -- | Return the task result suspending the outer process if required.
-taskResult :: MonadComp m => Task m a -> Process m (TaskResult a)
+taskResult :: MonadDES m => Task m a -> Process m (TaskResult a)
 taskResult t =
-  do x <- liftComp $ readProtoRef (taskResultRef t)
+  do x <- liftEvent $ readRef (taskResultRef t)
      case x of
        Just x -> return x
        Nothing -> processAwait (taskResultReceived t)
 
 -- | Cancel the task.
-cancelTask :: MonadComp m => Task m a -> Event m ()
+cancelTask :: MonadDES m => Task m a -> Event m ()
 cancelTask t =
   cancelProcessWithId (taskId t)
 
 -- | Test whether the task was cancelled.
-taskCancelled :: MonadComp m => Task m a -> Event m Bool
+taskCancelled :: MonadDES m => Task m a -> Event m Bool
 taskCancelled t =
   processCancelled (taskId t)
 
 -- | Create a task by the specified process and its identifier.
-newTaskUsingId :: MonadComp m => ProcessId m -> Process m a -> Event m (Task m a, Process m ())
+newTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Event m (Task m a, Process m ())
 newTaskUsingId pid p =
-  do sn <- liftParameter simulationSession
-     r <- liftComp $ newProtoRef sn Nothing
+  do r <- liftSimulation $ newRef Nothing
      s <- liftSimulation newSignalSource
      let t = Task { taskId = pid,
                     taskResultRef = r,
                     taskResultReceived = publishSignal s }
      let m =
-           do v <- liftComp $ newProtoRef sn TaskCancelled
+           do v <- liftSimulation $ newRef TaskCancelled
               finallyProcess
                 (catchProcess
                  (do a <- p
-                     liftComp $ writeProtoRef v (TaskCompleted a))
+                     liftEvent $ writeRef v (TaskCompleted a))
                  (\e ->
-                   liftComp $ writeProtoRef v (TaskError e)))
+                   liftEvent $ writeRef v (TaskError e)))
                 (liftEvent $
-                 do x <- liftComp $ readProtoRef v
-                    liftComp $ writeProtoRef r (Just x)
+                 do x <- readRef v
+                    writeRef r (Just x)
                     triggerSignal s x)
      return (t, m)
 
 -- | Run the process with the specified identifier in background and
 -- return the corresponded task immediately.
-runTaskUsingId :: MonadComp m => ProcessId m -> Process m a -> Event m (Task m a)
+runTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Event m (Task m a)
 runTaskUsingId pid p =
   do (t, m) <- newTaskUsingId pid p
      runProcessUsingId pid m
      return t
 
 -- | Run the process in background and return the corresponded task immediately.
-runTask :: MonadComp m => Process m a -> Event m (Task m a)
+runTask :: MonadDES m => Process m a -> Event m (Task m a)
 runTask p =
   do pid <- liftSimulation newProcessId
      runTaskUsingId pid p
 
 -- | Enqueue the process that will be started at the specified time with the given
 -- identifier from the event queue. It returns the corresponded task immediately.
-enqueueTaskUsingId :: MonadComp m => Double -> ProcessId m -> Process m a -> Event m (Task m a)
+enqueueTaskUsingId :: MonadDES m => Double -> ProcessId m -> Process m a -> Event m (Task m a)
 enqueueTaskUsingId time pid p =
   do (t, m) <- newTaskUsingId pid p
      enqueueProcessUsingId time pid m
@@ -145,37 +142,37 @@ enqueueTaskUsingId time pid p =
 
 -- | Enqueue the process that will be started at the specified time from the event queue.
 -- It returns the corresponded task immediately.
-enqueueTask :: MonadComp m => Double -> Process m a -> Event m (Task m a)
+enqueueTask :: MonadDES m => Double -> Process m a -> Event m (Task m a)
 enqueueTask time p =
   do pid <- liftSimulation newProcessId
      enqueueTaskUsingId time pid p
 
 -- | Run using the specified identifier a child process in background and return
 -- immediately the corresponded task.
-spawnTaskUsingId :: MonadComp m => ProcessId m -> Process m a -> Process m (Task m a)
+spawnTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Process m (Task m a)
 spawnTaskUsingId = spawnTaskUsingIdWith CancelTogether
 
 -- | Run a child process in background and return immediately the corresponded task.
-spawnTask :: MonadComp m => Process m a -> Process m (Task m a)
+spawnTask :: MonadDES m => Process m a -> Process m (Task m a)
 spawnTask = spawnTaskWith CancelTogether
 
 -- | Run using the specified identifier a child process in background and return
 -- immediately the corresponded task.
-spawnTaskUsingIdWith :: MonadComp m => ContCancellation -> ProcessId m -> Process m a -> Process m (Task m a)
+spawnTaskUsingIdWith :: MonadDES m => ContCancellation -> ProcessId m -> Process m a -> Process m (Task m a)
 spawnTaskUsingIdWith cancellation pid p =
   do (t, m) <- liftEvent $ newTaskUsingId pid p
      spawnProcessUsingIdWith cancellation pid m
      return t
 
 -- | Run a child process in background and return immediately the corresponded task.
-spawnTaskWith :: MonadComp m => ContCancellation -> Process m a -> Process m (Task m a)
+spawnTaskWith :: MonadDES m => ContCancellation -> Process m a -> Process m (Task m a)
 spawnTaskWith cancellation p =
   do pid <- liftSimulation newProcessId
      spawnTaskUsingIdWith cancellation pid p
 
 -- | Return an outer process that behaves like the task itself except for one thing:
 -- if the outer process is cancelled then it is not enough to cancel the task. 
-taskProcess :: MonadComp m => Task m a -> Process m a
+taskProcess :: MonadDES m => Task m a -> Process m a
 taskProcess t =
   do x <- taskResult t
      case x of
