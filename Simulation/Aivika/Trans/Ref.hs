@@ -70,3 +70,6 @@ refChanged r = publishSignal (refChangedSource r)
 -- | Return a signal that notifies about every change of the reference state.
 refChanged_ :: MonadDES m => Ref m a -> Signal m ()
 refChanged_ r = mapSignal (const ()) $ refChanged r
+
+instance MonadDES m => Eq (Ref m a) where
+  r1 == r2 = (refValue r1) == (refValue r2)

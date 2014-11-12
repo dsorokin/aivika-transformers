@@ -41,3 +41,9 @@ class Monad m => MonadRef m where
 
   -- | Mutate the contents of the reference.
   modifyRef :: Ref m a -> (a -> a) -> Event m ()
+
+  -- | Compare two references for equality.
+  equalRef :: Ref m a -> Ref m a -> Bool
+
+instance MonadRef m => Eq (Ref m a) where
+  (==) = equalRef

@@ -42,3 +42,5 @@ instance MonadIO m => MonadRef m where
     do a <- liftIO $ readIORef (refValue r)
        let b = f a
        b `seq` liftIO $ writeIORef (refValue r) b
+
+  equalRef (Ref r1) (Ref r2) = (r1 == r2)
