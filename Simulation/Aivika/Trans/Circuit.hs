@@ -58,9 +58,9 @@ import qualified Control.Category as C
 import Control.Arrow
 import Control.Monad.Fix
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.Monad.SD
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
@@ -73,7 +73,6 @@ import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Task
-import Simulation.Aivika.Trans.Monad.SD
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents a circuit synchronized with the event queue.
@@ -85,7 +84,7 @@ newtype Circuit m a b =
             -- ^ Run the circuit.
           }
 
-instance MonadComp m => C.Category (Circuit m) where
+instance MonadDES m => C.Category (Circuit m) where
 
   id = Circuit $ \a -> return (a, C.id)
 
@@ -98,7 +97,7 @@ instance MonadComp m => C.Category (Circuit m) where
            (c, cir2) <- invokeEvent p (g b)
            return (c, cir2 `dot` cir1)
 
-instance MonadComp m => Arrow (Circuit m) where
+instance MonadDES m => Arrow (Circuit m) where
 
   arr f = Circuit $ \a -> return (f a, arr f)
 
@@ -128,7 +127,7 @@ instance MonadComp m => Arrow (Circuit m) where
        (c', cir2) <- invokeEvent p (g b)
        return ((c, c'), cir1 &&& cir2)
 
-instance (MonadComp m, MonadFix m) => ArrowLoop (Circuit m) where
+instance (MonadDES m, MonadFix m) => ArrowLoop (Circuit m) where
 
   loop (Circuit f) =
     Circuit $ \b ->
@@ -136,7 +135,7 @@ instance (MonadComp m, MonadFix m) => ArrowLoop (Circuit m) where
     do rec ((c, d), cir) <- invokeEvent p (f (b, d))
        return (c, loop cir)
 
-instance MonadComp m => ArrowChoice (Circuit m) where
+instance MonadDES m => ArrowChoice (Circuit m) where
 
   left x@(Circuit f) =
     Circuit $ \ebd ->
@@ -181,22 +180,19 @@ instance MonadComp m => ArrowChoice (Circuit m) where
            return (d, x ||| cir2)
 
 -- | Get a signal transform by the specified circuit.
-circuitSignaling :: MonadComp m => Circuit m a b -> Signal m a -> Signal m b
+circuitSignaling :: MonadDES m => Circuit m a b -> Signal m a -> Signal m b
 circuitSignaling (Circuit cir) sa =
   Signal { handleSignal = \f ->
-            Event $ \p ->
-            do let s = runSession (pointRun p)
-               r <- newProtoRef s cir
-               invokeEvent p $
-                 handleSignal sa $ \a ->
+            do r <- liftSimulation $ newRef cir
+               handleSignal sa $ \a ->
                  Event $ \p ->
-                 do cir <- readProtoRef r
+                 do cir <- invokeEvent p $ readRef r
                     (b, Circuit cir') <- invokeEvent p (cir a)
-                    writeProtoRef r cir'
+                    invokeEvent p $ writeRef r cir'
                     invokeEvent p (f b) }
 
 -- | Transform the circuit to a processor.
-circuitProcessor :: MonadComp m => Circuit m a b -> Processor m a b
+circuitProcessor :: MonadDES m => Circuit m a b -> Processor m a b
 circuitProcessor (Circuit cir) = Processor $ \sa ->
   Cons $
   do (a, xs) <- runStream sa
@@ -206,7 +202,7 @@ circuitProcessor (Circuit cir) = Processor $ \sa ->
 
 -- | Create a simple circuit by the specified handling function
 -- that runs the computation for each input value to get an output.
-arrCircuit :: MonadComp m => (a -> Event m b) -> Circuit m a b
+arrCircuit :: MonadDES m => (a -> Event m b) -> Circuit m a b
 arrCircuit f =
   let x =
         Circuit $ \a ->
@@ -216,7 +212,7 @@ arrCircuit f =
   in x
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumCircuit :: MonadComp m => (acc -> a -> Event m (acc, b)) -> acc -> Circuit m a b
+accumCircuit :: MonadDES m => (acc -> a -> Event m (acc, b)) -> acc -> Circuit m a b
 accumCircuit f acc =
   Circuit $ \a ->
   Event $ \p ->
@@ -225,7 +221,7 @@ accumCircuit f acc =
 
 -- | A circuit that adds the information about the time points at which 
 -- the values were received.
-arrivalCircuit :: MonadComp m => Circuit m a (Arrival a)
+arrivalCircuit :: MonadDES m => Circuit m a (Arrival a)
 arrivalCircuit =
   let loop t0 =
         Circuit $ \a ->
@@ -241,20 +237,20 @@ arrivalCircuit =
   in loop Nothing
 
 -- | Delay the input by one step using the specified initial value.
-delayCircuit :: MonadComp m => a -> Circuit m a a
+delayCircuit :: MonadDES m => a -> Circuit m a a
 delayCircuit a0 =
   Circuit $ \a ->
   return (a0, delayCircuit a)
 
 -- | A circuit that returns the current modeling time.
-timeCircuit :: MonadComp m => Circuit m a Double
+timeCircuit :: MonadDES m => Circuit m a Double
 timeCircuit =
   Circuit $ \a ->
   Event $ \p ->
   return (pointTime p, timeCircuit)
 
 -- | Like '>>>' but processes only the represented events.
-(>?>) :: MonadComp m
+(>?>) :: MonadDES m
          => Circuit m a (Maybe b)
          -- ^ whether there is an event
          -> Circuit m b c
@@ -273,7 +269,7 @@ whether >?> process =
             return (Just c, whether' >?> process')
 
 -- | Like '<<<' but processes only the represented events.
-(<?<) :: MonadComp m
+(<?<) :: MonadDES m
          => Circuit m b c
          -- ^ process the event if it presents
          -> Circuit m a (Maybe b)
@@ -284,12 +280,12 @@ whether >?> process =
 
 -- | Filter the circuit, calculating only those parts of the circuit that satisfy
 -- the specified predicate.
-filterCircuit :: MonadComp m => (a -> Bool) -> Circuit m a b -> Circuit m a (Maybe b)
+filterCircuit :: MonadDES m => (a -> Bool) -> Circuit m a b -> Circuit m a (Maybe b)
 filterCircuit pred = filterCircuitM (return . pred)
 
 -- | Filter the circuit within the 'Event' computation, calculating only those parts
 -- of the circuit that satisfy the specified predicate.
-filterCircuitM :: MonadComp m => (a -> Event m Bool) -> Circuit m a b -> Circuit m a (Maybe b)
+filterCircuitM :: MonadDES m => (a -> Event m Bool) -> Circuit m a b -> Circuit m a (Maybe b)
 filterCircuitM pred cir =
   Circuit $ \a ->
   Event $ \p ->
@@ -300,7 +296,7 @@ filterCircuitM pred cir =
        else return (Nothing, filterCircuitM pred cir)
 
 -- | The source of events that never occur.
-neverCircuit :: MonadComp m => Circuit m a (Maybe b)
+neverCircuit :: MonadDES m => Circuit m a (Maybe b)
 neverCircuit =
   Circuit $ \a -> return (Nothing, neverCircuit)
 
@@ -324,7 +320,7 @@ neverCircuit =
 -- Regarding the recursive equations, the both functions allow defining them
 -- but whithin different computations (either with help of the recursive
 -- do-notation or the proc-notation).
-integCircuit :: MonadComp m
+integCircuit :: MonadDES m
                 => Double
                 -- ^ the initial value
                 -> Circuit m Double Double
@@ -346,7 +342,7 @@ integCircuit init = start
 
 -- | Like 'integCircuit' but allows either setting a new 'Left' integral value,
 -- or using the 'Right' derivative when integrating by Euler's method.
-integCircuitEither :: MonadComp m
+integCircuitEither :: MonadDES m
                       => Double
                       -- ^ the initial value
                       -> Circuit m (Either Double Double) Double
@@ -383,7 +379,7 @@ integCircuitEither init = start
 -- Regarding the recursive equations, the both functions allow defining them
 -- but whithin different computations (either with help of the recursive
 -- do-notation or the proc-notation).
-sumCircuit :: (MonadComp m, Num a)
+sumCircuit :: (MonadDES m, Num a)
               => a
               -- ^ the initial value
               -> Circuit m a a
@@ -402,7 +398,7 @@ sumCircuit init = start
 
 -- | Like 'sumCircuit' but allows either setting a new 'Left' value for the sum, or updating it
 -- by specifying the 'Right' difference.
-sumCircuitEither :: (MonadComp m, Num a)
+sumCircuitEither :: (MonadDES m, Num a)
                     => a
                     -- ^ the initial value
                     -> Circuit m (Either a a) a
@@ -431,27 +427,27 @@ sumCircuitEither init = start
 --
 -- This procedure consumes memory as the underlying memoization allocates
 -- an array to store the calculated values.
-circuitTransform :: MonadSD m => Circuit m a b -> Transform m a b
+circuitTransform :: (MonadSD m, MonadDES m) => Circuit m a b -> Transform m a b
 circuitTransform cir = Transform start
   where
     start m =
       Simulation $ \r ->
-      do let s = runSession r
-         ref <- newProtoRef s cir
+      do ref <- invokeSimulation r $ newRef cir
          invokeSimulation r $
            memo0Dynamics (next ref m)
     next ref m =
       Dynamics $ \p ->
       do a <- invokeDynamics p m
-         cir <- readProtoRef ref
-         (b, cir') <-
-           invokeDynamics p $
-           runEvent (runCircuit cir a)
-         writeProtoRef ref cir'
-         return b
+         invokeDynamics p $
+           runEvent $
+           Event $ \p ->
+           do cir <- invokeEvent p $ readRef ref
+              (b, cir') <- invokeEvent p $ runCircuit cir a
+              invokeEvent p $ writeRef ref cir'
+              return b
 
 -- | Iterate the circuit in the specified time points.
-iterateCircuitInPoints_ :: MonadComp m => [Point m] -> Circuit m a a -> a -> Event m ()
+iterateCircuitInPoints_ :: MonadDES m => [Point m] -> Circuit m a a -> a -> Event m ()
 iterateCircuitInPoints_ [] cir a = return ()
 iterateCircuitInPoints_ (p : ps) cir a =
   enqueueEvent (pointTime p) $
@@ -461,7 +457,7 @@ iterateCircuitInPoints_ (p : ps) cir a =
 
 -- | Iterate the circuit in the specified time points returning a task
 -- which completes after the final output of the circuit is received.
-iterateCircuitInPoints :: MonadComp m => [Point m] -> Circuit m a a -> a -> Event m (Task m a)
+iterateCircuitInPoints :: MonadDES m => [Point m] -> Circuit m a a -> a -> Event m (Task m a)
 iterateCircuitInPoints ps cir a =
   do let loop [] cir a source = triggerSignal source a
          loop (p : ps) cir a source =
@@ -475,7 +471,7 @@ iterateCircuitInPoints ps cir a =
      return task
 
 -- | Iterate the circuit in the integration time points.
-iterateCircuitInIntegTimes_ :: MonadComp m => Circuit m a a -> a -> Event m ()
+iterateCircuitInIntegTimes_ :: MonadDES m => Circuit m a a -> a -> Event m ()
 iterateCircuitInIntegTimes_ cir a =
   Event $ \p ->
   do let ps = integPointsStartingFrom p
@@ -483,7 +479,7 @@ iterateCircuitInIntegTimes_ cir a =
        iterateCircuitInPoints_ ps cir a
 
 -- | Iterate the circuit in the specified time points.
-iterateCircuitInTimes_ :: MonadComp m => [Double] -> Circuit m a a -> a -> Event m ()
+iterateCircuitInTimes_ :: MonadDES m => [Double] -> Circuit m a a -> a -> Event m ()
 iterateCircuitInTimes_ ts cir a =
   Event $ \p ->
   do let ps = map (pointAt $ pointRun p) ts
@@ -492,7 +488,7 @@ iterateCircuitInTimes_ ts cir a =
 
 -- | Iterate the circuit in the integration time points returning a task
 -- which completes after the final output of the circuit is received.
-iterateCircuitInIntegTimes :: MonadComp m => Circuit m a a -> a -> Event m (Task m a)
+iterateCircuitInIntegTimes :: MonadDES m => Circuit m a a -> a -> Event m (Task m a)
 iterateCircuitInIntegTimes cir a =
   Event $ \p ->
   do let ps = integPointsStartingFrom p
@@ -501,7 +497,7 @@ iterateCircuitInIntegTimes cir a =
 
 -- | Iterate the circuit in the specified time points returning a task
 -- which completes after the final output of the circuit is received.
-iterateCircuitInTimes :: MonadComp m => [Double] -> Circuit m a a -> a -> Event m (Task m a)
+iterateCircuitInTimes :: MonadDES m => [Double] -> Circuit m a a -> a -> Event m (Task m a)
 iterateCircuitInTimes ts cir a =
   Event $ \p ->
   do let ps = map (pointAt $ pointRun p) ts
@@ -510,7 +506,7 @@ iterateCircuitInTimes ts cir a =
 
 -- | Iterate the circuit in the specified time points, interrupting the iteration
 -- immediately if 'Nothing' is returned within the 'Circuit' computation.
-iterateCircuitInPointsMaybe :: MonadComp m => [Point m] -> Circuit m a (Maybe a) -> a -> Event m ()
+iterateCircuitInPointsMaybe :: MonadDES m => [Point m] -> Circuit m a (Maybe a) -> a -> Event m ()
 iterateCircuitInPointsMaybe [] cir a = return ()
 iterateCircuitInPointsMaybe (p : ps) cir a =
   enqueueEvent (pointTime p) $
@@ -523,7 +519,7 @@ iterateCircuitInPointsMaybe (p : ps) cir a =
 
 -- | Iterate the circuit in the integration time points, interrupting the iteration
 -- immediately if 'Nothing' is returned within the 'Circuit' computation.
-iterateCircuitInIntegTimesMaybe :: MonadComp m => Circuit m a (Maybe a) -> a -> Event m ()
+iterateCircuitInIntegTimesMaybe :: MonadDES m => Circuit m a (Maybe a) -> a -> Event m ()
 iterateCircuitInIntegTimesMaybe cir a =
   Event $ \p ->
   do let ps = integPointsStartingFrom p
@@ -532,7 +528,7 @@ iterateCircuitInIntegTimesMaybe cir a =
 
 -- | Iterate the circuit in the specified time points, interrupting the iteration
 -- immediately if 'Nothing' is returned within the 'Circuit' computation.
-iterateCircuitInTimesMaybe :: MonadComp m => [Double] -> Circuit m a (Maybe a) -> a -> Event m ()
+iterateCircuitInTimesMaybe :: MonadDES m => [Double] -> Circuit m a (Maybe a) -> a -> Event m ()
 iterateCircuitInTimesMaybe ts cir a =
   Event $ \p ->
   do let ps = map (pointAt $ pointRun p) ts
@@ -543,7 +539,7 @@ iterateCircuitInTimesMaybe ts cir a =
 -- that computes the final output of the circuit either after all points
 -- are exhausted, or after the 'Left' result of type @b@ is received,
 -- which interrupts the computation immediately.
-iterateCircuitInPointsEither :: MonadComp m => [Point m] -> Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
+iterateCircuitInPointsEither :: MonadDES m => [Point m] -> Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
 iterateCircuitInPointsEither ps cir a =
   do let loop [] cir ba source = triggerSignal source ba
          loop ps cir ba@(Left b) source = triggerSignal source ba 
@@ -561,7 +557,7 @@ iterateCircuitInPointsEither ps cir a =
 -- that computes the final output of the circuit either after all points
 -- are exhausted, or after the 'Left' result of type @b@ is received,
 -- which interrupts the computation immediately.
-iterateCircuitInIntegTimesEither :: MonadComp m => Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
+iterateCircuitInIntegTimesEither :: MonadDES m => Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
 iterateCircuitInIntegTimesEither cir a =
   Event $ \p ->
   do let ps = integPointsStartingFrom p
@@ -572,7 +568,7 @@ iterateCircuitInIntegTimesEither cir a =
 -- that computes the final output of the circuit either after all points
 -- are exhausted, or after the 'Left' result of type @b@ is received,
 -- which interrupts the computation immediately.
-iterateCircuitInTimesEither :: MonadComp m => [Double] -> Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
+iterateCircuitInTimesEither :: MonadDES m => [Double] -> Circuit m a (Either b a) -> a -> Event m (Task m (Either b a))
 iterateCircuitInTimesEither ts cir a =
   Event $ \p ->
   do let ps = map (pointAt $ pointRun p) ts
@@ -580,7 +576,7 @@ iterateCircuitInTimesEither ts cir a =
        iterateCircuitInPointsEither ps cir a
 
 -- | Show the debug messages with the current simulation time.
-traceCircuit :: MonadComp m
+traceCircuit :: MonadDES m
                 => Maybe String
                 -- ^ the request message
                 -> Maybe String
