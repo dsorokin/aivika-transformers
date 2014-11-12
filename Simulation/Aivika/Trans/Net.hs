@@ -50,9 +50,8 @@ import qualified Control.Category as C
 import Control.Arrow
 import Control.Monad.Trans
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
@@ -63,7 +62,6 @@ import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Resource
 import Simulation.Aivika.Trans.Processor
-import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Circuit
 import Simulation.Aivika.Arrival (Arrival(..))
 
@@ -73,7 +71,7 @@ newtype Net m a b =
         -- ^ Run the net.
       }
 
-instance MonadComp m => C.Category (Net m) where
+instance MonadDES m => C.Category (Net m) where
 
   id = Net $ \a -> return (a, C.id)
 
@@ -85,7 +83,7 @@ instance MonadComp m => C.Category (Net m) where
            (c, p2) <- g b
            return (c, p2 `dot` p1)
 
-instance MonadComp m => Arrow (Net m) where
+instance MonadDES m => Arrow (Net m) where
 
   arr f = Net $ \a -> return (f a, arr f)
 
@@ -111,7 +109,7 @@ instance MonadComp m => Arrow (Net m) where
        (c', p2) <- g b
        return ((c, c'), p1 &&& p2)
 
-instance MonadComp m => ArrowChoice (Net m) where
+instance MonadDES m => ArrowChoice (Net m) where
 
   left x@(Net f) =
     Net $ \ebd ->
@@ -152,12 +150,12 @@ instance MonadComp m => ArrowChoice (Net m) where
            return (d, x ||| p2)
 
 -- | A net that never finishes its work.
-emptyNet :: MonadComp m => Net m a b
+emptyNet :: MonadDES m => Net m a b
 emptyNet = Net $ const neverProcess
 
 -- | Create a simple net by the specified handling function
 -- that runs the discontinuous process for each input value to get an output.
-arrNet :: MonadComp m => (a -> Process m b) -> Net m a b
+arrNet :: MonadDES m => (a -> Process m b) -> Net m a b
 arrNet f =
   let x =
         Net $ \a ->
@@ -166,7 +164,7 @@ arrNet f =
   in x
 
 -- | Accumulator that outputs a value determined by the supplied function.
-accumNet :: MonadComp m => (acc -> a -> Process m (acc, b)) -> acc -> Net m a b
+accumNet :: MonadDES m => (acc -> a -> Process m (acc, b)) -> acc -> Net m a b
 accumNet f acc =
   Net $ \a ->
   do (acc', b) <- f acc a
@@ -176,12 +174,12 @@ accumNet f acc =
 -- It can be useful to refer to the underlying 'Process' computation which
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
-netUsingId :: MonadComp m => ProcessId m -> Net m a b -> Net m a b
+netUsingId :: MonadDES m => ProcessId m -> Net m a b -> Net m a b
 netUsingId pid (Net f) =
   Net $ processUsingId pid . f
 
 -- | Transform the net to an equivalent processor (a rather cheap transformation).
-netProcessor :: MonadComp m => Net m a b -> Processor m a b
+netProcessor :: MonadDES m => Net m a b -> Processor m a b
 netProcessor = Processor . loop
   where loop x as =
           Cons $
@@ -190,7 +188,7 @@ netProcessor = Processor . loop
              return (b, loop x' as')
 
 -- | Transform the processor to a similar net (a more costly transformation).
-processorNet :: MonadComp m => Processor m a b -> Net m a b
+processorNet :: MonadDES m => Processor m a b -> Net m a b
 processorNet x =
   Net $ \a ->
   do readingA <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
@@ -198,29 +196,28 @@ processorNet x =
      readingB <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
      writingB <- liftSimulation $ newResourceWithMaxCount FCFS 1 (Just 1)
      conting  <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
-     sn <- liftParameter simulationSession
-     refA <- liftComp $ newProtoRef sn Nothing
-     refB <- liftComp $ newProtoRef sn Nothing
+     refA <- liftSimulation $ newRef Nothing
+     refB <- liftSimulation $ newRef Nothing
      let input =
            do requestResource readingA
-              Just a <- liftComp $ readProtoRef refA
-              liftComp $ writeProtoRef refA Nothing
+              Just a <- liftEvent $ readRef refA
+              liftEvent $ writeRef refA Nothing
               releaseResource writingA
               return (a, Cons input)
          consume bs =
            do (b, bs') <- runStream bs
               requestResource writingB
-              liftComp $ writeProtoRef refB (Just b)
+              liftEvent $ writeRef refB (Just b)
               releaseResource readingB
               requestResource conting
               consume bs'
          loop a =
            do requestResource writingA
-              liftComp $ writeProtoRef refA (Just a)
+              liftEvent $ writeRef refA (Just a)
               releaseResource readingA
               requestResource readingB
-              Just b <- liftComp $ readProtoRef refB
-              liftComp $ writeProtoRef refB Nothing
+              Just b <- liftEvent $ readRef refB
+              liftEvent $ writeRef refB Nothing
               releaseResource writingB
               return (b, Net $ \a -> releaseResource conting >> loop a)
      spawnProcess $
@@ -229,7 +226,7 @@ processorNet x =
 
 -- | A net that adds the information about the time points at which 
 -- the values were received.
-arrivalNet :: MonadComp m => Net m a (Arrival a)
+arrivalNet :: MonadDES m => Net m a (Arrival a)
 arrivalNet =
   let loop t0 =
         Net $ \a ->
@@ -244,20 +241,20 @@ arrivalNet =
   in loop Nothing
 
 -- | Delay the input by one step using the specified initial value.
-delayNet :: MonadComp m => a -> Net m a a
+delayNet :: MonadDES m => a -> Net m a a
 delayNet a0 =
   Net $ \a ->
   return (a0, delayNet a)
 
 -- | Iterate infinitely using the specified initial value.
-iterateNet :: MonadComp m => Net m a a -> a -> Process m ()
+iterateNet :: MonadDES m => Net m a a -> a -> Process m ()
 iterateNet (Net f) a =
   do (a', x) <- f a
      iterateNet x a'
 
 -- | Iterate the net using the specified initial value
 -- until 'Nothing' is returned within the 'Net' computation.
-iterateNetMaybe :: MonadComp m => Net m a (Maybe a) -> a -> Process m ()
+iterateNetMaybe :: MonadDES m => Net m a (Maybe a) -> a -> Process m ()
 iterateNetMaybe (Net f) a =
   do (a', x) <- f a
      case a' of
@@ -266,7 +263,7 @@ iterateNetMaybe (Net f) a =
 
 -- | Iterate the net using the specified initial value
 -- until the 'Left' result is returned within the 'Net' computation.
-iterateNetEither :: MonadComp m => Net m a (Either b a) -> a -> Process m b
+iterateNetEither :: MonadDES m => Net m a (Either b a) -> a -> Process m b
 iterateNetEither (Net f) a =
   do (ba', x) <- f a
      case ba' of
@@ -274,7 +271,7 @@ iterateNetEither (Net f) a =
        Right a' -> iterateNetEither x a'
 
 -- | Show the debug messages with the current simulation time.
-traceNet :: MonadComp m
+traceNet :: MonadDES m
             => Maybe String
             -- ^ the request message
             -> Maybe String

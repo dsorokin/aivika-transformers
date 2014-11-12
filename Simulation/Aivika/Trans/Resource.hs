@@ -50,9 +50,8 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Exception
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
@@ -83,12 +82,12 @@ data Resource m s =
              resourceMaxCount :: Maybe Int,
              -- ^ Return the maximum count of the resource, where 'Nothing'
              -- means that the resource has no upper bound.
-             resourceCountRef :: ProtoRef m Int, 
+             resourceCountRef :: Ref m Int, 
              resourceWaitList :: StrategyQueue m s (Event m (Maybe (ContParams m ()))) }
 
 -- | Create a new FCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
-newFCFSResource :: MonadComp m
+newFCFSResource :: MonadDES m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (FCFSResource m)
@@ -96,7 +95,7 @@ newFCFSResource = newResource FCFS
 
 -- | Create a new FCFS resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newFCFSResourceWithMaxCount :: MonadComp m
+newFCFSResourceWithMaxCount :: MonadDES m
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -106,7 +105,7 @@ newFCFSResourceWithMaxCount = newResourceWithMaxCount FCFS
 
 -- | Create a new LCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
-newLCFSResource :: MonadComp m
+newLCFSResource :: MonadDES m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (LCFSResource m)
@@ -114,7 +113,7 @@ newLCFSResource = newResource LCFS
 
 -- | Create a new LCFS resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newLCFSResourceWithMaxCount :: MonadComp m
+newLCFSResourceWithMaxCount :: MonadDES m
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -124,7 +123,7 @@ newLCFSResourceWithMaxCount = newResourceWithMaxCount LCFS
 
 -- | Create a new SIRO resource with the specified initial count which value becomes
 -- the upper bound as well.
-newSIROResource :: MonadComp m
+newSIROResource :: MonadDES m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (SIROResource m)
@@ -132,7 +131,7 @@ newSIROResource = newResource SIRO
 
 -- | Create a new SIRO resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newSIROResourceWithMaxCount :: MonadComp m
+newSIROResourceWithMaxCount :: MonadDES m
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -142,7 +141,7 @@ newSIROResourceWithMaxCount = newResourceWithMaxCount SIRO
 
 -- | Create a new priority resource with the specified initial count which value becomes
 -- the upper bound as well.
-newPriorityResource :: MonadComp m
+newPriorityResource :: MonadDES m
                        => Int
                        -- ^ the initial count (and maximal count too) of the resource
                        -> Simulation m (PriorityResource m)
@@ -150,7 +149,7 @@ newPriorityResource = newResource StaticPriorities
 
 -- | Create a new priority resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newPriorityResourceWithMaxCount :: MonadComp m
+newPriorityResourceWithMaxCount :: MonadDES m
                                    => Int
                                    -- ^ the initial count of the resource
                                    -> Maybe Int
@@ -160,7 +159,7 @@ newPriorityResourceWithMaxCount = newResourceWithMaxCount StaticPriorities
 
 -- | Create a new resource with the specified queue strategy and initial count.
 -- The last value becomes the upper bound as well.
-newResource :: (MonadComp m, QueueStrategy m s)
+newResource :: (MonadDES m, QueueStrategy m s)
                => s
                -- ^ the strategy for managing the queuing requests
                -> Int
@@ -172,8 +171,7 @@ newResource s count =
        error $
        "The resource count cannot be negative: " ++
        "newResource."
-     let session = runSession r 
-     countRef <- newProtoRef session count
+     countRef <- invokeSimulation r $ newRef count
      waitList <- invokeSimulation r $ newStrategyQueue s
      return Resource { resourceStrategy = s,
                        resourceMaxCount = Just count,
@@ -182,7 +180,7 @@ newResource s count =
 
 -- | Create a new resource with the specified queue strategy, initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newResourceWithMaxCount :: (MonadComp m, QueueStrategy m s)
+newResourceWithMaxCount :: (MonadDES m, QueueStrategy m s)
                            => s
                            -- ^ the strategy for managing the queuing requests
                            -> Int
@@ -203,8 +201,7 @@ newResourceWithMaxCount s count maxCount =
          "its maximum value: newResourceWithMaxCount."
        _ ->
          return ()
-     let session = runSession r
-     countRef <- newProtoRef session count
+     countRef <- invokeSimulation r $ newRef count
      waitList <- invokeSimulation r $ newStrategyQueue s
      return Resource { resourceStrategy = s,
                        resourceMaxCount = maxCount,
@@ -212,14 +209,14 @@ newResourceWithMaxCount s count maxCount =
                        resourceWaitList = waitList }
 
 -- | Return the current count of the resource.
-resourceCount :: MonadComp m => Resource m s -> Event m Int
+resourceCount :: MonadDES m => Resource m s -> Event m Int
 resourceCount r =
-  Event $ \p -> readProtoRef (resourceCountRef r)
+  Event $ \p -> invokeEvent p $ readRef (resourceCountRef r)
 
 -- | Request for the resource decreasing its count in case of success,
 -- otherwise suspending the discontinuous process until some other 
 -- process releases the resource.
-requestResource :: (MonadComp m, EnqueueStrategy m s)
+requestResource :: (MonadDES m, EnqueueStrategy m s)
                    => Resource m s 
                    -- ^ the requested resource
                    -> Process m ()
@@ -227,19 +224,19 @@ requestResource r =
   Process $ \pid ->
   Cont $ \c ->
   Event $ \p ->
-  do a <- readProtoRef (resourceCountRef r)
+  do a <- invokeEvent p $ readRef (resourceCountRef r)
      if a == 0 
        then do c <- invokeEvent p $ contFreeze c
                invokeEvent p $
                  strategyEnqueue (resourceWaitList r) c
        else do let a' = a - 1
-               a' `seq` writeProtoRef (resourceCountRef r) a'
+               a' `seq` invokeEvent p $ writeRef (resourceCountRef r) a'
                invokeEvent p $ resumeCont c ()
 
 -- | Request with the priority for the resource decreasing its count
 -- in case of success, otherwise suspending the discontinuous process
 -- until some other process releases the resource.
-requestResourceWithPriority :: (MonadComp m, PriorityQueueStrategy m s p)
+requestResourceWithPriority :: (MonadDES m, PriorityQueueStrategy m s p)
                                => Resource m s
                                -- ^ the requested resource
                                -> p
@@ -249,18 +246,18 @@ requestResourceWithPriority r priority =
   Process $ \pid ->
   Cont $ \c ->
   Event $ \p ->
-  do a <- readProtoRef (resourceCountRef r)
+  do a <- invokeEvent p $ readRef (resourceCountRef r)
      if a == 0 
        then do c <- invokeEvent p $ contFreeze c
                invokeEvent p $
                  strategyEnqueueWithPriority (resourceWaitList r) priority c
        else do let a' = a - 1
-               a' `seq` writeProtoRef (resourceCountRef r) a'
+               a' `seq` invokeEvent p $ writeRef (resourceCountRef r) a'
                invokeEvent p $ resumeCont c ()
 
 -- | Release the resource increasing its count and resuming one of the
 -- previously suspended processes as possible.
-releaseResource :: (MonadComp m, DequeueStrategy m s)
+releaseResource :: (MonadDES m, DequeueStrategy m s)
                    => Resource m s
                    -- ^ the resource to release
                    -> Process m ()
@@ -273,13 +270,13 @@ releaseResource r =
 
 -- | Release the resource increasing its count and resuming one of the
 -- previously suspended processes as possible.
-releaseResourceWithinEvent :: (MonadComp m, DequeueStrategy m s)
+releaseResourceWithinEvent :: (MonadDES m, DequeueStrategy m s)
                               => Resource m s
                               -- ^ the resource to release
                               -> Event m ()
 releaseResourceWithinEvent r =
   Event $ \p ->
-  do a <- readProtoRef (resourceCountRef r)
+  do a <- invokeEvent p $ readRef (resourceCountRef r)
      let a' = a + 1
      case resourceMaxCount r of
        Just maxCount | a' > maxCount ->
@@ -291,7 +288,7 @@ releaseResourceWithinEvent r =
      f <- invokeEvent p $
           strategyQueueNull (resourceWaitList r)
      if f 
-       then a' `seq` writeProtoRef (resourceCountRef r) a'
+       then a' `seq` invokeEvent p $ writeRef (resourceCountRef r) a'
        else do c <- invokeEvent p $
                     strategyDequeue (resourceWaitList r)
                c <- invokeEvent p c
@@ -303,22 +300,22 @@ releaseResourceWithinEvent r =
 
 -- | Try to request for the resource decreasing its count in case of success
 -- and returning 'True' in the 'Event' monad; otherwise, returning 'False'.
-tryRequestResourceWithinEvent :: MonadComp m
+tryRequestResourceWithinEvent :: MonadDES m
                                  => Resource m s
                                  -- ^ the resource which we try to request for
                                  -> Event m Bool
 tryRequestResourceWithinEvent r =
   Event $ \p ->
-  do a <- readProtoRef (resourceCountRef r)
+  do a <- invokeEvent p $ readRef (resourceCountRef r)
      if a == 0 
        then return False
        else do let a' = a - 1
-               a' `seq` writeProtoRef (resourceCountRef r) a'
+               a' `seq` invokeEvent p $ writeRef (resourceCountRef r) a'
                return True
                
 -- | Acquire the resource, perform some action and safely release the resource               
 -- in the end, even if the 'IOException' was raised within the action. 
-usingResource :: (MonadComp m, EnqueueStrategy m s)
+usingResource :: (MonadDES m, EnqueueStrategy m s)
                  => Resource m s
                  -- ^ the resource we are going to request for and then release in the end
                  -> Process m a
@@ -332,7 +329,7 @@ usingResource r m =
 -- | Acquire the resource with the specified priority, perform some action and
 -- safely release the resource in the end, even if the 'IOException' was raised
 -- within the action.
-usingResourceWithPriority :: (MonadComp m, PriorityQueueStrategy m s p)
+usingResourceWithPriority :: (MonadDES m, PriorityQueueStrategy m s p)
                              => Resource m s
                              -- ^ the resource we are going to request for and then
                              -- release in the end
