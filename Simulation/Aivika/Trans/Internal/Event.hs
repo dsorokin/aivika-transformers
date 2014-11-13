@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Event
@@ -99,33 +99,33 @@ instance MonadIO m => MonadIO (Event m) where
   {-# INLINE liftIO #-}
   liftIO = Event . const . liftIO
 
-instance MonadCompTrans Event where
+instance Monad m => MonadCompTrans Event m where
 
   {-# INLINE liftComp #-}
   liftComp = Event . const
 
 -- | A type class to lift the 'Event' computations into other computations.
-class EventLift t where
+class EventLift t m where
   
   -- | Lift the specified 'Event' computation into another computation.
-  liftEvent :: MonadComp m => Event m a -> t m a
+  liftEvent :: Event m a -> t m a
 
-instance EventLift Event where
+instance Monad m => EventLift Event m where
   
   {-# INLINE liftEvent #-}
   liftEvent = id
 
-instance DynamicsLift Event where
+instance Monad m => DynamicsLift Event m where
   
   {-# INLINE liftDynamics #-}
   liftDynamics (Dynamics x) = Event x
 
-instance SimulationLift Event where
+instance Monad m => SimulationLift Event m where
 
   {-# INLINE liftSimulation #-}
   liftSimulation (Simulation x) = Event $ x . pointRun 
 
-instance ParameterLift Event where
+instance Monad m => ParameterLift Event m where
 
   {-# INLINE liftParameter #-}
   liftParameter (Parameter x) = Event $ x . pointRun

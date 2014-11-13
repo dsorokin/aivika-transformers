@@ -1,5 +1,5 @@
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Comp
@@ -44,9 +44,9 @@ class (ProtoMonadComp m, EventQueueing m) => MonadComp m
 -- | A variant of the standard 'MonadTrans' type class with one difference:
 -- the computation that will be lifted into another must be 'MonadComp' instead of
 -- more general and less restricted 'Monad'.
-class MonadCompTrans t where
+class MonadCompTrans t m where
 
   -- | Lift the underlying computation into another within simulation.
-  liftComp :: MonadComp m => m a -> t m a
+  liftComp :: m a -> t m a
 
 instance ProtoMonadComp IO

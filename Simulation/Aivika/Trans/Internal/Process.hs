@@ -1,4 +1,6 @@
 
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Process
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
@@ -88,9 +90,9 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Applicative
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
+import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
@@ -101,23 +103,22 @@ import Simulation.Aivika.Trans.Signal
 
 -- | Represents a process identifier.
 data ProcessId m = 
-  ProcessId { processStarted :: ProtoRef m Bool,
-              processMarker  :: SessionMarker m,
-              processReactCont     :: ProtoRef m (Maybe (ContParams m ())), 
+  ProcessId { processStarted :: Ref m Bool,
+              processReactCont     :: Ref m (Maybe (ContParams m ())), 
               processCancelSource  :: ContCancellationSource m,
-              processInterruptRef  :: ProtoRef m Bool, 
-              processInterruptCont :: ProtoRef m (Maybe (ContParams m ())), 
-              processInterruptVersion :: ProtoRef m Int }
+              processInterruptRef  :: Ref m Bool, 
+              processInterruptCont :: Ref m (Maybe (ContParams m ())), 
+              processInterruptVersion :: Ref m Int }
 
 -- | Specifies a discontinuous process that can suspend at any time
 -- and then resume later.
 newtype Process m a = Process (ProcessId m -> Cont m a)
 
 -- | A type class to lift the 'Process' computation into other computations.
-class ProcessLift t where
+class ProcessLift t m where
   
   -- | Lift the specified 'Process' computation into another computation.
-  liftProcess :: MonadComp m => Process m a -> t m a
+  liftProcess :: Process m a -> t m a
 
 -- | Invoke the process computation.
 invokeProcess :: ProcessId m -> Process m a -> Cont m a
@@ -125,87 +126,87 @@ invokeProcess :: ProcessId m -> Process m a -> Cont m a
 invokeProcess pid (Process m) = m pid
 
 -- | Hold the process for the specified time period.
-holdProcess :: MonadComp m => Double -> Process m ()
+holdProcess :: MonadDES m => Double -> Process m ()
 holdProcess dt =
   Process $ \pid ->
   Cont $ \c ->
   Event $ \p ->
   do let x = processInterruptCont pid
-     writeProtoRef x $ Just c
-     writeProtoRef (processInterruptRef pid) False
-     v <- readProtoRef (processInterruptVersion pid)
+     invokeEvent p $ writeRef x $ Just c
+     invokeEvent p $ writeRef (processInterruptRef pid) False
+     v <- invokeEvent p $ readRef (processInterruptVersion pid)
      invokeEvent p $
        enqueueEvent (pointTime p + dt) $
        Event $ \p ->
-       do v' <- readProtoRef (processInterruptVersion pid)
+       do v' <- invokeEvent p $ readRef (processInterruptVersion pid)
           when (v == v') $ 
-            do writeProtoRef x Nothing
+            do invokeEvent p $ writeRef x Nothing
                invokeEvent p $ resumeCont c ()
 
 -- | Interrupt a process with the specified identifier if the process
 -- is held by computation 'holdProcess'.
-interruptProcess :: MonadComp m => ProcessId m -> Event m ()
+interruptProcess :: MonadDES m => ProcessId m -> Event m ()
 interruptProcess pid =
   Event $ \p ->
   do let x = processInterruptCont pid
-     a <- readProtoRef x
+     a <- invokeEvent p $ readRef x
      case a of
        Nothing -> return ()
        Just c ->
-         do writeProtoRef x Nothing
-            writeProtoRef (processInterruptRef pid) True
-            modifyProtoRef (processInterruptVersion pid) $ (+) 1
+         do invokeEvent p $ writeRef x Nothing
+            invokeEvent p $ writeRef (processInterruptRef pid) True
+            invokeEvent p $ modifyRef (processInterruptVersion pid) $ (+) 1
             invokeEvent p $ enqueueEvent (pointTime p) $ resumeCont c ()
             
 -- | Test whether the process with the specified identifier was interrupted.
-processInterrupted :: MonadComp m => ProcessId m -> Event m Bool
+processInterrupted :: MonadDES m => ProcessId m -> Event m Bool
 processInterrupted pid =
   Event $ \p ->
-  readProtoRef (processInterruptRef pid)
+  invokeEvent p $ readRef (processInterruptRef pid)
 
 -- | Passivate the process.
-passivateProcess :: MonadComp m => Process m ()
+passivateProcess :: MonadDES m => Process m ()
 passivateProcess =
   Process $ \pid ->
   Cont $ \c ->
   Event $ \p ->
   do let x = processReactCont pid
-     a <- readProtoRef x
+     a <- invokeEvent p $ readRef x
      case a of
-       Nothing -> writeProtoRef x $ Just c
+       Nothing -> invokeEvent p $ writeRef x $ Just c
        Just _  -> error "Cannot passivate the process twice: passivateProcess"
 
 -- | Test whether the process with the specified identifier is passivated.
-processPassive :: MonadComp m => ProcessId m -> Event m Bool
+processPassive :: MonadDES m => ProcessId m -> Event m Bool
 processPassive pid =
   Event $ \p ->
   do let x = processReactCont pid
-     a <- readProtoRef x
+     a <- invokeEvent p $ readRef x
      return $ isJust a
 
 -- | Reactivate a process with the specified identifier.
-reactivateProcess :: MonadComp m => ProcessId m -> Event m ()
+reactivateProcess :: MonadDES m => ProcessId m -> Event m ()
 reactivateProcess pid =
   Event $ \p ->
   do let x = processReactCont pid
-     a <- readProtoRef x
+     a <- invokeEvent p $ readRef x
      case a of
        Nothing -> 
          return ()
        Just c ->
-         do writeProtoRef x Nothing
+         do invokeEvent p $ writeRef x Nothing
             invokeEvent p $ enqueueEvent (pointTime p) $ resumeCont c ()
 
 -- | Prepare the processes identifier for running.
-processIdPrepare :: MonadComp m => ProcessId m -> Event m ()
+processIdPrepare :: MonadDES m => ProcessId m -> Event m ()
 processIdPrepare pid =
   Event $ \p ->
-  do y <- readProtoRef (processStarted pid)
+  do y <- invokeEvent p $ readRef (processStarted pid)
      if y
        then error $
             "Another process with the specified identifier " ++
             "has been started already: processIdPrepare"
-       else writeProtoRef (processStarted pid) True
+       else invokeEvent p $ writeRef (processStarted pid) True
      let signal = processCancelling pid
      invokeEvent p $
        handleSignal_ signal $ \_ ->
@@ -217,7 +218,7 @@ processIdPrepare pid =
 --            
 -- To run the process at the specified time, you can use
 -- the 'enqueueProcess' function.
-runProcess :: MonadComp m => Process m () -> Event m ()
+runProcess :: MonadDES m => Process m () -> Event m ()
 runProcess p =
   do pid <- liftSimulation newProcessId
      runProcessUsingId pid p
@@ -228,7 +229,7 @@ runProcess p =
 --            
 -- To run the process at the specified time, you can use
 -- the 'enqueueProcessUsingId' function.
-runProcessUsingId :: MonadComp m => ProcessId m -> Process m () -> Event m ()
+runProcessUsingId :: MonadDES m => ProcessId m -> Process m () -> Event m ()
 runProcessUsingId pid p =
   do processIdPrepare pid
      runCont m cont econt ccont (processCancelSource pid) False
@@ -239,57 +240,54 @@ runProcessUsingId pid p =
 
 -- | Run the process in the start time immediately involving all pending
 -- 'CurrentEvents' in the computation too.
-runProcessInStartTime :: MonadComp m => Process m () -> Simulation m ()
+runProcessInStartTime :: MonadDES m => Process m () -> Simulation m ()
 runProcessInStartTime = runEventInStartTime . runProcess
 
 -- | Run the process in the start time immediately using the specified identifier
 -- and involving all pending 'CurrentEvents' in the computation too.
-runProcessInStartTimeUsingId :: MonadComp m => ProcessId m -> Process m () -> Simulation m ()
+runProcessInStartTimeUsingId :: MonadDES m => ProcessId m -> Process m () -> Simulation m ()
 runProcessInStartTimeUsingId pid p =
   runEventInStartTime $ runProcessUsingId pid p
 
 -- | Run the process in the final simulation time immediately involving all
 -- pending 'CurrentEvents' in the computation too.
-runProcessInStopTime :: MonadComp m => Process m () -> Simulation m ()
+runProcessInStopTime :: MonadDES m => Process m () -> Simulation m ()
 runProcessInStopTime = runEventInStopTime . runProcess
 
 -- | Run the process in the final simulation time immediately using 
 -- the specified identifier and involving all pending 'CurrentEvents'
 -- in the computation too.
-runProcessInStopTimeUsingId :: MonadComp m => ProcessId m -> Process m () -> Simulation m ()
+runProcessInStopTimeUsingId :: MonadDES m => ProcessId m -> Process m () -> Simulation m ()
 runProcessInStopTimeUsingId pid p =
   runEventInStopTime $ runProcessUsingId pid p
 
 -- | Enqueue the process that will be then started at the specified time
 -- from the event queue.
-enqueueProcess :: MonadComp m => Double -> Process m () -> Event m ()
+enqueueProcess :: MonadDES m => Double -> Process m () -> Event m ()
 enqueueProcess t p =
   enqueueEvent t $ runProcess p
 
 -- | Enqueue the process that will be then started at the specified time
 -- from the event queue.
-enqueueProcessUsingId :: MonadComp m => Double -> ProcessId m -> Process m () -> Event m ()
+enqueueProcessUsingId :: MonadDES m => Double -> ProcessId m -> Process m () -> Event m ()
 enqueueProcessUsingId t pid p =
   enqueueEvent t $ runProcessUsingId pid p
 
 -- | Return the current process identifier.
-processId :: MonadComp m => Process m (ProcessId m)
+processId :: MonadDES m => Process m (ProcessId m)
 processId = Process return
 
 -- | Create a new process identifier.
-newProcessId :: MonadComp m => Simulation m (ProcessId m)
+newProcessId :: MonadDES m => Simulation m (ProcessId m)
 newProcessId =
   Simulation $ \r ->
-  do let s = runSession r
-     m <- newSessionMarker s       
-     x <- newProtoRef s Nothing
-     y <- newProtoRef s False
+  do x <- invokeSimulation r $ newRef Nothing
+     y <- invokeSimulation r $ newRef False
      c <- invokeSimulation r newContCancellationSource
-     i <- newProtoRef s False
-     z <- newProtoRef s Nothing
-     v <- newProtoRef s 0
+     i <- invokeSimulation r $ newRef False
+     z <- invokeSimulation r $ newRef Nothing
+     v <- invokeSimulation r $ newRef 0
      return ProcessId { processStarted = y,
-                        processMarker  = m,
                         processReactCont     = x, 
                         processCancelSource  = c, 
                         processInterruptRef  = i,
@@ -297,11 +295,11 @@ newProcessId =
                         processInterruptVersion = v }
 
 -- | Cancel a process with the specified identifier, interrupting it if needed.
-cancelProcessWithId :: MonadComp m => ProcessId m -> Event m ()
+cancelProcessWithId :: MonadDES m => ProcessId m -> Event m ()
 cancelProcessWithId pid = contCancellationInitiate (processCancelSource pid)
 
 -- | The process cancels itself.
-cancelProcess :: MonadComp m => Process m a
+cancelProcess :: MonadDES m => Process m a
 cancelProcess =
   do pid <- processId
      liftEvent $ cancelProcessWithId pid
@@ -309,7 +307,7 @@ cancelProcess =
        (error "The process must be cancelled already: cancelProcess." :: SomeException)
 
 -- | Test whether the process with the specified identifier was cancelled.
-processCancelled :: MonadComp m => ProcessId m -> Event m Bool
+processCancelled :: MonadDES m => ProcessId m -> Event m Bool
 processCancelled pid = contCancellationInitiated (processCancelSource pid)
 
 -- | Return a signal that notifies about cancelling the process with 
@@ -318,18 +316,18 @@ processCancelling :: ProcessId m -> Signal m ()
 processCancelling pid = contCancellationInitiating (processCancelSource pid)
 
 -- | Register a handler that will be invoked in case of cancelling the current process.
-whenCancellingProcess :: MonadComp m => Event m () -> Process m ()
+whenCancellingProcess :: MonadDES m => Event m () -> Process m ()
 whenCancellingProcess h =
   Process $ \pid ->
   liftEvent $
   handleSignal_ (processCancelling pid) $ \() -> h
 
-instance MonadComp m => Eq (ProcessId m) where
+instance MonadDES m => Eq (ProcessId m) where
 
   {-# INLINE (==) #-}
-  x == y = processMarker x == processMarker y
+  x == y = processStarted x == processStarted y
 
-instance MonadComp m => Monad (Process m) where
+instance MonadDES m => Monad (Process m) where
 
   {-# INLINE return #-}
   return a = Process $ \pid -> return a
@@ -341,17 +339,17 @@ instance MonadComp m => Monad (Process m) where
        let Process m' = k a
        m' pid
 
-instance MonadCompTrans Process where
+instance MonadDES m => MonadCompTrans Process m where
 
   {-# INLINE liftComp #-}
   liftComp = Process . const . liftComp
 
-instance MonadComp m => Functor (Process m) where
+instance MonadDES m => Functor (Process m) where
   
   {-# INLINE fmap #-}
   fmap f (Process x) = Process $ \pid -> fmap f $ x pid
 
-instance MonadComp m => Applicative (Process m) where
+instance MonadDES m => Applicative (Process m) where
   
   {-# INLINE pure #-}
   pure = Process . const . pure
@@ -359,45 +357,45 @@ instance MonadComp m => Applicative (Process m) where
   {-# INLINE (<*>) #-}
   (Process x) <*> (Process y) = Process $ \pid -> x pid <*> y pid
 
-instance (MonadComp m, MonadIO m) => MonadIO (Process m) where
+instance (MonadDES m, MonadIO m) => MonadIO (Process m) where
   
   {-# INLINE liftIO #-}
   liftIO = Process . const . liftIO
 
-instance ParameterLift Process where
+instance MonadDES m => ParameterLift Process m where
 
   {-# INLINE liftParameter #-}
   liftParameter = Process . const . liftParameter
 
-instance SimulationLift Process where
+instance MonadDES m => SimulationLift Process m where
 
   {-# INLINE liftSimulation #-}
   liftSimulation = Process . const . liftSimulation
   
-instance DynamicsLift Process where
+instance MonadDES m => DynamicsLift Process m where
 
   {-# INLINE liftDynamics #-}
   liftDynamics = Process . const . liftDynamics
   
-instance EventLift Process where
+instance MonadDES m => EventLift Process m where
 
   {-# INLINE liftEvent #-}
   liftEvent = Process . const . liftEvent
 
-instance ProcessLift Process where
+instance MonadDES m => ProcessLift Process m where
 
   {-# INLINE liftProcess #-}
   liftProcess = id
 
 -- | Exception handling within 'Process' computations.
-catchProcess :: (MonadComp m, Exception e) => Process m a -> (e -> Process m a) -> Process m a
+catchProcess :: (MonadDES m, Exception e) => Process m a -> (e -> Process m a) -> Process m a
 catchProcess (Process m) h =
   Process $ \pid ->
   catchCont (m pid) $ \e ->
   let Process m' = h e in m' pid
                            
 -- | A computation with finalization part.
-finallyProcess :: MonadComp m => Process m a -> Process m b -> Process m a
+finallyProcess :: MonadDES m => Process m a -> Process m b -> Process m a
 finallyProcess (Process m) (Process m') =
   Process $ \pid ->
   finallyCont (m pid) (m' pid)
@@ -409,7 +407,7 @@ finallyProcess (Process m) (Process m') =
 -- if it will be wrapped in the 'IO' monad. Therefore, you should use specialised
 -- functions like the stated one that use the 'throw' function but within the 'IO' computation,
 -- which allows already handling the exception.
-throwProcess :: (MonadComp m, Exception e) => e -> Process m a
+throwProcess :: (MonadDES m, Exception e) => e -> Process m a
 throwProcess = liftEvent . throw
 
 -- | Execute the specified computations in parallel within
@@ -423,14 +421,14 @@ throwProcess = liftEvent . throw
 -- they are processed simultaneously by the event queue.
 --
 -- New 'ProcessId' identifiers will be assigned to the started processes.
-processParallel :: MonadComp m => [Process m a] -> Process m [a]
+processParallel :: MonadDES m => [Process m a] -> Process m [a]
 processParallel xs =
   liftSimulation (processParallelCreateIds xs) >>= processParallelUsingIds 
 
 -- | Like 'processParallel' but allows specifying the process identifiers.
 -- It will be more efficient than as you would specify the process identifiers
 -- with help of the 'processUsingId' combinator and then would call 'processParallel'.
-processParallelUsingIds :: MonadComp m => [(ProcessId m, Process m a)] -> Process m [a]
+processParallelUsingIds :: MonadDES m => [(ProcessId m, Process m a)] -> Process m [a]
 processParallelUsingIds xs =
   Process $ \pid ->
   do liftEvent $ processParallelPrepare xs
@@ -439,12 +437,12 @@ processParallelUsingIds xs =
        (invokeProcess pid m, processCancelSource pid)
 
 -- | Like 'processParallel' but ignores the result.
-processParallel_ :: MonadComp m => [Process m a] -> Process m ()
+processParallel_ :: MonadDES m => [Process m a] -> Process m ()
 processParallel_ xs =
   liftSimulation (processParallelCreateIds xs) >>= processParallelUsingIds_ 
 
 -- | Like 'processParallelUsingIds' but ignores the result.
-processParallelUsingIds_ :: MonadComp m => [(ProcessId m, Process m a)] -> Process m ()
+processParallelUsingIds_ :: MonadDES m => [(ProcessId m, Process m a)] -> Process m ()
 processParallelUsingIds_ xs =
   Process $ \pid ->
   do liftEvent $ processParallelPrepare xs
@@ -453,13 +451,13 @@ processParallelUsingIds_ xs =
        (invokeProcess pid m, processCancelSource pid)
 
 -- | Create the new process identifiers.
-processParallelCreateIds :: MonadComp m => [Process m a] -> Simulation m [(ProcessId m, Process m a)]
+processParallelCreateIds :: MonadDES m => [Process m a] -> Simulation m [(ProcessId m, Process m a)]
 processParallelCreateIds xs =
   do pids <- liftSimulation $ forM xs $ const newProcessId
      return $ zip pids xs
 
 -- | Prepare the processes for parallel execution.
-processParallelPrepare :: MonadComp m => [(ProcessId m, Process m a)] -> Event m ()
+processParallelPrepare :: MonadDES m => [(ProcessId m, Process m a)] -> Event m ()
 processParallelPrepare xs =
   Event $ \p ->
   forM_ xs $ invokeEvent p . processIdPrepare . fst
@@ -472,7 +470,7 @@ processParallelPrepare xs =
 -- explicit specifying the 'ProcessId' identifier of the nested process itself,
 -- that is the nested process cannot be interrupted using only the parent
 -- process identifier.
-processUsingId :: MonadComp m => ProcessId m -> Process m a -> Process m a
+processUsingId :: MonadDES m => ProcessId m -> Process m a -> Process m a
 processUsingId pid x =
   Process $ \pid' ->
   do liftEvent $ processIdPrepare pid
@@ -480,31 +478,31 @@ processUsingId pid x =
 
 -- | Spawn the child process. In case of cancelling one of the processes,
 -- other process will be cancelled too.
-spawnProcess :: MonadComp m => Process m () -> Process m ()
+spawnProcess :: MonadDES m => Process m () -> Process m ()
 spawnProcess = spawnProcessWith CancelTogether
 
 -- | Spawn the child process specifying the process identifier.
 -- In case of cancelling one of the processes, other process will be cancelled too.
-spawnProcessUsingId :: MonadComp m => ProcessId m -> Process m () -> Process m ()
+spawnProcessUsingId :: MonadDES m => ProcessId m -> Process m () -> Process m ()
 spawnProcessUsingId = spawnProcessUsingIdWith CancelTogether
 
 -- | Spawn the child process specifying how the child and parent processes
 -- should be cancelled in case of need.
-spawnProcessWith :: MonadComp m => ContCancellation -> Process m () -> Process m ()
+spawnProcessWith :: MonadDES m => ContCancellation -> Process m () -> Process m ()
 spawnProcessWith cancellation x =
   do pid <- liftSimulation newProcessId
      spawnProcessUsingIdWith cancellation pid x
 
 -- | Spawn the child process specifying how the child and parent processes
 -- should be cancelled in case of need.
-spawnProcessUsingIdWith :: MonadComp m => ContCancellation -> ProcessId m -> Process m () -> Process m ()
+spawnProcessUsingIdWith :: MonadDES m => ContCancellation -> ProcessId m -> Process m () -> Process m ()
 spawnProcessUsingIdWith cancellation pid x =
   Process $ \pid' ->
   do liftEvent $ processIdPrepare pid
      spawnCont cancellation (invokeProcess pid x) (processCancelSource pid)
 
 -- | Await the signal.
-processAwait :: MonadComp m => Signal m a -> Process m a
+processAwait :: MonadDES m => Signal m a -> Process m a
 processAwait signal =
   Process $ \pid -> contAwait signal
 
@@ -515,53 +513,51 @@ data MemoResult a = MemoComputed a
 
 -- | Memoize the process so that it would always return the same value
 -- within the simulation run.
-memoProcess :: MonadComp m => Process m a -> Simulation m (Process m a)
+memoProcess :: MonadDES m => Process m a -> Simulation m (Process m a)
 memoProcess x =
   Simulation $ \r ->
-  do let s = runSession r
-     started  <- newProtoRef s False
+  do started  <- invokeSimulation r $ newRef False
      computed <- invokeSimulation r newSignalSource
-     value    <- newProtoRef s Nothing
+     value    <- invokeSimulation r $ newRef Nothing
      let result =
-           do Just x <- liftComp $ readProtoRef value
+           do Just x <- liftEvent $ readRef value
               case x of
                 MemoComputed a -> return a
                 MemoError e    -> throwProcess e
                 MemoCancelled  -> cancelProcess
      return $
-       do v <- liftComp $ readProtoRef value
+       do v <- liftEvent $ readRef value
           case v of
             Just _ -> result
             Nothing ->
-              do f <- liftComp $ readProtoRef started
+              do f <- liftEvent $ readRef started
                  case f of
                    True ->
                      do processAwait $ publishSignal computed
                         result
                    False ->
-                     do liftComp $ writeProtoRef started True
-                        r <- liftComp $ newProtoRef s MemoCancelled
+                     do liftEvent $ writeRef started True
+                        r <- liftSimulation $ newRef MemoCancelled
                         finallyProcess
                           (catchProcess
                            (do a <- x    -- compute only once!
-                               liftComp $ writeProtoRef r (MemoComputed a))
+                               liftEvent $ writeRef r (MemoComputed a))
                            (\e ->
-                             liftComp $ writeProtoRef r (MemoError e)))
+                             liftEvent $ writeRef r (MemoError e)))
                           (liftEvent $
-                           do liftComp $
-                                do x <- readProtoRef r
-                                   writeProtoRef value (Just x)
+                           do x <- readRef r
+                              writeRef value (Just x)
                               triggerSignal computed ())
                         result
 
 -- | Zip two parallel processes waiting for the both.
-zipProcessParallel :: MonadComp m => Process m a -> Process m b -> Process m (a, b)
+zipProcessParallel :: MonadDES m => Process m a -> Process m b -> Process m (a, b)
 zipProcessParallel x y =
   do [Left a, Right b] <- processParallel [fmap Left x, fmap Right y]
      return (a, b)
 
 -- | Zip three parallel processes waiting for their results.
-zip3ProcessParallel :: MonadComp m => Process m a -> Process m b -> Process m c -> Process m (a, b, c)
+zip3ProcessParallel :: MonadDES m => Process m a -> Process m b -> Process m c -> Process m (a, b, c)
 zip3ProcessParallel x y z =
   do [Left a,
       Right (Left b),
@@ -574,7 +570,7 @@ zip3ProcessParallel x y z =
 -- | Unzip the process using memoization so that the both returned
 -- processes could be applied independently, although they will refer
 -- to the same pair of values.
-unzipProcess :: MonadComp m => Process m (a, b) -> Simulation m (Process m a, Process m b)
+unzipProcess :: MonadDES m => Process m (a, b) -> Simulation m (Process m a, Process m b)
 unzipProcess xy =
   do xy' <- memoProcess xy
      return (fmap fst xy', fmap snd xy')
@@ -589,7 +585,7 @@ unzipProcess xy =
 --
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
-timeoutProcess :: MonadComp m => Double -> Process m a -> Process m (Maybe a)
+timeoutProcess :: MonadDES m => Double -> Process m a -> Process m (Maybe a)
 timeoutProcess timeout p =
   do pid <- liftSimulation newProcessId
      timeoutProcessUsingId timeout pid p
@@ -604,7 +600,7 @@ timeoutProcess timeout p =
 --
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
-timeoutProcessUsingId :: MonadComp m => Double -> ProcessId m -> Process m a -> Process m (Maybe a)
+timeoutProcessUsingId :: MonadDES m => Double -> ProcessId m -> Process m a -> Process m (Maybe a)
 timeoutProcessUsingId timeout pid p =
   do s <- liftSimulation newSignalSource
      timeoutPid <- liftSimulation newProcessId
@@ -614,16 +610,15 @@ timeoutProcessUsingId timeout pid p =
        (liftEvent $
         cancelProcessWithId pid)
      spawnProcessUsingIdWith CancelChildAfterParent pid $
-       do sn <- liftParameter simulationSession
-          r <- liftComp $ newProtoRef sn Nothing
+       do r <- liftSimulation $ newRef Nothing
           finallyProcess
             (catchProcess
              (do a <- p
-                 liftComp $ writeProtoRef r $ Just (Right a))
+                 liftEvent $ writeRef r $ Just (Right a))
              (\e ->
-               liftComp $ writeProtoRef r $ Just (Left e)))
+               liftEvent $ writeRef r $ Just (Left e)))
             (liftEvent $
-             do x <- liftComp $ readProtoRef r
+             do x <- readRef r
                 triggerSignal s x)
      x <- processAwait $ publishSignal s
      case x of
@@ -633,7 +628,7 @@ timeoutProcessUsingId timeout pid p =
 
 -- | Yield to allow other 'Process' and 'Event' computations to run
 -- at the current simulation time point.
-processYield :: MonadComp m => Process m ()
+processYield :: MonadDES m => Process m ()
 processYield =
   Process $ \pid ->
   Cont $ \c ->
@@ -646,7 +641,7 @@ processYield =
 -- the discontinuous process, although such a process can still be canceled outside
 -- (see 'cancelProcessWithId'), but then only its finalization parts (see 'finallyProcess')
 -- will be called, usually, to release the resources acquired before.
-neverProcess :: MonadComp m => Process m a
+neverProcess :: MonadDES m => Process m a
 neverProcess =
   Process $ \pid ->
   Cont $ \c ->
@@ -655,7 +650,7 @@ neverProcess =
      resumeCont c $ error "It must never be computed: neverProcess"
 
 -- | Show the debug message with the current simulation time.
-traceProcess :: MonadComp m => String -> Process m a -> Process m a
+traceProcess :: MonadDES m => String -> Process m a -> Process m a
 traceProcess message m =
   Process $ \pid ->
   traceCont message $

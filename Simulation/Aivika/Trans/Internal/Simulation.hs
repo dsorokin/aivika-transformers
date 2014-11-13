@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo, TypeSynonymInstances #-}
+{-# LANGUAGE RecursiveDo, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Simulation
@@ -108,7 +108,7 @@ instance MonadTrans Simulation where
   {-# INLINE lift #-}
   lift = Simulation . const
 
-instance MonadCompTrans Simulation where
+instance Monad m => MonadCompTrans Simulation m where
 
   {-# INLINE liftComp #-}
   liftComp = Simulation . const
@@ -119,17 +119,17 @@ instance MonadIO m => MonadIO (Simulation m) where
   liftIO = Simulation . const . liftIO
 
 -- | A type class to lift the simulation computations into other computations.
-class SimulationLift t where
+class SimulationLift t m where
   
   -- | Lift the specified 'Simulation' computation into another computation.
-  liftSimulation :: MonadComp m => Simulation m a -> t m a
+  liftSimulation :: Simulation m a -> t m a
 
-instance SimulationLift Simulation where
+instance Monad m => SimulationLift Simulation m where
   
   {-# INLINE liftSimulation #-}
   liftSimulation = id
 
-instance ParameterLift Simulation where
+instance Monad m => ParameterLift Simulation m where
 
   {-# INLINE liftParameter #-}
   liftParameter (Parameter x) = Simulation x

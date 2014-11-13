@@ -117,7 +117,6 @@ import Data.Ix
 import Data.Maybe
 import Data.Monoid
 
-import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
@@ -135,6 +134,7 @@ import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Results.Locale
+import Simulation.Aivika.Trans.Monad.SD
 import Simulation.Aivika.Trans.Monad.DES
 
 -- | A name used for indentifying the results when generating output.
@@ -142,7 +142,7 @@ type ResultName = String
 
 -- | Represents a provider of the simulation results. It is usually something, or
 -- an array of something, or a list of such values which can be simulated to get data.
-class MonadComp m => ResultProvider p m | p -> m where
+class MonadDES m => ResultProvider p m | p -> m where
   
   -- | Return the source of simulation results by the specified name, description and provider. 
   resultSource :: ResultName -> ResultDescription -> p -> ResultSource m
@@ -177,49 +177,49 @@ class ResultItemable a where
   resultItemId :: a m -> ResultId
 
   -- | Whether the item emits a signal.
-  resultItemSignal :: MonadComp m => a m -> ResultSignal m
+  resultItemSignal :: MonadDES m => a m -> ResultSignal m
 
   -- | Return an expanded version of the item, for example,
   -- when the statistics item is exanded to an object
   -- having the corresponded properties for count, average,
   -- deviation, minimum, maximum and so on.
-  resultItemExpansion :: MonadComp m => a m -> ResultSource m
+  resultItemExpansion :: MonadDES m => a m -> ResultSource m
   
   -- | Return usually a short version of the item, i.e. its summary,
   -- but values of some data types such as statistics can be
   -- implicitly expanded to an object with the corresponded
   -- properties.
-  resultItemSummary :: MonadComp m => a m -> ResultSource m
+  resultItemSummary :: MonadDES m => a m -> ResultSource m
   
   -- | Return integer numbers in time points.
-  resultItemToIntValue :: MonadComp m => a m -> ResultValue Int m
+  resultItemToIntValue :: MonadDES m => a m -> ResultValue Int m
 
   -- | Return lists of integer numbers in time points. 
-  resultItemToIntListValue :: MonadComp m => a m -> ResultValue [Int] m
+  resultItemToIntListValue :: MonadDES m => a m -> ResultValue [Int] m
 
   -- | Return statistics based on integer numbers.
-  resultItemToIntStatsValue :: MonadComp m => a m -> ResultValue (SamplingStats Int) m
+  resultItemToIntStatsValue :: MonadDES m => a m -> ResultValue (SamplingStats Int) m
 
   -- | Return timing statistics based on integer numbers.
-  resultItemToIntTimingStatsValue :: MonadComp m => a m -> ResultValue (TimingStats Int) m
+  resultItemToIntTimingStatsValue :: MonadDES m => a m -> ResultValue (TimingStats Int) m
 
   -- | Return double numbers in time points.
-  resultItemToDoubleValue :: MonadComp m => a m -> ResultValue Double m
+  resultItemToDoubleValue :: MonadDES m => a m -> ResultValue Double m
   
   -- | Return lists of double numbers in time points. 
-  resultItemToDoubleListValue :: MonadComp m => a m -> ResultValue [Double] m
+  resultItemToDoubleListValue :: MonadDES m => a m -> ResultValue [Double] m
 
   -- | Return statistics based on double numbers.
-  resultItemToDoubleStatsValue :: MonadComp m => a m -> ResultValue (SamplingStats Double) m
+  resultItemToDoubleStatsValue :: MonadDES m => a m -> ResultValue (SamplingStats Double) m
 
   -- | Return timing statistics based on integer numbers.
-  resultItemToDoubleTimingStatsValue :: MonadComp m => a m -> ResultValue (TimingStats Double) m
+  resultItemToDoubleTimingStatsValue :: MonadDES m => a m -> ResultValue (TimingStats Double) m
 
   -- | Return string representations in time points.
-  resultItemToStringValue :: MonadComp m => a m -> ResultValue String m
+  resultItemToStringValue :: MonadDES m => a m -> ResultValue String m
 
 -- | Return a version optimised for fast aggregation of the statistics based on integer numbers.
-resultItemToIntStatsEitherValue :: (MonadComp m, ResultItemable a) => a m -> ResultValue (Either Int (SamplingStats Int)) m
+resultItemToIntStatsEitherValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (Either Int (SamplingStats Int)) m
 resultItemToIntStatsEitherValue x =
   case resultValueData x1 of
     Just a1 -> mapResultValue Left x1
@@ -232,7 +232,7 @@ resultItemToIntStatsEitherValue x =
     x2 = resultItemToIntStatsValue x
 
 -- | Return a version optimised for fast aggregation of the statistics based on double floating point numbers.
-resultItemToDoubleStatsEitherValue :: (MonadComp m, ResultItemable a) => a m -> ResultValue (Either Double (SamplingStats Double)) m
+resultItemToDoubleStatsEitherValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (Either Double (SamplingStats Double)) m
 resultItemToDoubleStatsEitherValue x =
   case resultValueData x1 of
     Just a1 -> mapResultValue Left x1
@@ -287,13 +287,13 @@ data ResultVector m =
                }
 
 -- | Calculate the result vector signal and memoize it in a new vector.
-memoResultVectorSignal :: MonadComp m => ResultVector m -> ResultVector m
+memoResultVectorSignal :: MonadDES m => ResultVector m -> ResultVector m
 memoResultVectorSignal x =
   x { resultVectorSignal =
          foldr (<>) mempty $ map resultSourceSignal $ A.elems $ resultVectorItems x }
 
 -- | Calculate the result vector summary and memoize it in a new vector.
-memoResultVectorSummary :: MonadComp m => ResultVector m -> ResultVector m
+memoResultVectorSummary :: MonadDES m => ResultVector m -> ResultVector m
 memoResultVectorSummary x =
   x { resultVectorSummary =
          ResultVectorSource $
@@ -322,7 +322,7 @@ data ResultValue e m =
                 -- ^ Whether the value emits a signal when changing simulation data.
               }
 
-mapResultValue :: MonadComp m => (a -> b) -> ResultValue a m -> ResultValue b m
+mapResultValue :: MonadDES m => (a -> b) -> ResultValue a m -> ResultValue b m
 mapResultValue f x = x { resultValueData = fmap (fmap f) (resultValueData x) }
 
 -- | Return a new value with the discarded simulation results.
@@ -367,7 +367,7 @@ resultContainerPropertySource cont name i f g =
     resultValueSignal = g (resultContainerData cont) }
 
 -- | Create a constant property by the specified container.
-resultContainerConstProperty :: (MonadComp m,
+resultContainerConstProperty :: (MonadDES m,
                                  ResultItemable (ResultValue b))
                                 => ResultContainer a m
                                 -- ^ the container
@@ -386,7 +386,7 @@ resultContainerConstProperty cont name i f =
       resultContainerPropertySource cont name i (Just . return . f) (const EmptyResultSignal) }
   
 -- | Create by the specified container a property that changes in the integration time points, or it is supposed to be such one.
-resultContainerIntegProperty :: (MonadComp m,
+resultContainerIntegProperty :: (MonadDES m,
                                  ResultItemable (ResultValue b))
                                 => ResultContainer a m
                                 -- ^ the container
@@ -405,7 +405,7 @@ resultContainerIntegProperty cont name i f =
       resultContainerPropertySource cont name i (Just . f) (const UnknownResultSignal) }
   
 -- | Create a property by the specified container.
-resultContainerProperty :: (MonadComp m,
+resultContainerProperty :: (MonadDES m,
                             ResultItemable (ResultValue b))
                            => ResultContainer a m
                            -- ^ the container
@@ -426,7 +426,7 @@ resultContainerProperty cont name i f g =
       resultContainerPropertySource cont name i (Just . f) (ResultSignal . g) }
 
 -- | Create by the specified container a mapped property which is recomputed each time again and again.
-resultContainerMapProperty :: (MonadComp m,
+resultContainerMapProperty :: (MonadDES m,
                                ResultItemable (ResultValue b))
                               => ResultContainer (ResultData a m) m
                               -- ^ the container
@@ -475,7 +475,7 @@ data ResultSignal m = EmptyResultSignal
                     | ResultSignalMix (Signal m ())
                       -- ^ When the specified signal was combined with unknown signal.
 
-instance MonadComp m => Monoid (ResultSignal m) where
+instance MonadDES m => Monoid (ResultSignal m) where
 
   mempty = EmptyResultSignal
 
@@ -833,7 +833,7 @@ resultSourceName (ResultVectorSource x) = resultVectorName x
 resultSourceName (ResultSeparatorSource x) = []
 
 -- | Expand the result source returning a more detailed version expanding the properties as possible.
-expandResultSource :: MonadComp m => ResultSource m -> ResultSource m
+expandResultSource :: MonadDES m => ResultSource m -> ResultSource m
 expandResultSource (ResultItemSource (ResultItem x)) = resultItemExpansion x
 expandResultSource (ResultObjectSource x) =
   ResultObjectSource $
@@ -850,61 +850,61 @@ expandResultSource (ResultVectorSource x) =
 expandResultSource z@(ResultSeparatorSource x) = z
 
 -- | Return a summarised and usually more short version of the result source expanding the main properties or excluding auxiliary properties if required.
-resultSourceSummary :: MonadComp m => ResultSource m -> ResultSource m
+resultSourceSummary :: MonadDES m => ResultSource m -> ResultSource m
 resultSourceSummary (ResultItemSource (ResultItem x)) = resultItemSummary x
 resultSourceSummary (ResultObjectSource x) = resultObjectSummary x
 resultSourceSummary (ResultVectorSource x) = resultVectorSummary x
 resultSourceSummary z@(ResultSeparatorSource x) = z
 
 -- | Return a signal emitted by the source.
-resultSourceSignal :: MonadComp m => ResultSource m -> ResultSignal m
+resultSourceSignal :: MonadDES m => ResultSource m -> ResultSignal m
 resultSourceSignal (ResultItemSource (ResultItem x)) = resultItemSignal x
 resultSourceSignal (ResultObjectSource x) = resultObjectSignal x
 resultSourceSignal (ResultVectorSource x) = resultVectorSignal x
 resultSourceSignal (ResultSeparatorSource x) = EmptyResultSignal
 
 -- | Represent the result source as integer numbers.
-resultSourceToIntValues :: MonadComp m => ResultSource m -> [ResultValue Int m]
+resultSourceToIntValues :: MonadDES m => ResultSource m -> [ResultValue Int m]
 resultSourceToIntValues = map (\(ResultItem x) -> resultItemToIntValue x) . flattenResultSource
 
 -- | Represent the result source as lists of integer numbers.
-resultSourceToIntListValues :: MonadComp m => ResultSource m -> [ResultValue [Int] m]
+resultSourceToIntListValues :: MonadDES m => ResultSource m -> [ResultValue [Int] m]
 resultSourceToIntListValues = map (\(ResultItem x) -> resultItemToIntListValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on integer numbers.
-resultSourceToIntStatsValues :: MonadComp m => ResultSource m -> [ResultValue (SamplingStats Int) m]
+resultSourceToIntStatsValues :: MonadDES m => ResultSource m -> [ResultValue (SamplingStats Int) m]
 resultSourceToIntStatsValues = map (\(ResultItem x) -> resultItemToIntStatsValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on integer numbers and optimised for fast aggregation.
-resultSourceToIntStatsEitherValues :: MonadComp m => ResultSource m -> [ResultValue (Either Int (SamplingStats Int)) m]
+resultSourceToIntStatsEitherValues :: MonadDES m => ResultSource m -> [ResultValue (Either Int (SamplingStats Int)) m]
 resultSourceToIntStatsEitherValues = map (\(ResultItem x) -> resultItemToIntStatsEitherValue x) . flattenResultSource
 
 -- | Represent the result source as timing statistics based on integer numbers.
-resultSourceToIntTimingStatsValues :: MonadComp m => ResultSource m -> [ResultValue (TimingStats Int) m]
+resultSourceToIntTimingStatsValues :: MonadDES m => ResultSource m -> [ResultValue (TimingStats Int) m]
 resultSourceToIntTimingStatsValues = map (\(ResultItem x) -> resultItemToIntTimingStatsValue x) . flattenResultSource
 
 -- | Represent the result source as double floating point numbers.
-resultSourceToDoubleValues :: MonadComp m => ResultSource m -> [ResultValue Double m]
+resultSourceToDoubleValues :: MonadDES m => ResultSource m -> [ResultValue Double m]
 resultSourceToDoubleValues = map (\(ResultItem x) -> resultItemToDoubleValue x) . flattenResultSource
 
 -- | Represent the result source as lists of double floating point numbers.
-resultSourceToDoubleListValues :: MonadComp m => ResultSource m -> [ResultValue [Double] m]
+resultSourceToDoubleListValues :: MonadDES m => ResultSource m -> [ResultValue [Double] m]
 resultSourceToDoubleListValues = map (\(ResultItem x) -> resultItemToDoubleListValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on double floating point numbers.
-resultSourceToDoubleStatsValues :: MonadComp m => ResultSource m -> [ResultValue (SamplingStats Double) m]
+resultSourceToDoubleStatsValues :: MonadDES m => ResultSource m -> [ResultValue (SamplingStats Double) m]
 resultSourceToDoubleStatsValues = map (\(ResultItem x) -> resultItemToDoubleStatsValue x) . flattenResultSource
 
 -- | Represent the result source as statistics based on double floating point numbers and optimised for fast aggregation.
-resultSourceToDoubleStatsEitherValues :: MonadComp m => ResultSource m -> [ResultValue (Either Double (SamplingStats Double)) m]
+resultSourceToDoubleStatsEitherValues :: MonadDES m => ResultSource m -> [ResultValue (Either Double (SamplingStats Double)) m]
 resultSourceToDoubleStatsEitherValues = map (\(ResultItem x) -> resultItemToDoubleStatsEitherValue x) . flattenResultSource
 
 -- | Represent the result source as timing statistics based on double floating point numbers.
-resultSourceToDoubleTimingStatsValues :: MonadComp m => ResultSource m -> [ResultValue (TimingStats Double) m]
+resultSourceToDoubleTimingStatsValues :: MonadDES m => ResultSource m -> [ResultValue (TimingStats Double) m]
 resultSourceToDoubleTimingStatsValues = map (\(ResultItem x) -> resultItemToDoubleTimingStatsValue x) . flattenResultSource
 
 -- | Represent the result source as string values.
-resultSourceToStringValues :: MonadComp m => ResultSource m -> [ResultValue String m]
+resultSourceToStringValues :: MonadDES m => ResultSource m -> [ResultValue String m]
 resultSourceToStringValues = map (\(ResultItem x) -> resultItemToStringValue x) . flattenResultSource
 
 -- | It contains the results of simulation.
@@ -929,7 +929,7 @@ data ResultPredefinedSignals m =
                           }
 
 -- | Create the predefined signals provided by every simulation model.
-newResultPredefinedSignals :: MonadComp m => Simulation m (ResultPredefinedSignals m)
+newResultPredefinedSignals :: MonadDES m => Simulation m (ResultPredefinedSignals m)
 newResultPredefinedSignals = runDynamicsInStartTime $ runEventWith EarlierEvents d where
   d = do signalInIntegTimes <- newSignalInIntegTimes
          signalInStartTime  <- newSignalInStartTime
@@ -950,62 +950,62 @@ results ms =
             resultSourceList = ms }
 
 -- | Represent the results as integer numbers.
-resultsToIntValues :: MonadComp m => Results m -> [ResultValue Int m]
+resultsToIntValues :: MonadDES m => Results m -> [ResultValue Int m]
 resultsToIntValues = concat . map resultSourceToIntValues . resultSourceList
 
 -- | Represent the results as lists of integer numbers.
-resultsToIntListValues :: MonadComp m => Results m -> [ResultValue [Int] m]
+resultsToIntListValues :: MonadDES m => Results m -> [ResultValue [Int] m]
 resultsToIntListValues = concat . map resultSourceToIntListValues . resultSourceList
 
 -- | Represent the results as statistics based on integer numbers.
-resultsToIntStatsValues :: MonadComp m => Results m -> [ResultValue (SamplingStats Int) m]
+resultsToIntStatsValues :: MonadDES m => Results m -> [ResultValue (SamplingStats Int) m]
 resultsToIntStatsValues = concat . map resultSourceToIntStatsValues . resultSourceList
 
 -- | Represent the results as statistics based on integer numbers and optimised for fast aggregation.
-resultsToIntStatsEitherValues :: MonadComp m => Results m -> [ResultValue (Either Int (SamplingStats Int)) m]
+resultsToIntStatsEitherValues :: MonadDES m => Results m -> [ResultValue (Either Int (SamplingStats Int)) m]
 resultsToIntStatsEitherValues = concat . map resultSourceToIntStatsEitherValues . resultSourceList
 
 -- | Represent the results as timing statistics based on integer numbers.
-resultsToIntTimingStatsValues :: MonadComp m => Results m -> [ResultValue (TimingStats Int) m]
+resultsToIntTimingStatsValues :: MonadDES m => Results m -> [ResultValue (TimingStats Int) m]
 resultsToIntTimingStatsValues = concat . map resultSourceToIntTimingStatsValues . resultSourceList
 
 -- | Represent the results as double floating point numbers.
-resultsToDoubleValues :: MonadComp m => Results m -> [ResultValue Double m]
+resultsToDoubleValues :: MonadDES m => Results m -> [ResultValue Double m]
 resultsToDoubleValues = concat . map resultSourceToDoubleValues . resultSourceList
 
 -- | Represent the results as lists of double floating point numbers.
-resultsToDoubleListValues :: MonadComp m => Results m -> [ResultValue [Double] m]
+resultsToDoubleListValues :: MonadDES m => Results m -> [ResultValue [Double] m]
 resultsToDoubleListValues = concat . map resultSourceToDoubleListValues . resultSourceList
 
 -- | Represent the results as statistics based on double floating point numbers.
-resultsToDoubleStatsValues :: MonadComp m => Results m -> [ResultValue (SamplingStats Double) m]
+resultsToDoubleStatsValues :: MonadDES m => Results m -> [ResultValue (SamplingStats Double) m]
 resultsToDoubleStatsValues = concat . map resultSourceToDoubleStatsValues . resultSourceList
 
 -- | Represent the results as statistics based on double floating point numbers and optimised for fast aggregation.
-resultsToDoubleStatsEitherValues :: MonadComp m => Results m -> [ResultValue (Either Double (SamplingStats Double)) m]
+resultsToDoubleStatsEitherValues :: MonadDES m => Results m -> [ResultValue (Either Double (SamplingStats Double)) m]
 resultsToDoubleStatsEitherValues = concat . map resultSourceToDoubleStatsEitherValues . resultSourceList
 
 -- | Represent the results as timing statistics based on double floating point numbers.
-resultsToDoubleTimingStatsValues :: MonadComp m => Results m -> [ResultValue (TimingStats Double) m]
+resultsToDoubleTimingStatsValues :: MonadDES m => Results m -> [ResultValue (TimingStats Double) m]
 resultsToDoubleTimingStatsValues = concat . map resultSourceToDoubleTimingStatsValues . resultSourceList
 
 -- | Represent the results as string values.
-resultsToStringValues :: MonadComp m => Results m -> [ResultValue String m]
+resultsToStringValues :: MonadDES m => Results m -> [ResultValue String m]
 resultsToStringValues = concat . map resultSourceToStringValues . resultSourceList
 
 -- | Return a signal emitted by the specified results.
-resultSignal :: MonadComp m => Results m -> ResultSignal m
+resultSignal :: MonadDES m => Results m -> ResultSignal m
 resultSignal = mconcat . map resultSourceSignal . resultSourceList
 
 -- | Return an expanded version of the simulation results expanding the properties as possible, which
 -- takes place for expanding statistics to show the count, average, deviation, minimum, maximum etc.
 -- as separate values.
-expandResults :: MonadComp m => ResultTransform m
+expandResults :: MonadDES m => ResultTransform m
 expandResults = results . map expandResultSource . resultSourceList
 
 -- | Return a short version of the simulation results, i.e. their summary, expanding the main properties
 -- or excluding auxiliary properties if required.
-resultSummary :: MonadComp m => ResultTransform m
+resultSummary :: MonadDES m => ResultTransform m
 resultSummary = results . map resultSourceSummary . resultSourceList
 
 -- | Take a result by its name.
@@ -1147,7 +1147,7 @@ appendResults x y =
 -- The signal returned is triggered when the source signal is triggered.
 -- The pure signal is also triggered in the integration time points
 -- if the source signal is unknown or it was combined with any unknown signal.
-pureResultSignal :: MonadComp m => ResultPredefinedSignals m -> ResultSignal m -> Signal m ()
+pureResultSignal :: MonadDES m => ResultPredefinedSignals m -> ResultSignal m -> Signal m ()
 pureResultSignal rs EmptyResultSignal =
   void (resultSignalInStartTime rs)
 pureResultSignal rs UnknownResultSignal =
@@ -1170,7 +1170,7 @@ data ResultExtract e m =
                 }
 
 -- | Extract the results as integer values, or raise a conversion error.
-extractIntResults :: MonadComp m => Results m -> [ResultExtract Int m]
+extractIntResults :: MonadDES m => Results m -> [ResultExtract Int m]
 extractIntResults rs = flip map (resultsToIntValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1185,7 +1185,7 @@ extractIntResults rs = flip map (resultsToIntValues rs) $ \x ->
       ResultExtract n i a s
 
 -- | Extract the results as lists of integer values, or raise a conversion error.
-extractIntListResults :: MonadComp m => Results m -> [ResultExtract [Int] m]
+extractIntListResults :: MonadDES m => Results m -> [ResultExtract [Int] m]
 extractIntListResults rs = flip map (resultsToIntListValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1201,7 +1201,7 @@ extractIntListResults rs = flip map (resultsToIntListValues rs) $ \x ->
 
 -- | Extract the results as statistics based on integer values,
 -- or raise a conversion error.
-extractIntStatsResults :: MonadComp m => Results m -> [ResultExtract (SamplingStats Int) m]
+extractIntStatsResults :: MonadDES m => Results m -> [ResultExtract (SamplingStats Int) m]
 extractIntStatsResults rs = flip map (resultsToIntStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1217,7 +1217,7 @@ extractIntStatsResults rs = flip map (resultsToIntStatsValues rs) $ \x ->
 
 -- | Extract the results as statistics based on integer values and optimised
 -- for fast aggregation, or raise a conversion error.
-extractIntStatsEitherResults :: MonadComp m => Results m -> [ResultExtract (Either Int (SamplingStats Int)) m]
+extractIntStatsEitherResults :: MonadDES m => Results m -> [ResultExtract (Either Int (SamplingStats Int)) m]
 extractIntStatsEitherResults rs = flip map (resultsToIntStatsEitherValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1233,7 +1233,7 @@ extractIntStatsEitherResults rs = flip map (resultsToIntStatsEitherValues rs) $ 
 
 -- | Extract the results as timing statistics based on integer values,
 -- or raise a conversion error.
-extractIntTimingStatsResults :: MonadComp m => Results m -> [ResultExtract (TimingStats Int) m]
+extractIntTimingStatsResults :: MonadDES m => Results m -> [ResultExtract (TimingStats Int) m]
 extractIntTimingStatsResults rs = flip map (resultsToIntTimingStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1248,7 +1248,7 @@ extractIntTimingStatsResults rs = flip map (resultsToIntTimingStatsValues rs) $ 
       ResultExtract n i a s
 
 -- | Extract the results as double floating point values, or raise a conversion error.
-extractDoubleResults :: MonadComp m => Results m -> [ResultExtract Double m]
+extractDoubleResults :: MonadDES m => Results m -> [ResultExtract Double m]
 extractDoubleResults rs = flip map (resultsToDoubleValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1264,7 +1264,7 @@ extractDoubleResults rs = flip map (resultsToDoubleValues rs) $ \x ->
 
 -- | Extract the results as lists of double floating point values,
 -- or raise a conversion error.
-extractDoubleListResults :: MonadComp m => Results m -> [ResultExtract [Double] m]
+extractDoubleListResults :: MonadDES m => Results m -> [ResultExtract [Double] m]
 extractDoubleListResults rs = flip map (resultsToDoubleListValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1280,7 +1280,7 @@ extractDoubleListResults rs = flip map (resultsToDoubleListValues rs) $ \x ->
 
 -- | Extract the results as statistics based on double floating point values,
 -- or raise a conversion error.
-extractDoubleStatsResults :: MonadComp m => Results m -> [ResultExtract (SamplingStats Double) m]
+extractDoubleStatsResults :: MonadDES m => Results m -> [ResultExtract (SamplingStats Double) m]
 extractDoubleStatsResults rs = flip map (resultsToDoubleStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1296,7 +1296,7 @@ extractDoubleStatsResults rs = flip map (resultsToDoubleStatsValues rs) $ \x ->
 
 -- | Extract the results as statistics based on double floating point values
 -- and optimised for fast aggregation, or raise a conversion error.
-extractDoubleStatsEitherResults :: MonadComp m => Results m -> [ResultExtract (Either Double (SamplingStats Double)) m]
+extractDoubleStatsEitherResults :: MonadDES m => Results m -> [ResultExtract (Either Double (SamplingStats Double)) m]
 extractDoubleStatsEitherResults rs = flip map (resultsToDoubleStatsEitherValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1312,7 +1312,7 @@ extractDoubleStatsEitherResults rs = flip map (resultsToDoubleStatsEitherValues 
 
 -- | Extract the results as timing statistics based on double floating point values,
 -- or raise a conversion error.
-extractDoubleTimingStatsResults :: MonadComp m => Results m -> [ResultExtract (TimingStats Double) m]
+extractDoubleTimingStatsResults :: MonadDES m => Results m -> [ResultExtract (TimingStats Double) m]
 extractDoubleTimingStatsResults rs = flip map (resultsToDoubleTimingStatsValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1327,7 +1327,7 @@ extractDoubleTimingStatsResults rs = flip map (resultsToDoubleTimingStatsValues 
       ResultExtract n i a s
 
 -- | Extract the results as string values, or raise a conversion error.
-extractStringResults :: MonadComp m => Results m -> [ResultExtract String m]
+extractStringResults :: MonadDES m => Results m -> [ResultExtract String m]
 extractStringResults rs = flip map (resultsToStringValues rs) $ \x ->
   let n = resultValueName x
       i = resultValueId x
@@ -1342,7 +1342,7 @@ extractStringResults rs = flip map (resultsToStringValues rs) $ \x ->
       ResultExtract n i a s
 
 -- | Represents a computation that can return the simulation data.
-class MonadComp m => ResultComputing t m where
+class MonadDES m => ResultComputing t m where
 
   -- | Compute data with the results of simulation.
   computeResultData :: t m a -> ResultData a m
@@ -1366,22 +1366,22 @@ computeResultValue name i m =
     resultValueData   = computeResultData m,
     resultValueSignal = computeResultSignal m }
 
-instance MonadComp m => ResultComputing Parameter m where
+instance MonadDES m => ResultComputing Parameter m where
 
   computeResultData = Just . liftParameter
   computeResultSignal = const UnknownResultSignal
 
-instance MonadComp m => ResultComputing Simulation m where
+instance MonadDES m => ResultComputing Simulation m where
 
   computeResultData = Just . liftSimulation
   computeResultSignal = const UnknownResultSignal
 
-instance MonadComp m => ResultComputing Dynamics m where
+instance MonadDES m => ResultComputing Dynamics m where
 
   computeResultData = Just . liftDynamics
   computeResultSignal = const UnknownResultSignal
 
-instance MonadComp m => ResultComputing Event m where
+instance MonadDES m => ResultComputing Event m where
 
   computeResultData = Just . id
   computeResultSignal = const UnknownResultSignal
@@ -1396,18 +1396,18 @@ instance MonadDES m => ResultComputing B.Ref m where
   computeResultData = Just . B.readRef
   computeResultSignal = const UnknownResultSignal
 
-instance MonadComp m => ResultComputing Var m where
+instance MonadDES m => ResultComputing Var m where
 
   computeResultData = Just . readVar
   computeResultSignal = ResultSignal . varChanged_
 
-instance MonadComp m => ResultComputing Signalable m where
+instance MonadDES m => ResultComputing Signalable m where
 
   computeResultData = Just . readSignalable
   computeResultSignal = ResultSignal . signalableChanged_
       
 -- | Return a source by the specified statistics.
-samplingStatsResultSource :: (MonadComp m,
+samplingStatsResultSource :: (MonadDES m,
                               ResultItemable (ResultValue a),
                               ResultItemable (ResultValue (SamplingStats a)))
                              => ResultValue (SamplingStats a) m
@@ -1433,7 +1433,7 @@ samplingStatsResultSource x =
     c = resultValueToContainer x
 
 -- | Return the summary by the specified statistics.
-samplingStatsResultSummary :: (MonadComp m,
+samplingStatsResultSummary :: (MonadDES m,
                                ResultItemable (ResultValue (SamplingStats a)))
                               => ResultValue (SamplingStats a) m
                               -- ^ the statistics
@@ -1441,7 +1441,7 @@ samplingStatsResultSummary :: (MonadComp m,
 samplingStatsResultSummary = ResultItemSource . ResultItem . resultItemToStringValue 
   
 -- | Return a source by the specified timing statistics.
-timingStatsResultSource :: (MonadComp m,
+timingStatsResultSource :: (MonadDES m,
                             TimingData a,
                             ResultItemable (ResultValue a),
                             ResultItemable (ResultValue (TimingStats a)))
@@ -1473,7 +1473,7 @@ timingStatsResultSource x =
     c = resultValueToContainer x
 
 -- | Return the summary by the specified timing statistics.
-timingStatsResultSummary :: (MonadComp m,
+timingStatsResultSummary :: (MonadDES m,
                              TimingData a,
                              ResultItemable (ResultValue (TimingStats a)))
                             => ResultValue (TimingStats a) m 
@@ -1482,7 +1482,7 @@ timingStatsResultSummary :: (MonadComp m,
 timingStatsResultSummary = ResultItemSource . ResultItem . resultItemToStringValue
   
 -- | Return a source by the specified counter.
-samplingCounterResultSource :: (MonadComp m,
+samplingCounterResultSource :: (MonadDES m,
                                 ResultItemable (ResultValue a),
                                 ResultItemable (ResultValue (SamplingStats a)))
                                => ResultValue (SamplingCounter a) m
@@ -1503,7 +1503,7 @@ samplingCounterResultSource x =
     c = resultValueToContainer x
       
 -- | Return a source by the specified counter.
-samplingCounterResultSummary :: (MonadComp m,
+samplingCounterResultSummary :: (MonadDES m,
                                  ResultItemable (ResultValue a),
                                  ResultItemable (ResultValue (SamplingStats a)))
                                 => ResultValue (SamplingCounter a) m
@@ -1524,7 +1524,7 @@ samplingCounterResultSummary x =
     c = resultValueToContainer x
       
 -- | Return a source by the specified counter.
-timingCounterResultSource :: (MonadComp m,
+timingCounterResultSource :: (MonadDES m,
                               ResultItemable (ResultValue a),
                               ResultItemable (ResultValue (TimingStats a)))
                              => ResultValue (TimingCounter a) m
@@ -1545,7 +1545,7 @@ timingCounterResultSource x =
     c = resultValueToContainer x
       
 -- | Return a source by the specified counter.
-timingCounterResultSummary :: (MonadComp m,
+timingCounterResultSummary :: (MonadDES m,
                                ResultItemable (ResultValue a),
                                ResultItemable (ResultValue (TimingStats a)))
                               => ResultValue (TimingCounter a) m
@@ -1817,7 +1817,7 @@ textResultSource text =
   ResultSeparator { resultSeparatorText = text }
 
 -- | Return the source of the modeling time.
-timeResultSource :: MonadComp m => ResultSource m
+timeResultSource :: MonadDES m => ResultSource m
 timeResultSource = resultSource' "t" TimeId time
                          
 -- | Make an integer subscript

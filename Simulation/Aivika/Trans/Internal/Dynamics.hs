@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Dynamics
@@ -205,28 +205,28 @@ instance MonadIO m => MonadIO (Dynamics m) where
   {-# INLINE liftIO #-}
   liftIO = Dynamics . const . liftIO
 
-instance MonadCompTrans Dynamics where
+instance Monad m => MonadCompTrans Dynamics m where
 
   {-# INLINE liftComp #-}
   liftComp = Dynamics . const
 
 -- | A type class to lift the 'Dynamics' computations into other computations.
-class DynamicsLift t where
+class DynamicsLift t m where
   
   -- | Lift the specified 'Dynamics' computation into another computation.
-  liftDynamics :: MonadComp m => Dynamics m a -> t m a
+  liftDynamics :: Dynamics m a -> t m a
 
-instance DynamicsLift Dynamics where
+instance Monad m => DynamicsLift Dynamics m where
   
   {-# INLINE liftDynamics #-}
   liftDynamics = id
 
-instance SimulationLift Dynamics where
+instance Monad m => SimulationLift Dynamics m where
 
   {-# INLINE liftSimulation #-}
   liftSimulation (Simulation x) = Dynamics $ x . pointRun 
 
-instance ParameterLift Dynamics where
+instance Monad m => ParameterLift Dynamics m where
 
   {-# INLINE liftParameter #-}
   liftParameter (Parameter x) = Dynamics $ x . pointRun

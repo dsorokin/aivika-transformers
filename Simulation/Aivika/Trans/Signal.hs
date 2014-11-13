@@ -56,20 +56,21 @@ module Simulation.Aivika.Trans.Signal
 import Data.Monoid
 import Data.List
 import Data.Array
+import Data.Array.MArray.Safe
 
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import qualified Simulation.Aivika.Trans.Vector as V
-import qualified Simulation.Aivika.Trans.Vector.Unboxed as UV
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Arrival (Arrival(..))
+
+import qualified Simulation.Aivika.Vector as V
+import qualified Simulation.Aivika.Vector.Unboxed as UV
 
 -- | The signal source that can publish its signal.
 data SignalSource m a =
@@ -92,73 +93,73 @@ data Signal m a =
 
 -- | The queue of signal handlers.
 data SignalHandlerQueue m a =
-  SignalHandlerQueue { queueList :: ProtoRef m [SignalHandler m a] }
+  SignalHandlerQueue { queueList :: Ref m [SignalHandler m a] }
   
 -- | It contains the information about the disposable queue handler.
 data SignalHandler m a =
-  SignalHandler { handlerComp   :: a -> Event m (),
-                  handlerMarker :: SessionMarker m }
+  SignalHandler { handlerComp :: a -> Event m (),
+                  handlerRef  :: Ref m () }
 
-instance SessionMonad m => Eq (SignalHandler m a) where
+instance MonadDES m => Eq (SignalHandler m a) where
 
   {-# INLINE (==) #-}
-  x == y = (handlerMarker x) == (handlerMarker y)
+  x == y = (handlerRef x) == (handlerRef y)
 
 -- | Subscribe the handler to the specified signal forever.
 -- To subscribe the disposable handlers, use function 'handleSignal'.
-handleSignal_ :: MonadComp m => Signal m a -> (a -> Event m ()) -> Event m ()
+handleSignal_ :: MonadDES m => Signal m a -> (a -> Event m ()) -> Event m ()
 {-# INLINE handleSignal_ #-}
 handleSignal_ signal h = 
   do x <- handleSignal signal h
      return ()
      
 -- | Create a new signal source.
-newSignalSource :: MonadComp m => Simulation m (SignalSource m a)
+newSignalSource :: MonadDES m => Simulation m (SignalSource m a)
 newSignalSource =
-  Simulation $ \r ->
-  do let s = runSession r
-     list <- newProtoRef s []
+  do list <- newRef []
      let queue  = SignalHandlerQueue { queueList = list }
          signal = Signal { handleSignal = handle }
          source = SignalSource { publishSignal = signal, 
                                  triggerSignal = trigger }
          handle h =
            Event $ \p ->
-           do m <- newSessionMarker s
-              x <- enqueueSignalHandler queue h m
+           do x <- invokeEvent p $ enqueueSignalHandler queue h
               return $
                 DisposableEvent $
-                Event $ \p -> dequeueSignalHandler queue x
+                dequeueSignalHandler queue x
          trigger a =
-           Event $ \p -> triggerSignalHandlers queue a p
+           triggerSignalHandlers queue a
      return source
 
 -- | Trigger all next signal handlers.
-triggerSignalHandlers :: MonadComp m => SignalHandlerQueue m a -> a -> Point m -> m ()
-triggerSignalHandlers q a p =
-  do hs <- readProtoRef (queueList q)
+triggerSignalHandlers :: MonadDES m => SignalHandlerQueue m a -> a -> Event m ()
+triggerSignalHandlers q a =
+  Event $ \p ->
+  do hs <- invokeEvent p $ readRef (queueList q)
      forM_ hs $ \h ->
        invokeEvent p $ handlerComp h a
             
 -- | Enqueue the handler and return its representative in the queue.            
-enqueueSignalHandler :: MonadComp m => SignalHandlerQueue m a -> (a -> Event m ()) -> SessionMarker m -> m (SignalHandler m a)
-enqueueSignalHandler q h m = 
-  do let handler = SignalHandler { handlerComp   = h,
-                                   handlerMarker = m }
-     modifyProtoRef (queueList q) (handler :)
+enqueueSignalHandler :: MonadDES m => SignalHandlerQueue m a -> (a -> Event m ()) -> Event m (SignalHandler m a)
+enqueueSignalHandler q h =
+  Event $ \p ->
+  do r <- invokeSimulation (pointRun p) $ newRef ()
+     let handler = SignalHandler { handlerComp = h,
+                                   handlerRef  = r }
+     invokeEvent p $ modifyRef (queueList q) (handler :)
      return handler
 
 -- | Dequeue the handler representative.
-dequeueSignalHandler :: MonadComp m => SignalHandlerQueue m a -> SignalHandler m a -> m ()
+dequeueSignalHandler :: MonadDES m => SignalHandlerQueue m a -> SignalHandler m a -> Event m ()
 dequeueSignalHandler q h = 
-  modifyProtoRef (queueList q) (delete h)
+  modifyRef (queueList q) (delete h)
 
-instance MonadComp m => Functor (Signal m) where
+instance MonadDES m => Functor (Signal m) where
 
   {-# INLINE fmap #-}
   fmap = mapSignal
   
-instance MonadComp m => Monoid (Signal m a) where 
+instance MonadDES m => Monoid (Signal m a) where 
 
   {-# INLINE mempty #-}
   mempty = emptySignal
@@ -177,14 +178,14 @@ instance MonadComp m => Monoid (Signal m a) where
     mconcat $ merge5Signals x1 x2 x3 x4 x5 : xs
   
 -- | Map the signal according the specified function.
-mapSignal :: MonadComp m => (a -> b) -> Signal m a -> Signal m b
+mapSignal :: MonadDES m => (a -> b) -> Signal m a -> Signal m b
 mapSignal f m =
   Signal { handleSignal = \h -> 
             handleSignal m $ h . f }
 
 -- | Filter only those signal values that satisfy to 
 -- the specified predicate.
-filterSignal :: MonadComp m => (a -> Bool) -> Signal m a -> Signal m a
+filterSignal :: MonadDES m => (a -> Bool) -> Signal m a -> Signal m a
 filterSignal p m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a ->
@@ -192,7 +193,7 @@ filterSignal p m =
   
 -- | Filter only those signal values that satisfy to 
 -- the specified predicate.
-filterSignalM :: MonadComp m => (a -> Event m Bool) -> Signal m a -> Signal m a
+filterSignalM :: MonadDES m => (a -> Event m Bool) -> Signal m a -> Signal m a
 filterSignalM p m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a ->
@@ -200,7 +201,7 @@ filterSignalM p m =
                when x $ h a }
   
 -- | Merge two signals.
-merge2Signals :: MonadComp m => Signal m a -> Signal m a -> Signal m a
+merge2Signals :: MonadDES m => Signal m a -> Signal m a -> Signal m a
 merge2Signals m1 m2 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -208,7 +209,7 @@ merge2Signals m1 m2 =
                return $ x1 <> x2 }
 
 -- | Merge three signals.
-merge3Signals :: MonadComp m => Signal m a -> Signal m a -> Signal m a -> Signal m a
+merge3Signals :: MonadDES m => Signal m a -> Signal m a -> Signal m a -> Signal m a
 merge3Signals m1 m2 m3 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -217,7 +218,7 @@ merge3Signals m1 m2 m3 =
                return $ x1 <> x2 <> x3 }
 
 -- | Merge four signals.
-merge4Signals :: MonadComp m
+merge4Signals :: MonadDES m
                  => Signal m a -> Signal m a -> Signal m a
                  -> Signal m a -> Signal m a
 merge4Signals m1 m2 m3 m4 =
@@ -229,7 +230,7 @@ merge4Signals m1 m2 m3 m4 =
                return $ x1 <> x2 <> x3 <> x4 }
            
 -- | Merge five signals.
-merge5Signals :: MonadComp m
+merge5Signals :: MonadDES m
                  => Signal m a -> Signal m a -> Signal m a
                  -> Signal m a -> Signal m a -> Signal m a
 merge5Signals m1 m2 m3 m4 m5 =
@@ -242,19 +243,19 @@ merge5Signals m1 m2 m3 m4 m5 =
                return $ x1 <> x2 <> x3 <> x4 <> x5 }
 
 -- | Compose the signal.
-mapSignalM :: MonadComp m => (a -> Event m b) -> Signal m a -> Signal m b
+mapSignalM :: MonadDES m => (a -> Event m b) -> Signal m a -> Signal m b
 mapSignalM f m =
   Signal { handleSignal = \h ->
             handleSignal m (f >=> h) }
   
 -- | Transform the signal.
-apSignal :: MonadComp m => Event m (a -> b) -> Signal m a -> Signal m b
+apSignal :: MonadDES m => Event m (a -> b) -> Signal m a -> Signal m b
 apSignal f m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a -> do { x <- f; h (x a) } }
 
 -- | An empty signal which is never triggered.
-emptySignal :: MonadComp m => Signal m a
+emptySignal :: MonadDES m => Signal m a
 emptySignal =
   Signal { handleSignal = \h -> return mempty }
                                     
@@ -262,30 +263,31 @@ emptySignal =
 data SignalHistory m a =
   SignalHistory { signalHistorySignal :: Signal m a,  
                   -- ^ The signal for which the history is created.
-                  signalHistoryTimes  :: UV.Vector m Double,
-                  signalHistoryValues :: V.Vector m a }
+                  signalHistoryTimes  :: UV.Vector Double,
+                  signalHistoryValues :: V.Vector a }
 
 -- | Create a history of the signal values.
-newSignalHistory :: MonadComp m => Signal m a -> Event m (SignalHistory m a)
+newSignalHistory :: (MonadDES m, MonadIO m) => Signal m a -> Event m (SignalHistory m a)
 newSignalHistory =
   newSignalHistoryStartingWith Nothing
 
 -- | Create a history of the signal values starting with
 -- the optional initial value.
-newSignalHistoryStartingWith :: MonadComp m => Maybe a -> Signal m a -> Event m (SignalHistory m a)
+newSignalHistoryStartingWith :: (MonadDES m, MonadIO m) => Maybe a -> Signal m a -> Event m (SignalHistory m a)
 newSignalHistoryStartingWith init signal =
   Event $ \p ->
-  do let s = runSession $ pointRun p
-     ts <- UV.newVector s
-     xs <- V.newVector s
+  do ts <- liftIO UV.newVector
+     xs <- liftIO V.newVector
      case init of
        Nothing -> return ()
        Just a ->
+         liftIO $
          do UV.appendVector ts (pointTime p)
             V.appendVector xs a
      invokeEvent p $
        handleSignal_ signal $ \a ->
        Event $ \p ->
+       liftIO $
        do UV.appendVector ts (pointTime p)
           V.appendVector xs a
      return SignalHistory { signalHistorySignal = signal,
@@ -293,20 +295,20 @@ newSignalHistoryStartingWith init signal =
                             signalHistoryValues = xs }
        
 -- | Read the history of signal values.
-readSignalHistory :: MonadComp m => SignalHistory m a -> Event m (Array Int Double, Array Int a)
+readSignalHistory :: (MonadDES m, MonadIO m) => SignalHistory m a -> Event m (Array Int Double, Array Int a)
 readSignalHistory history =
   Event $ \p ->
-  do xs <- UV.freezeVector (signalHistoryTimes history)
-     ys <- V.freezeVector (signalHistoryValues history)
+  do xs <- liftIO $ UV.freezeVector (signalHistoryTimes history)
+     ys <- liftIO $ V.freezeVector (signalHistoryValues history)
      return (xs, ys)     
      
 -- | Trigger the signal with the current time.
-triggerSignalWithCurrentTime :: MonadComp m => SignalSource m Double -> Event m ()
+triggerSignalWithCurrentTime :: MonadDES m => SignalSource m Double -> Event m ()
 triggerSignalWithCurrentTime s =
   Event $ \p -> invokeEvent p $ triggerSignal s (pointTime p)
 
 -- | Return a signal that is triggered in the specified time points.
-newSignalInTimes :: MonadComp m => [Double] -> Event m (Signal m Double)
+newSignalInTimes :: MonadDES m => [Double] -> Event m (Signal m Double)
 newSignalInTimes xs =
   do s <- liftSimulation newSignalSource
      enqueueEventWithTimes xs $ triggerSignalWithCurrentTime s
@@ -314,7 +316,7 @@ newSignalInTimes xs =
        
 -- | Return a signal that is triggered in the integration time points.
 -- It should be called with help of 'runEventInStartTime'.
-newSignalInIntegTimes :: MonadComp m => Event m (Signal m Double)
+newSignalInIntegTimes :: MonadDES m => Event m (Signal m Double)
 newSignalInIntegTimes =
   do s <- liftSimulation newSignalSource
      enqueueEventWithIntegTimes $ triggerSignalWithCurrentTime s
@@ -322,7 +324,7 @@ newSignalInIntegTimes =
      
 -- | Return a signal that is triggered in the start time.
 -- It should be called with help of 'runEventInStartTime'.
-newSignalInStartTime :: MonadComp m => Event m (Signal m Double)
+newSignalInStartTime :: MonadDES m => Event m (Signal m Double)
 newSignalInStartTime =
   do s <- liftSimulation newSignalSource
      t <- liftParameter starttime
@@ -330,7 +332,7 @@ newSignalInStartTime =
      return $ publishSignal s
 
 -- | Return a signal that is triggered in the final time.
-newSignalInStopTime :: MonadComp m => Event m (Signal m Double)
+newSignalInStopTime :: MonadDES m => Event m (Signal m Double)
 newSignalInStopTime =
   do s <- liftSimulation newSignalSource
      t <- liftParameter stoptime
@@ -347,7 +349,7 @@ data Signalable m a =
              }
 
 -- | Return a signal notifying that the value has changed.
-signalableChanged :: MonadComp m => Signalable m a -> Signal m a
+signalableChanged :: MonadDES m => Signalable m a -> Signal m a
 signalableChanged x = mapSignalM (const $ readSignalable x) $ signalableChanged_ x
 
 instance Functor m => Functor (Signalable m) where
@@ -355,7 +357,7 @@ instance Functor m => Functor (Signalable m) where
   {-# INLINE fmap #-}
   fmap f x = x { readSignalable = fmap f (readSignalable x) }
 
-instance (MonadComp m, Monoid a) => Monoid (Signalable m a) where
+instance (MonadDES m, Monoid a) => Monoid (Signalable m a) where
 
   {-# INLINE mempty #-}
   mempty = emptySignalable
@@ -364,31 +366,28 @@ instance (MonadComp m, Monoid a) => Monoid (Signalable m a) where
   mappend = appendSignalable
 
 -- | Return an identity.
-emptySignalable :: (MonadComp m, Monoid a) => Signalable m a
+emptySignalable :: (MonadDES m, Monoid a) => Signalable m a
 emptySignalable =
   Signalable { readSignalable = return mempty,
                signalableChanged_ = mempty }
 
 -- | An associative operation.
-appendSignalable :: (MonadComp m, Monoid a) => Signalable m a -> Signalable m a -> Signalable m a
+appendSignalable :: (MonadDES m, Monoid a) => Signalable m a -> Signalable m a -> Signalable m a
 appendSignalable m1 m2 =
   Signalable { readSignalable = liftM2 (<>) (readSignalable m1) (readSignalable m2),
                signalableChanged_ = (signalableChanged_ m1) <> (signalableChanged_ m2) }
 
 -- | Transform a signal so that the resulting signal returns a sequence of arrivals
 -- saving the information about the time points at which the original signal was received.
-arrivalSignal :: MonadComp m => Signal m a -> Signal m (Arrival a)
+arrivalSignal :: MonadDES m => Signal m a -> Signal m (Arrival a)
 arrivalSignal m = 
   Signal { handleSignal = \h ->
-             Event $ \p ->
-             do let s = runSession $ pointRun p
-                r <- newProtoRef s Nothing
-                invokeEvent p $
-                  handleSignal m $ \a ->
+             do r <- liftSimulation $ newRef Nothing
+                handleSignal m $ \a ->
                   Event $ \p ->
-                  do t0 <- readProtoRef r
+                  do t0 <- invokeEvent p $ readRef r
                      let t = pointTime p
-                     writeProtoRef r (Just t)
+                     invokeEvent p $ writeRef r (Just t)
                      invokeEvent p $
                        h Arrival { arrivalValue = a,
                                    arrivalTime  = t,
@@ -398,7 +397,7 @@ arrivalSignal m =
                                        Just t0 -> Just (t - t0) } }
 
 -- | Show the debug message with the current simulation time.
-traceSignal :: MonadComp m => String -> Signal m a -> Signal m a 
+traceSignal :: MonadDES m => String -> Signal m a -> Signal m a 
 traceSignal message m =
   Signal { handleSignal = \h ->
             handleSignal m $ traceEvent message . h }

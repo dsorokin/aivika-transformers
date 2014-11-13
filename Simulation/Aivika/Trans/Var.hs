@@ -26,7 +26,7 @@ module Simulation.Aivika.Trans.Var
 import Data.Array
 
 import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
@@ -53,7 +53,7 @@ data Var m a =
         varChangedSource :: SignalSource m a }
      
 -- | Create a new variable.
-newVar :: MonadComp m => a -> Simulation m (Var m a)
+newVar :: MonadDES m => a -> Simulation m (Var m a)
 newVar a =
   Simulation $ \r ->
   do let sn = runSession r
@@ -74,7 +74,7 @@ newVar a =
 --
 -- This computation can be used in the ordinary differential and
 -- difference equations of System Dynamics.
-varMemo :: MonadComp m => Var m a -> Dynamics m a
+varMemo :: MonadDES m => Var m a -> Dynamics m a
 varMemo v =
   runEventWith CurrentEventsOrFromPast $
   Event $ \p ->
@@ -101,7 +101,7 @@ varMemo v =
 -- | Read the recent actual value of a variable for the requested time.
 --
 -- This computation is destined for using within discrete event simulation.
-readVar :: MonadComp m => Var m a -> Event m a
+readVar :: MonadDES m => Var m a -> Event m a
 readVar v = 
   Event $ \p ->
   do let xs = varXS v
@@ -118,7 +118,7 @@ readVar v =
                  else V.readVector ys $ - (i + 1) - 1
 
 -- | Write a new value into the variable.
-writeVar :: MonadComp m => Var m a -> a -> Event m ()
+writeVar :: MonadDES m => Var m a -> a -> Event m ()
 writeVar v a =
   Event $ \p ->
   do let xs = varXS v
@@ -139,7 +139,7 @@ writeVar v a =
      invokeEvent p $ triggerSignal s a
 
 -- | Mutate the contents of the variable.
-modifyVar :: MonadComp m => Var m a -> (a -> a) -> Event m ()
+modifyVar :: MonadDES m => Var m a -> (a -> a) -> Event m ()
 modifyVar v f =
   Event $ \p ->
   do let xs = varXS v
@@ -172,7 +172,7 @@ modifyVar v f =
 -- If you need to get all changes including those ones that correspond to the same
 -- simulation time points then you can use the 'newSignalHistory' function passing
 -- in the 'varChanged' signal to it and then call function 'readSignalHistory'.
-freezeVar :: MonadComp m => Var m a -> Event m (Array Int Double, Array Int a, Array Int a)
+freezeVar :: MonadDES m => Var m a -> Event m (Array Int Double, Array Int a, Array Int a)
 freezeVar v =
   Event $ \p ->
   do xs <- UV.freezeVector (varXS v)
@@ -185,5 +185,5 @@ varChanged :: Var m a -> Signal m a
 varChanged v = publishSignal (varChangedSource v)
 
 -- | Return a signal that notifies about every change of the variable state.
-varChanged_ :: MonadComp m => Var m a -> Signal m ()
+varChanged_ :: MonadDES m => Var m a -> Signal m ()
 varChanged_ v = mapSignal (const ()) $ varChanged v     

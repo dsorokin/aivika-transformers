@@ -239,18 +239,18 @@ instance MonadIO m => MonadIO (Parameter m) where
   {-# INLINE liftIO #-}
   liftIO = Parameter . const . liftIO
 
-instance MonadCompTrans Parameter where
+instance Monad m => MonadCompTrans Parameter m where
 
   {-# INLINE liftComp #-}
   liftComp = Parameter . const
 
 -- | A type class to lift the parameters into other computations.
-class ParameterLift t where
+class ParameterLift t m where
   
   -- | Lift the specified 'Parameter' computation into another computation.
-  liftParameter :: MonadComp m => Parameter m a -> t m a
+  liftParameter :: Parameter m a -> t m a
 
-instance ParameterLift Parameter where
+instance Monad m => ParameterLift Parameter m where
   
   {-# INLINE liftParameter #-}
   liftParameter = id
