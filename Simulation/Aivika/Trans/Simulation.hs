@@ -19,8 +19,6 @@ module Simulation.Aivika.Trans.Simulation
         catchSimulation,
         finallySimulation,
         throwSimulation,
-        -- * Memoization
-        memoSimulation,
         -- * Exceptions
         SimulationException(..),
         SimulationAbort(..)) where

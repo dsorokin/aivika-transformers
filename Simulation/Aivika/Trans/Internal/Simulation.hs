@@ -23,8 +23,6 @@ module Simulation.Aivika.Trans.Internal.Simulation
         catchSimulation,
         finallySimulation,
         throwSimulation,
-        -- * Memoization
-        memoSimulation,
         -- * Exceptions
         SimulationException(..),
         SimulationAbort(..)) where
@@ -159,19 +157,3 @@ instance MonadFix m => MonadFix (Simulation m) where
   mfix f = 
     Simulation $ \r ->
     do { rec { a <- invokeSimulation r (f a) }; return a }
-
--- | Memoize the 'Simulation' computation, always returning the same value
--- within a simulation run.
-memoSimulation :: MonadComp m => Simulation m a -> Simulation m (Simulation m a)
-memoSimulation m =
-  Simulation $ \r ->
-  do let s = runSession r
-     ref <- newProtoRef s Nothing
-     return $ Simulation $ \r ->
-       do x <- readProtoRef ref
-          case x of
-            Just v -> return v
-            Nothing ->
-              do v <- invokeSimulation r m
-                 writeProtoRef ref (Just v)
-                 return v
