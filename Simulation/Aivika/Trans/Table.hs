@@ -2,7 +2,7 @@
 -- |
 -- Module     : Simulation.Aivika.Trans.Table
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
--- License    : GPL
+-- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3

@@ -8,7 +8,7 @@ description:
     \[1] <http://hackage.haskell.org/package/aivika>
     .
 category:        Simulation
-license:         GPL
+license:         GPL-3
 license-file:    LICENSE
 copyright:       (c) 2009-2014. David Sorokin <david.sorokin@gmail.com>
 author:          David Sorokin
