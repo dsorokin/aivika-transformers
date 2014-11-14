@@ -55,9 +55,9 @@ import Control.Applicative
 import Debug.Trace (trace)
 
 import Simulation.Aivika.Trans.Exception
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
+import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
@@ -131,20 +131,20 @@ instance Monad m => ParameterLift Event m where
   liftParameter (Parameter x) = Event $ x . pointRun
 
 -- | Exception handling within 'Event' computations.
-catchEvent :: (MonadComp m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
+catchEvent :: (MonadDES m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
 catchEvent (Event m) h =
   Event $ \p -> 
   catchComp (m p) $ \e ->
   let Event m' = h e in m' p
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyEvent :: MonadComp m => Event m a -> Event m b -> Event m a
+finallyEvent :: MonadDES m => Event m a -> Event m b -> Event m a
 finallyEvent (Event m) (Event m') =
   Event $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
-throwEvent :: (MonadComp m, Exception e) => e -> Event m a
+throwEvent :: (MonadDES m, Exception e) => e -> Event m a
 throwEvent = throw
 
 instance MonadFix m => MonadFix (Event m) where
@@ -156,22 +156,22 @@ instance MonadFix m => MonadFix (Event m) where
 
 -- | Run the 'Event' computation in the start time involving all
 -- pending 'CurrentEvents' in the processing too.
-runEventInStartTime :: MonadComp m => Event m a -> Simulation m a
+runEventInStartTime :: MonadDES m => Event m a -> Simulation m a
 runEventInStartTime = runDynamicsInStartTime . runEvent
 
 -- | Run the 'Event' computation in the stop time involving all
 -- pending 'CurrentEvents' in the processing too.
-runEventInStopTime :: MonadComp m => Event m a -> Simulation m a
+runEventInStopTime :: MonadDES m => Event m a -> Simulation m a
 runEventInStopTime = runDynamicsInStopTime . runEvent
 
 -- | Actuate the event handler in the specified time points.
-enqueueEventWithTimes :: MonadComp m => [Double] -> Event m () -> Event m ()
+enqueueEventWithTimes :: MonadDES m => [Double] -> Event m () -> Event m ()
 enqueueEventWithTimes ts e = loop ts
   where loop []       = return ()
         loop (t : ts) = enqueueEvent t $ e >> loop ts
        
 -- | Actuate the event handler in the specified time points.
-enqueueEventWithPoints :: MonadComp m => [Point m] -> Event m () -> Event m ()
+enqueueEventWithPoints :: MonadDES m => [Point m] -> Event m () -> Event m ()
 enqueueEventWithPoints xs (Event e) = loop xs
   where loop []       = return ()
         loop (x : xs) = enqueueEvent (pointTime x) $ 
@@ -180,7 +180,7 @@ enqueueEventWithPoints xs (Event e) = loop xs
                            invokeEvent p $ loop xs
                            
 -- | Actuate the event handler in the integration time points.
-enqueueEventWithIntegTimes :: MonadComp m => Event m () -> Event m ()
+enqueueEventWithIntegTimes :: MonadDES m => Event m () -> Event m ()
 enqueueEventWithIntegTimes e =
   Event $ \p ->
   let points = integPointsStartingFrom p
@@ -197,48 +197,47 @@ data EventCancellation m =
                     }
 
 -- | Enqueue the event with an ability to cancel it.
-enqueueEventWithCancellation :: MonadComp m => Double -> Event m () -> Event m (EventCancellation m)
+enqueueEventWithCancellation :: MonadDES m => Double -> Event m () -> Event m (EventCancellation m)
 enqueueEventWithCancellation t e =
   Event $ \p ->
-  do let s = runSession $ pointRun p
-     cancelledRef <- newProtoRef s False
-     cancellableRef <- newProtoRef s True
-     finishedRef <- newProtoRef s False
+  do let r = pointRun p
+     cancelledRef <- invokeSimulation r $ newRef False
+     cancellableRef <- invokeSimulation r $ newRef True
+     finishedRef <- invokeSimulation r $ newRef False
      let cancel =
            Event $ \p ->
-           do x <- readProtoRef cancellableRef
+           do x <- invokeEvent p $ readRef cancellableRef
               when x $
-                writeProtoRef cancelledRef True
+                invokeEvent p $ writeRef cancelledRef True
          cancelled =
-           Event $ \p -> readProtoRef cancelledRef
+           readRef cancelledRef
          finished =
-           Event $ \p -> readProtoRef finishedRef
+           readRef finishedRef
      invokeEvent p $
        enqueueEvent t $
        Event $ \p ->
-       do writeProtoRef cancellableRef False
-          x <- readProtoRef cancelledRef
+       do invokeEvent p $ writeRef cancellableRef False
+          x <- invokeEvent p $ readRef cancelledRef
           unless x $
             do invokeEvent p e
-               writeProtoRef finishedRef True
+               invokeEvent p $ writeRef finishedRef True
      return EventCancellation { cancelEvent   = cancel,
                                 eventCancelled = cancelled,
                                 eventFinished = finished }
 
 -- | Memoize the 'Event' computation, always returning the same value
 -- within a simulation run.
-memoEvent :: MonadComp m => Event m a -> Simulation m (Event m a)
+memoEvent :: MonadDES m => Event m a -> Simulation m (Event m a)
 memoEvent m =
   Simulation $ \r ->
-  do let s = runSession r
-     ref <- newProtoRef s Nothing
+  do ref <- invokeSimulation r $ newRef Nothing
      return $ Event $ \p ->
-       do x <- readProtoRef ref
+       do x <- invokeEvent p $ readRef ref
           case x of
             Just v -> return v
             Nothing ->
               do v <- invokeEvent p m
-                 writeProtoRef ref (Just v)
+                 invokeEvent p $ writeRef ref (Just v)
                  return v
 
 -- | Memoize the 'Event' computation, always returning the same value
@@ -249,23 +248,22 @@ memoEvent m =
 -- computation is always synchronized with the event queue which time
 -- flows in one direction only. This synchronization is a key difference
 -- between the 'Event' and 'Dynamics' computations.
-memoEventInTime :: MonadComp m => Event m a -> Simulation m (Event m a)
+memoEventInTime :: MonadDES m => Event m a -> Simulation m (Event m a)
 memoEventInTime m =
   Simulation $ \r ->
-  do let s = runSession r
-     ref <- newProtoRef s Nothing
+  do ref <- invokeSimulation r $ newRef Nothing
      return $ Event $ \p ->
-       do x <- readProtoRef ref
+       do x <- invokeEvent p $ readRef ref
           case x of
             Just (t, v) | t == pointTime p ->
               return v
             _ ->
               do v <- invokeEvent p m
-                 writeProtoRef ref (Just (pointTime p, v))
+                 invokeEvent p $ writeRef ref (Just (pointTime p, v))
                  return v
 
 -- | Enqueue the event which must be actuated with the current modeling time but later.
-yieldEvent :: MonadComp m => Event m () -> Event m ()
+yieldEvent :: MonadDES m => Event m () -> Event m ()
 yieldEvent m =
   Event $ \p ->
   invokeEvent p $
@@ -286,7 +284,7 @@ instance Monad m => Monoid (DisposableEvent m) where
   mappend (DisposableEvent x) (DisposableEvent y) = DisposableEvent $ x >> y
 
 -- | Show the debug message with the current simulation time.
-traceEvent :: MonadComp m => String -> Event m a -> Event m a
+traceEvent :: MonadDES m => String -> Event m a -> Event m a
 traceEvent message m =
   Event $ \p ->
   trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
