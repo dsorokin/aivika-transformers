@@ -256,21 +256,23 @@ instance Monad m => ParameterLift Parameter m where
   liftParameter = id
     
 -- | Exception handling within 'Parameter' computations.
-catchParameter :: (MonadComp m, Exception e) => Parameter m a -> (e -> Parameter m a) -> Parameter m a
+catchParameter :: (MonadException m, Exception e) => Parameter m a -> (e -> Parameter m a) -> Parameter m a
 catchParameter (Parameter m) h =
   Parameter $ \r -> 
   catchComp (m r) $ \e ->
   let Parameter m' = h e in m' r
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyParameter :: MonadComp m => Parameter m a -> Parameter m b -> Parameter m a
+finallyParameter :: MonadException m => Parameter m a -> Parameter m b -> Parameter m a
 finallyParameter (Parameter m) (Parameter m') =
   Parameter $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
-throwParameter :: (MonadComp m, Exception e) => e -> Parameter m a
-throwParameter = throw
+throwParameter :: (MonadException m, Exception e) => e -> Parameter m a
+throwParameter e =
+  Parameter $ \r ->
+  throwComp e
 
 instance MonadFix m => MonadFix (Parameter m) where
 

@@ -232,21 +232,23 @@ instance Monad m => ParameterLift Dynamics m where
   liftParameter (Parameter x) = Dynamics $ x . pointRun
   
 -- | Exception handling within 'Dynamics' computations.
-catchDynamics :: (MonadComp m, Exception e) => Dynamics m a -> (e -> Dynamics m a) -> Dynamics m a
+catchDynamics :: (MonadException m, Exception e) => Dynamics m a -> (e -> Dynamics m a) -> Dynamics m a
 catchDynamics (Dynamics m) h =
   Dynamics $ \p -> 
   catchComp (m p) $ \e ->
   let Dynamics m' = h e in m' p
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyDynamics :: MonadComp m => Dynamics m a -> Dynamics m b -> Dynamics m a
+finallyDynamics :: MonadException m => Dynamics m a -> Dynamics m b -> Dynamics m a
 finallyDynamics (Dynamics m) (Dynamics m') =
   Dynamics $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
-throwDynamics :: (MonadComp m, Exception e) => e -> Dynamics m a
-throwDynamics = throw
+throwDynamics :: (MonadException m, Exception e) => e -> Dynamics m a
+throwDynamics e =
+  Dynamics $ \p ->
+  throwComp e
 
 instance MonadFix m => MonadFix (Dynamics m) where
 

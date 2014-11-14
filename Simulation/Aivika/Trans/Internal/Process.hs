@@ -408,7 +408,7 @@ finallyProcess (Process m) (Process m') =
 -- functions like the stated one that use the 'throw' function but within the 'IO' computation,
 -- which allows already handling the exception.
 throwProcess :: (MonadDES m, Exception e) => e -> Process m a
-throwProcess = liftEvent . throw
+throwProcess = liftEvent . throwEvent
 
 -- | Execute the specified computations in parallel within
 -- the current computation and return their results. The cancellation

@@ -16,7 +16,7 @@ import Control.Monad.Trans
 import Control.Exception
 
 -- | A computation within which we can throw an exception.
-class MonadException m where
+class Monad m => MonadException m where
 
   -- | Catch an exception within the computation.
   catchComp :: Exception e => m a -> (e -> m a) -> m a

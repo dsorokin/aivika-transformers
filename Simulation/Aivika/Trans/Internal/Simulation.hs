@@ -135,21 +135,23 @@ instance Monad m => ParameterLift Simulation m where
   liftParameter (Parameter x) = Simulation x
     
 -- | Exception handling within 'Simulation' computations.
-catchSimulation :: (MonadComp m, Exception e) => Simulation m a -> (e -> Simulation m a) -> Simulation m a
+catchSimulation :: (MonadException m, Exception e) => Simulation m a -> (e -> Simulation m a) -> Simulation m a
 catchSimulation (Simulation m) h =
   Simulation $ \r -> 
   catchComp (m r) $ \e ->
   let Simulation m' = h e in m' r
                            
 -- | A computation with finalization part like the 'finally' function.
-finallySimulation :: MonadComp m => Simulation m a -> Simulation m b -> Simulation m a
+finallySimulation :: MonadException m => Simulation m a -> Simulation m b -> Simulation m a
 finallySimulation (Simulation m) (Simulation m') =
   Simulation $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
-throwSimulation :: (MonadComp m, Exception e) => e -> Simulation m a
-throwSimulation = throw
+throwSimulation :: (MonadException m, Exception e) => e -> Simulation m a
+throwSimulation e =
+  Simulation $ \r ->
+  throwComp e
 
 instance MonadFix m => MonadFix (Simulation m) where
 

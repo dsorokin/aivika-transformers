@@ -131,21 +131,23 @@ instance Monad m => ParameterLift Event m where
   liftParameter (Parameter x) = Event $ x . pointRun
 
 -- | Exception handling within 'Event' computations.
-catchEvent :: (MonadDES m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
+catchEvent :: (MonadException m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
 catchEvent (Event m) h =
   Event $ \p -> 
   catchComp (m p) $ \e ->
   let Event m' = h e in m' p
                            
 -- | A computation with finalization part like the 'finally' function.
-finallyEvent :: MonadDES m => Event m a -> Event m b -> Event m a
+finallyEvent :: MonadException m => Event m a -> Event m b -> Event m a
 finallyEvent (Event m) (Event m') =
   Event $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
-throwEvent :: (MonadDES m, Exception e) => e -> Event m a
-throwEvent = throw
+throwEvent :: (MonadException m, Exception e) => e -> Event m a
+throwEvent e =
+  Event $ \p ->
+  throwComp e
 
 instance MonadFix m => MonadFix (Event m) where
 
