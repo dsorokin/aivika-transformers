@@ -29,7 +29,7 @@ import Simulation.Aivika.Trans.Internal.Types
 
 -- | A prototype of the type class of monads based on which the simulation monads can be built. 
 class (Monad m,
-       ExceptionHandling m,
+       MonadException m,
        SessionMonad m,
        ProtoRefMonad m,
        ProtoArrayMonad m,

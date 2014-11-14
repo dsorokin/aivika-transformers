@@ -7,18 +7,18 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3
 --
--- It defines a type class of monads with 'IO' exception handling capabilities.
+-- It defines a type class of monads with exception handling capabilities.
 --
 module Simulation.Aivika.Trans.Exception
-       (ExceptionHandling(..)) where
+       (MonadException(..)) where
 
 import Control.Monad.Trans
 import Control.Exception
 
 -- | A computation within which we can throw an exception.
-class ExceptionHandling m where
+class MonadException m where
 
-  -- | Catch an 'IO' exception within the computation.
+  -- | Catch an exception within the computation.
   catchComp :: Exception e => m a -> (e -> m a) -> m a
 
   -- | Introduce a finalisation block.
@@ -27,7 +27,7 @@ class ExceptionHandling m where
   -- | Throw an exception.
   throwComp :: Exception e => e -> m a
 
-instance ExceptionHandling IO where
+instance MonadException IO where
 
   {-# INLINE catchComp #-}
   catchComp = catch

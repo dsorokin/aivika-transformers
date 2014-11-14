@@ -26,6 +26,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Dynamics.Memo.Unboxed.IO,
         module Simulation.Aivika.Trans.Dynamics.Random,
         module Simulation.Aivika.Trans.Event,
+        module Simulation.Aivika.Trans.Exception,
         module Simulation.Aivika.Trans.Generator,
         module Simulation.Aivika.Trans.Monad.DES,
         module Simulation.Aivika.Trans.Monad.SD,
@@ -70,6 +71,7 @@ import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed.IO
 import Simulation.Aivika.Trans.Dynamics.Random
 import Simulation.Aivika.Trans.Event
+import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Monad.DES
 import Simulation.Aivika.Trans.Monad.SD
