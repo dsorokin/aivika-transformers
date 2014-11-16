@@ -20,9 +20,10 @@ import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.IO
 
 -- | The 'MonadIO' based monad is an instance of 'MonadRef'.
-instance MonadIO m => MonadRef m where
+instance TemplateIO m => MonadRef m where
 
   -- | A type safe wrapper for the 'IORef' reference.
   newtype Ref m a = Ref { refValue :: IORef a }

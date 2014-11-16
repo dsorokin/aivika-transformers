@@ -29,6 +29,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Event,
         module Simulation.Aivika.Trans.Exception,
         module Simulation.Aivika.Trans.Generator,
+        module Simulation.Aivika.Trans.IO,
         module Simulation.Aivika.Trans.Net,
         module Simulation.Aivika.Trans.Parameter,
         module Simulation.Aivika.Trans.Parameter.Random,
@@ -74,6 +75,7 @@ import Simulation.Aivika.Trans.Dynamics.Random
 import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Generator
+import Simulation.Aivika.Trans.IO
 import Simulation.Aivika.Trans.Net
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Parameter.Random

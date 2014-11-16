@@ -27,13 +27,14 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
 import Simulation.Aivika.Trans.Dynamics.Extra
+import Simulation.Aivika.Trans.IO
 
 -- | Create a new 'IOUArray'.
 newIOUArray_ :: (Ix i, MArray IOUArray e IO) => (i, i) -> IO (IOUArray i e)
 newIOUArray_ = newArray_
 
 -- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
-instance (MonadIO m, MArray IOUArray e IO) => MonadMemo m e where
+instance (TemplateIO m, MArray IOUArray e IO) => MonadMemo m e where
 
   {-# INLINABLE memoDynamics #-}
   memoDynamics (Dynamics m) = 

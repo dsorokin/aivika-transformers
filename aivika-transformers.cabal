@@ -66,6 +66,7 @@ library
                      Simulation.Aivika.Trans.Event
                      Simulation.Aivika.Trans.Exception
                      Simulation.Aivika.Trans.Generator
+                     Simulation.Aivika.Trans.IO
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
