@@ -52,10 +52,10 @@ library
                      Simulation.Aivika.Trans.Circuit
                      Simulation.Aivika.Trans.Comp
                      Simulation.Aivika.Trans.Comp.IO
-                     Simulation.Aivika.Trans.Comp.Template
                      Simulation.Aivika.Trans.Cont
                      Simulation.Aivika.Trans.DoubleLinkedList
                      Simulation.Aivika.Trans.DES
+                     Simulation.Aivika.Trans.DES.IO
                      Simulation.Aivika.Trans.Dynamics
                      Simulation.Aivika.Trans.Dynamics.Extra
                      Simulation.Aivika.Trans.Dynamics.Memo
@@ -64,9 +64,9 @@ library
                      Simulation.Aivika.Trans.Dynamics.Memo.Unboxed.IO
                      Simulation.Aivika.Trans.Dynamics.Random
                      Simulation.Aivika.Trans.Event
+                     Simulation.Aivika.Trans.Event.IO
                      Simulation.Aivika.Trans.Exception
                      Simulation.Aivika.Trans.Generator
-                     Simulation.Aivika.Trans.IO
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
@@ -100,6 +100,7 @@ library
                      Simulation.Aivika.Trans.SystemDynamics
                      Simulation.Aivika.Trans.Table
                      Simulation.Aivika.Trans.Task
+                     Simulation.Aivika.Trans.Template
                      Simulation.Aivika.Trans.Transform
                      Simulation.Aivika.Trans.Transform.Extra
                      Simulation.Aivika.Trans.Transform.Memo

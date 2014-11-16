@@ -27,7 +27,7 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo
 import Simulation.Aivika.Trans.Dynamics.Extra
-import Simulation.Aivika.Trans.IO
+import Simulation.Aivika.Trans.Template
 
 -- | Create a new 'IOArray'.
 newIOArray_ :: Ix i => (i, i) -> IO (IOArray i e)

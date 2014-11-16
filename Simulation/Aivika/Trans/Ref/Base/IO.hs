@@ -20,7 +20,7 @@ import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Ref.Base
-import Simulation.Aivika.Trans.IO
+import Simulation.Aivika.Trans.Template
 
 -- | The 'MonadIO' based monad is an instance of 'MonadRef'.
 instance TemplateIO m => MonadRef m where

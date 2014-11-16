@@ -56,7 +56,6 @@ import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Comp.IO
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 

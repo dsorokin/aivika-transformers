@@ -2,45 +2,48 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Comp.Template
+-- Module     : Simulation.Aivika.Trans.Event.IO
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3
 --
--- The module defines the event queue.
+-- The module defines a template-based event queue.
 --
-module Simulation.Aivika.Trans.Comp.Template
-       (TemplateEventQueueing(..)) where
+module Simulation.Aivika.Trans.Event.IO (EventQueueing) where
 
 import Control.Monad
+import Control.Monad.Trans
 
-import qualified Simulation.Aivika.Trans.PriorityQueue as PQ
+import Data.IORef
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
+import qualified Simulation.Aivika.PriorityQueue as PQ
+
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.DES.IO
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Types
 
--- | A template-based implementation of the 'EventQueueing' class type.
-class ProtoMonadComp m => TemplateEventQueueing m 
-
-instance TemplateEventQueueing m => EventQueueing m where
+-- | A template-based implementation of the 'EventQueueing' type class.
+instance TemplateIO m => EventQueueing m where
 
   data EventQueue m =
-    EventQueue { queuePQ :: PQ.PriorityQueue m (Point m -> m ()),
+    EventQueue { queuePQ :: PQ.PriorityQueue (Point m -> m ()),
                  -- ^ the underlying priority queue
-                 queueBusy :: ProtoRef m Bool,
+                 queueBusy :: IORef Bool,
                  -- ^ whether the queue is currently processing events
-                 queueTime :: ProtoRef m Double
+                 queueTime :: IORef Double
                  -- ^ the actual time of the event queue
                }
   
-  newEventQueue session specs = 
-    do f <- newProtoRef session False
-       t <- newProtoRef session $ spcStartTime specs
-       pq <- PQ.newQueue session
+  newEventQueue session specs =
+    liftIO $
+    do f <- newIORef False
+       t <- newIORef $ spcStartTime specs
+       pq <- PQ.newQueue
        return EventQueue { queuePQ   = pq,
                            queueBusy = f,
                            queueTime = t }
@@ -48,7 +51,7 @@ instance TemplateEventQueueing m => EventQueueing m where
   enqueueEvent t (Event m) =
     Event $ \p ->
     let pq = queuePQ $ runEventQueue $ pointRun p
-    in PQ.enqueue pq t m
+    in liftIO $ PQ.enqueue pq t m
 
   runEventWith processing (Event e) =
     Dynamics $ \p ->
@@ -56,33 +59,34 @@ instance TemplateEventQueueing m => EventQueueing m where
        e p
 
   eventQueueCount =
-    Event $ PQ.queueCount . queuePQ . runEventQueue . pointRun
+    Event $
+    liftIO . PQ.queueCount . queuePQ . runEventQueue . pointRun
 
 -- | Process the pending events.
-processPendingEventsCore :: ProtoMonadComp m => Bool -> Dynamics m ()
+processPendingEventsCore :: TemplateIO m => Bool -> Dynamics m ()
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
            f = queueBusy q
-       f' <- readProtoRef f
+       f' <- liftIO $ readIORef f
        unless f' $
-         do writeProtoRef f True
+         do liftIO $ writeIORef f True
             call q p
-            writeProtoRef f False
+            liftIO $ writeIORef f False
   call q p =
     do let pq = queuePQ q
            r  = pointRun p
-       f <- PQ.queueNull pq
+       f <- liftIO $ PQ.queueNull pq
        unless f $
-         do (t2, c2) <- PQ.queueFront pq
+         do (t2, c2) <- liftIO $ PQ.queueFront pq
             let t = queueTime q
-            t' <- readProtoRef t
+            t' <- liftIO $ readIORef t
             when (t2 < t') $ 
               error "The time value is too small: processPendingEventsCore"
             when ((t2 < pointTime p) ||
                   (includingCurrentEvents && (t2 == pointTime p))) $
-              do writeProtoRef t t2
-                 PQ.dequeue pq
+              do liftIO $ writeIORef t t2
+                 liftIO $ PQ.dequeue pq
                  let sc = pointSpecs p
                      t0 = spcStartTime sc
                      dt = spcDT sc
@@ -93,12 +97,12 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
                  call q p
 
 -- | Process the pending events synchronously, i.e. without past.
-processPendingEvents :: ProtoMonadComp m => Bool -> Dynamics m ()
+processPendingEvents :: TemplateIO m => Bool -> Dynamics m ()
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
            t = queueTime q
-       t' <- readProtoRef t
+       t' <- liftIO $ readIORef t
        if pointTime p < t'
          then error $
               "The current time is less than " ++
@@ -107,23 +111,23 @@ processPendingEvents includingCurrentEvents = Dynamics r where
   m = processPendingEventsCore includingCurrentEvents
 
 -- | A memoized value.
-processEventsIncludingCurrent :: ProtoMonadComp m => Dynamics m ()
+processEventsIncludingCurrent :: TemplateIO m => Dynamics m ()
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
-processEventsIncludingEarlier :: ProtoMonadComp m => Dynamics m ()
+processEventsIncludingEarlier :: TemplateIO m => Dynamics m ()
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
-processEventsIncludingCurrentCore :: ProtoMonadComp m => Dynamics m ()
+processEventsIncludingCurrentCore :: TemplateIO m => Dynamics m ()
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
-processEventsIncludingEarlierCore :: ProtoMonadComp m => Dynamics m ()
+processEventsIncludingEarlierCore :: TemplateIO m => Dynamics m ()
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
-processEvents :: ProtoMonadComp m => EventProcessing -> Dynamics m ()
+processEvents :: TemplateIO m => EventProcessing -> Dynamics m ()
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
