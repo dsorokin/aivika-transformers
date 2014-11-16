@@ -63,7 +63,7 @@ import qualified Data.Array as A
 import System.IO
 
 import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Specs
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics

@@ -15,7 +15,7 @@ module Simulation.Aivika.Trans.Processor.RoundRobbin
 
 import Control.Monad
 
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.Process

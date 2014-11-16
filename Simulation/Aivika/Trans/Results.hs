@@ -134,8 +134,8 @@ import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Results.Locale
-import Simulation.Aivika.Trans.Monad.SD
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.SD
+import Simulation.Aivika.Trans.DES
 
 -- | A name used for indentifying the results when generating output.
 type ResultName = String

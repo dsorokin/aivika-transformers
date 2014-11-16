@@ -55,6 +55,7 @@ library
                      Simulation.Aivika.Trans.Comp.Template
                      Simulation.Aivika.Trans.Cont
                      Simulation.Aivika.Trans.DoubleLinkedList
+                     Simulation.Aivika.Trans.DES
                      Simulation.Aivika.Trans.Dynamics
                      Simulation.Aivika.Trans.Dynamics.Extra
                      Simulation.Aivika.Trans.Dynamics.Memo
@@ -65,8 +66,6 @@ library
                      Simulation.Aivika.Trans.Event
                      Simulation.Aivika.Trans.Exception
                      Simulation.Aivika.Trans.Generator
-                     Simulation.Aivika.Trans.Monad.SD
-                     Simulation.Aivika.Trans.Monad.DES
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
@@ -87,6 +86,7 @@ library
                      Simulation.Aivika.Trans.Results.Locale
                      Simulation.Aivika.Trans.Results
                      Simulation.Aivika.Trans.Results.IO
+                     Simulation.Aivika.Trans.SD
                      Simulation.Aivika.Trans.Session
                      Simulation.Aivika.Trans.Server
                      Simulation.Aivika.Trans.Signal

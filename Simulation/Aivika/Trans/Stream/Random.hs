@@ -27,7 +27,7 @@ import System.Random
 import Control.Monad
 import Control.Monad.Trans
 
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Parameter.Random
 import Simulation.Aivika.Trans.Simulation

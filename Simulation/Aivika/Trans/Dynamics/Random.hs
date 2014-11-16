@@ -33,7 +33,7 @@ import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
-import Simulation.Aivika.Trans.Monad.SD
+import Simulation.Aivika.Trans.SD
 
 -- | Computation that generates random numbers distributed uniformly and
 -- memoizes them in the integration time points.

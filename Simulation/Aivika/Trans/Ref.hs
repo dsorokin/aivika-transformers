@@ -27,7 +27,7 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Signal
 import qualified Simulation.Aivika.Trans.Ref.Base as B
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 
 -- | The 'Ref' type represents a mutable variable similar to the 'IORef' variable 
 -- but only dependent on the event queue, which allows synchronizing the reference

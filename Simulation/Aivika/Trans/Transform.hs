@@ -35,7 +35,7 @@ import Simulation.Aivika.Trans.Dynamics
 import qualified Simulation.Aivika.Trans.Dynamics.Memo as M
 import qualified Simulation.Aivika.Trans.Dynamics.Memo.Unboxed as MU
 import Simulation.Aivika.Trans.SystemDynamics
-import Simulation.Aivika.Trans.Monad.SD
+import Simulation.Aivika.Trans.SD
 
 -- | It allows representing an analogous circuit as an opposite to
 -- the digital one.

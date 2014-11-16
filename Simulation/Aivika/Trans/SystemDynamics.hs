@@ -69,7 +69,7 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Extra
 import Simulation.Aivika.Trans.Table
-import Simulation.Aivika.Trans.Monad.SD
+import Simulation.Aivika.Trans.SD
 
 import qualified Simulation.Aivika.Trans.Dynamics.Memo as M
 import qualified Simulation.Aivika.Trans.Dynamics.Memo.Unboxed as MU

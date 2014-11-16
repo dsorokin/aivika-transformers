@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Monad.SD
+-- Module     : Simulation.Aivika.Trans.SD
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -11,7 +11,7 @@
 --
 -- It defines a type class of monads for System Dynamics (SD).
 --
-module Simulation.Aivika.Trans.Monad.SD (MonadSD) where
+module Simulation.Aivika.Trans.SD (MonadSD) where
 
 import Simulation.Aivika.Trans.Comp
 import qualified Simulation.Aivika.Trans.Dynamics.Memo as M

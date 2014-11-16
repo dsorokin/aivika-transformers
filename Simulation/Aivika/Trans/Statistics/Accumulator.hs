@@ -24,7 +24,7 @@ import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Signal
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 
 -- | Represents an accumulator for the timing statistics.
 newtype TimingStatsAccumulator m a =

@@ -26,7 +26,7 @@ module Simulation.Aivika.Trans.Var.Unboxed
 import Data.Array
 
 import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics

@@ -20,6 +20,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Comp.IO,
         module Simulation.Aivika.Trans.Comp.Template,
         module Simulation.Aivika.Trans.Cont,
+        module Simulation.Aivika.Trans.DES,
         module Simulation.Aivika.Trans.Dynamics,
         module Simulation.Aivika.Trans.Dynamics.Extra,
         module Simulation.Aivika.Trans.Dynamics.Memo.Unboxed,
@@ -28,8 +29,6 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Event,
         module Simulation.Aivika.Trans.Exception,
         module Simulation.Aivika.Trans.Generator,
-        module Simulation.Aivika.Trans.Monad.DES,
-        module Simulation.Aivika.Trans.Monad.SD,
         module Simulation.Aivika.Trans.Net,
         module Simulation.Aivika.Trans.Parameter,
         module Simulation.Aivika.Trans.Parameter.Random,
@@ -43,6 +42,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Results,
         module Simulation.Aivika.Trans.Results.Locale,
         module Simulation.Aivika.Trans.Results.IO,
+        module Simulation.Aivika.Trans.SD,
         module Simulation.Aivika.Trans.Server,
         module Simulation.Aivika.Trans.Signal,
         module Simulation.Aivika.Trans.Simulation,
@@ -65,6 +65,7 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Comp.IO
 import Simulation.Aivika.Trans.Comp.Template
 import Simulation.Aivika.Trans.Cont
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Extra
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
@@ -73,8 +74,6 @@ import Simulation.Aivika.Trans.Dynamics.Random
 import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Generator
-import Simulation.Aivika.Trans.Monad.DES
-import Simulation.Aivika.Trans.Monad.SD
 import Simulation.Aivika.Trans.Net
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Parameter.Random
@@ -88,6 +87,7 @@ import Simulation.Aivika.Trans.Resource
 import Simulation.Aivika.Trans.Results
 import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.Results.IO
+import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Simulation

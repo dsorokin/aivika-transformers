@@ -21,7 +21,7 @@ module Simulation.Aivika.Trans.Transform.Memo.Unboxed
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
 import Simulation.Aivika.Trans.Transform
-import Simulation.Aivika.Trans.Monad.SD
+import Simulation.Aivika.Trans.SD
 
 -- | A transform that memoizes and order the computation in the integration time points
 -- using the interpolation that knows of the Runge-Kutta method. The values are

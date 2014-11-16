@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Monad.DES
+-- Module     : Simulation.Aivika.Trans.DES
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -11,7 +11,7 @@
 --
 -- It defines a type class of monads for Discrete Event Simulation (DES).
 --
-module Simulation.Aivika.Trans.Monad.DES (MonadDES) where
+module Simulation.Aivika.Trans.DES (MonadDES) where
 
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Ref.Base

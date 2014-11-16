@@ -59,7 +59,7 @@ import Control.Monad.Trans
 import Control.Arrow
 
 import Simulation.Aivika.Trans.Ref.Base
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics

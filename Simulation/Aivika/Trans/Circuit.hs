@@ -59,8 +59,8 @@ import Control.Arrow
 import Control.Monad.Fix
 
 import Simulation.Aivika.Trans.Ref.Base
-import Simulation.Aivika.Trans.Monad.DES
-import Simulation.Aivika.Trans.Monad.SD
+import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics

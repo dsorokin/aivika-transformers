@@ -92,7 +92,7 @@ import Control.Applicative
 
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Monad.DES
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
