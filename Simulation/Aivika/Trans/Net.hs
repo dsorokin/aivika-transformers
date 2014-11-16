@@ -1,4 +1,6 @@
 
+{-# LANGUAGE FlexibleContexts #-}
+
 -- |
 -- Module     : Simulation.Aivika.Trans.Net
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
@@ -188,7 +190,8 @@ netProcessor = Processor . loop
              return (b, loop x' as')
 
 -- | Transform the processor to a similar net (a more costly transformation).
-processorNet :: MonadDES m => Processor m a b -> Net m a b
+processorNet :: (MonadDES m, EnqueueStrategy m FCFS)
+                => Processor m a b -> Net m a b
 processorNet x =
   Net $ \a ->
   do readingA <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)

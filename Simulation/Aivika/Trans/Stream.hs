@@ -105,7 +105,7 @@ instance MonadDES m => Applicative (Stream m) where
   {-# INLINE (<*>) #-}
   (<*>) = apStream
 
-instance MonadDES m => Monoid (Stream m a) where
+instance (MonadDES m, EnqueueStrategy m FCFS) => Monoid (Stream m a) where
 
   {-# INLINE mempty #-}
   mempty  = emptyStream
@@ -286,7 +286,7 @@ partitionEitherStream s =
 
 -- | Split the input stream into the specified number of output streams
 -- after applying the 'FCFS' strategy for enqueuing the output requests.
-splitStream :: MonadDES m => Int -> Stream m a -> Simulation m [Stream m a]
+splitStream :: (MonadDES m, EnqueueStrategy m FCFS) => Int -> Stream m a -> Simulation m [Stream m a]
 splitStream = splitStreamQueueing FCFS
 
 -- | Split the input stream into the specified number of output streams.
@@ -340,7 +340,7 @@ splitStreamPrioritising s ps x =
 
 -- | Concatenate the input streams applying the 'FCFS' strategy and
 -- producing one output stream.
-concatStreams :: MonadDES m => [Stream m a] -> Stream m a
+concatStreams :: (MonadDES m, EnqueueStrategy m FCFS) => [Stream m a] -> Stream m a
 concatStreams = concatQueuedStreams FCFS
 
 -- | Concatenate the input streams producing one output stream.
@@ -348,7 +348,10 @@ concatStreams = concatQueuedStreams FCFS
 -- If you don't know what the strategy to apply, then you probably
 -- need the 'FCFS' strategy, or function 'concatStreams' that
 -- does namely this.
-concatQueuedStreams :: (MonadDES m, EnqueueStrategy m s)
+concatQueuedStreams :: (MonadDES m,
+                        EnqueueStrategy m s,
+                        EnqueueStrategy m FCFS,
+                        DequeueStrategy m FCFS)
                        => s
                        -- ^ the strategy applied for enqueuing the input data
                        -> [Stream m a]
@@ -379,7 +382,10 @@ concatQueuedStreams s streams = Cons z where
          return (a, xs)
 
 -- | Concatenate the input priority streams producing one output stream.
-concatPriorityStreams :: (MonadDES m, PriorityQueueStrategy m s p)
+concatPriorityStreams :: (MonadDES m,
+                          PriorityQueueStrategy m s p,
+                          EnqueueStrategy m FCFS,
+                          DequeueStrategy m FCFS)
                          => s
                          -- ^ the strategy applied for enqueuing the input data
                          -> [Stream m (p, a)]
@@ -410,7 +416,7 @@ concatPriorityStreams s streams = Cons z where
          return (a, xs)
 
 -- | Merge two streams applying the 'FCFS' strategy for enqueuing the input data.
-mergeStreams :: MonadDES m => Stream m a -> Stream m a -> Stream m a
+mergeStreams :: (MonadDES m, EnqueueStrategy m FCFS) => Stream m a -> Stream m a -> Stream m a
 mergeStreams = mergeQueuedStreams FCFS
 
 -- | Merge two streams.
@@ -418,7 +424,10 @@ mergeStreams = mergeQueuedStreams FCFS
 -- If you don't know what the strategy to apply, then you probably
 -- need the 'FCFS' strategy, or function 'mergeStreams' that
 -- does namely this.
-mergeQueuedStreams :: (MonadDES m, EnqueueStrategy m s)
+mergeQueuedStreams :: (MonadDES m,
+                       EnqueueStrategy m s,
+                       EnqueueStrategy m FCFS,
+                       DequeueStrategy m FCFS)
                       => s
                       -- ^ the strategy applied for enqueuing the input data
                       -> Stream m a
@@ -430,7 +439,10 @@ mergeQueuedStreams :: (MonadDES m, EnqueueStrategy m s)
 mergeQueuedStreams s x y = concatQueuedStreams s [x, y]
 
 -- | Merge two priority streams.
-mergePriorityStreams :: (MonadDES m, PriorityQueueStrategy m s p)
+mergePriorityStreams :: (MonadDES m,
+                         PriorityQueueStrategy m s p,
+                         EnqueueStrategy m FCFS,
+                         DequeueStrategy m FCFS)
                         => s
                         -- ^ the strategy applied for enqueuing the input data
                         -> Stream m (p, a)
@@ -471,7 +483,7 @@ sinkStream = p where
 -- You can think of this as the prefetched stream could place its latest 
 -- data item in some temporary space for later use, which is very useful 
 -- for modeling a sequence of separate and independent work places.
-prefetchStream :: MonadDES m => Stream m a -> Stream m a
+prefetchStream :: (MonadDES m, EnqueueStrategy m FCFS) => Stream m a -> Stream m a
 prefetchStream s = Cons z where
   z = do reading <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
          writing <- liftSimulation $ newResourceWithMaxCount FCFS 1 (Just 1)
@@ -506,7 +518,10 @@ prefetchStream s = Cons z where
 -- the stream and it is returned within the computation.
 --
 -- Cancel the stream's process to unsubscribe from the specified signal.
-signalStream :: MonadDES m => Signal m a -> Process m (Stream m a)
+signalStream :: (MonadDES m,
+                 EnqueueStrategy m FCFS,
+                 DequeueStrategy m FCFS)
+                => Signal m a -> Process m (Stream m a)
 signalStream s =
   do q <- liftEvent newFCFSQueue
      h <- liftEvent $

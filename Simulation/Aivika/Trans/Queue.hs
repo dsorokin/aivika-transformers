@@ -186,19 +186,30 @@ data QueueItem a =
             }
   
 -- | Create a new FCFS queue with the specified capacity.  
-newFCFSQueue :: MonadDES m => Int -> Event m (FCFSQueue m a)
+newFCFSQueue :: (MonadDES m,
+                 QueueStrategy m FCFS)
+                => Int -> Event m (FCFSQueue m a)
 newFCFSQueue = newQueue FCFS FCFS FCFS
   
 -- | Create a new LCFS queue with the specified capacity.  
-newLCFSQueue :: MonadDES m => Int -> Event m (LCFSQueue m a)  
+newLCFSQueue :: (MonadDES m,
+                 QueueStrategy m LCFS,
+                 QueueStrategy m FCFS)
+                => Int -> Event m (LCFSQueue m a)  
 newLCFSQueue = newQueue FCFS LCFS FCFS
   
 -- | Create a new SIRO queue with the specified capacity.  
-newSIROQueue :: MonadDES m => Int -> Event m (SIROQueue m a)  
+newSIROQueue :: (MonadDES m,
+                 QueueStrategy m SIRO,
+                 QueueStrategy m FCFS)
+                => Int -> Event m (SIROQueue m a)  
 newSIROQueue = newQueue FCFS SIRO FCFS
   
 -- | Create a new priority queue with the specified capacity.  
-newPriorityQueue :: MonadDES m => Int -> Event m (PriorityQueue m a)  
+newPriorityQueue :: (MonadDES m,
+                     QueueStrategy m StaticPriorities,
+                     QueueStrategy m FCFS)
+                    => Int -> Event m (PriorityQueue m a)  
 newPriorityQueue = newQueue FCFS StaticPriorities FCFS
   
 -- | Create a new queue with the specified strategies and capacity.  

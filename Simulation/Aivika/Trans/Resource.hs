@@ -87,7 +87,7 @@ data Resource m s =
 
 -- | Create a new FCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
-newFCFSResource :: MonadDES m
+newFCFSResource :: (MonadDES m, QueueStrategy m FCFS)
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (FCFSResource m)
@@ -95,7 +95,7 @@ newFCFSResource = newResource FCFS
 
 -- | Create a new FCFS resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newFCFSResourceWithMaxCount :: MonadDES m
+newFCFSResourceWithMaxCount :: (MonadDES m, QueueStrategy m FCFS)
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -105,7 +105,7 @@ newFCFSResourceWithMaxCount = newResourceWithMaxCount FCFS
 
 -- | Create a new LCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
-newLCFSResource :: MonadDES m
+newLCFSResource :: (MonadDES m, QueueStrategy m LCFS)
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (LCFSResource m)
@@ -113,7 +113,7 @@ newLCFSResource = newResource LCFS
 
 -- | Create a new LCFS resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newLCFSResourceWithMaxCount :: MonadDES m
+newLCFSResourceWithMaxCount :: (MonadDES m, QueueStrategy m LCFS)
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -123,7 +123,7 @@ newLCFSResourceWithMaxCount = newResourceWithMaxCount LCFS
 
 -- | Create a new SIRO resource with the specified initial count which value becomes
 -- the upper bound as well.
-newSIROResource :: MonadDES m
+newSIROResource :: (MonadDES m, QueueStrategy m SIRO)
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (SIROResource m)
@@ -131,7 +131,7 @@ newSIROResource = newResource SIRO
 
 -- | Create a new SIRO resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newSIROResourceWithMaxCount :: MonadDES m
+newSIROResourceWithMaxCount :: (MonadDES m, QueueStrategy m SIRO)
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -141,7 +141,7 @@ newSIROResourceWithMaxCount = newResourceWithMaxCount SIRO
 
 -- | Create a new priority resource with the specified initial count which value becomes
 -- the upper bound as well.
-newPriorityResource :: MonadDES m
+newPriorityResource :: (MonadDES m, QueueStrategy m StaticPriorities)
                        => Int
                        -- ^ the initial count (and maximal count too) of the resource
                        -> Simulation m (PriorityResource m)
@@ -149,7 +149,7 @@ newPriorityResource = newResource StaticPriorities
 
 -- | Create a new priority resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newPriorityResourceWithMaxCount :: MonadDES m
+newPriorityResourceWithMaxCount :: (MonadDES m, QueueStrategy m StaticPriorities)
                                    => Int
                                    -- ^ the initial count of the resource
                                    -> Maybe Int

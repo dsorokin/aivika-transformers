@@ -1,5 +1,5 @@
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, UndecidableInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Processor
@@ -123,7 +123,7 @@ instance MonadDES m => ArrowZero (Processor m) where
 
   zeroArrow = emptyProcessor
 
-instance MonadDES m => ArrowPlus (Processor m) where
+instance (MonadDES m, EnqueueStrategy m FCFS) => ArrowPlus (Processor m) where
 
   (Processor f) <+> (Processor g) =
     Processor $ \xs ->
@@ -165,6 +165,8 @@ processorUsingId pid (Processor f) =
 -- function 'processorParallel' that does namely this.
 processorQueuedParallel :: (MonadDES m,
                             EnqueueStrategy m si,
+                            EnqueueStrategy m FCFS,
+                            DequeueStrategy m FCFS,
                             EnqueueStrategy m so)
                            => si
                            -- ^ the strategy applied for enqueuing the input data
@@ -187,6 +189,8 @@ processorQueuedParallel si so ps =
 -- | Launches the specified processors in parallel using priorities for combining the output.
 processorPrioritisingOutputParallel :: (MonadDES m,
                                         EnqueueStrategy m si,
+                                        EnqueueStrategy m FCFS,
+                                        DequeueStrategy m FCFS,
                                         PriorityQueueStrategy m so po)
                                        => si
                                        -- ^ the strategy applied for enqueuing the input data
@@ -209,6 +213,8 @@ processorPrioritisingOutputParallel si so ps =
 -- | Launches the specified processors in parallel using priorities for consuming the intput.
 processorPrioritisingInputParallel :: (MonadDES m,
                                        PriorityQueueStrategy m si pi,
+                                       EnqueueStrategy m FCFS,
+                                       DequeueStrategy m FCFS,
                                        EnqueueStrategy m so)
                                       => si
                                       -- ^ the strategy applied for enqueuing the input data
@@ -232,6 +238,8 @@ processorPrioritisingInputParallel si so ps =
 -- the input and combining the output.
 processorPrioritisingInputOutputParallel :: (MonadDES m,
                                              PriorityQueueStrategy m si pi,
+                                             EnqueueStrategy m FCFS,
+                                             DequeueStrategy m FCFS,
                                              PriorityQueueStrategy m so po)
                                             => si
                                             -- ^ the strategy applied for enqueuing the input data
@@ -254,12 +262,15 @@ processorPrioritisingInputOutputParallel si so ps =
 -- | Launches the processors in parallel consuming the same input stream and producing
 -- a combined output stream. This version applies the 'FCFS' strategy both for input
 -- and output, which suits the most part of uses cases.
-processorParallel :: MonadDES m => [Processor m a b] -> Processor m a b
+processorParallel :: (MonadDES m,
+                      EnqueueStrategy m FCFS,
+                      DequeueStrategy m FCFS)
+                     => [Processor m a b] -> Processor m a b
 processorParallel = processorQueuedParallel FCFS FCFS
 
 -- | Launches the processors sequentially using the 'prefetchProcessor' between them
 -- to model an autonomous work of each of the processors specified.
-processorSeq :: MonadDES m => [Processor m a a] -> Processor m a a
+processorSeq :: (MonadDES m, EnqueueStrategy m FCFS) => [Processor m a a] -> Processor m a a
 processorSeq []  = emptyProcessor
 processorSeq [p] = p
 processorSeq (p : ps) = p >>> prefetchProcessor >>> processorSeq ps
@@ -374,7 +385,8 @@ queueProcessorLoopMerging merge enqueue dequeue =
 -- merges two input streams of data: one stream that come from the external source and 
 -- another stream of data returned by the loop. The first stream has a priority over 
 -- the second one.
-queueProcessorLoopSeq :: MonadDES m
+queueProcessorLoopSeq :: (MonadDES m,
+                          EnqueueStrategy m FCFS)
                          => (a -> Process m ())
                          -- ^ enqueue the input item and wait
                          -- while the queue is full if required
@@ -427,7 +439,7 @@ queueProcessorLoopParallel enqueue dequeue =
 -- You can think of this as the prefetched processor could place its latest 
 -- data item in some temporary space for later use, which is very useful 
 -- for modeling a sequence of separate and independent work places.
-prefetchProcessor :: MonadDES m => Processor m a a
+prefetchProcessor :: (MonadDES m, EnqueueStrategy m FCFS) => Processor m a a
 prefetchProcessor = Processor prefetchStream
 
 -- | Convert the specified signal transform to a processor.
@@ -441,7 +453,10 @@ prefetchProcessor = Processor prefetchStream
 -- The former is passive, while the latter is active.
 --
 -- Cancel the processor's process to unsubscribe from the signals provided.
-signalProcessor :: MonadDES m => (Signal m a -> Signal m b) -> Processor m a b
+signalProcessor :: (MonadDES m,
+                    EnqueueStrategy m FCFS,
+                    DequeueStrategy m FCFS)
+                   => (Signal m a -> Signal m b) -> Processor m a b
 signalProcessor f =
   Processor $ \xs ->
   Cons $
@@ -460,7 +475,10 @@ signalProcessor f =
 -- The former is passive, while the latter is active.
 --
 -- Cancel the returned process to unsubscribe from the signal specified.
-processorSignaling :: MonadDES m => Processor m a b -> Signal m a -> Process m (Signal m b)
+processorSignaling :: (MonadDES m,
+                       EnqueueStrategy m FCFS,
+                       DequeueStrategy m FCFS)
+                      => Processor m a b -> Signal m a -> Process m (Signal m b)
 processorSignaling (Processor f) sa =
   do xs <- signalStream sa
      let ys = f xs
