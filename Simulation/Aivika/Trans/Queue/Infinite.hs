@@ -135,30 +135,19 @@ data QueueItem a =
             }
   
 -- | Create a new infinite FCFS queue.  
-newFCFSQueue :: (MonadDES m,
-                 QueueStrategy m FCFS)
-                => Event m (FCFSQueue m a)
+newFCFSQueue :: MonadDES m => Event m (FCFSQueue m a)
 newFCFSQueue = newQueue FCFS FCFS
   
 -- | Create a new infinite LCFS queue.  
-newLCFSQueue :: (MonadDES m,
-                 QueueStrategy m LCFS,
-                 QueueStrategy m FCFS)
-                => Event m (LCFSQueue m a)  
+newLCFSQueue :: MonadDES m => Event m (LCFSQueue m a)  
 newLCFSQueue = newQueue LCFS FCFS
   
 -- | Create a new infinite SIRO queue.  
-newSIROQueue :: (MonadDES m,
-                 QueueStrategy m SIRO,
-                 QueueStrategy m FCFS)
-                => Event m (SIROQueue m a)  
+newSIROQueue :: MonadDES m => Event m (SIROQueue m a)  
 newSIROQueue = newQueue SIRO FCFS
   
 -- | Create a new infinite priority queue.  
-newPriorityQueue :: (MonadDES m,
-                     QueueStrategy m StaticPriorities,
-                     QueueStrategy m FCFS)
-                    => Event m (PriorityQueue m a)  
+newPriorityQueue :: MonadDES m => Event m (PriorityQueue m a)  
 newPriorityQueue = newQueue StaticPriorities FCFS
   
 -- | Create a new infinite queue with the specified strategies.  
