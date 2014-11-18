@@ -23,138 +23,135 @@ module Simulation.Aivika.Trans.DoubleLinkedList
 
 import Control.Monad
 
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
-import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Simulation
+import Simulation.Aivika.Trans.Event
 
 -- | A cell of the double-linked list.
 data DoubleLinkedItem m a = 
   DoubleLinkedItem { itemVal  :: a,
-                     itemPrev :: ProtoRef m (Maybe (DoubleLinkedItem m a)),
-                     itemNext :: ProtoRef m (Maybe (DoubleLinkedItem m a)) }
+                     itemPrev :: Ref m (Maybe (DoubleLinkedItem m a)),
+                     itemNext :: Ref m (Maybe (DoubleLinkedItem m a)) }
   
 -- | The 'DoubleLinkedList' type represents an imperative double-linked list.
 data DoubleLinkedList m a =  
-  DoubleLinkedList { listSession :: Session m,
-                     listHead :: ProtoRef m (Maybe (DoubleLinkedItem m a)),
-                     listTail :: ProtoRef m (Maybe (DoubleLinkedItem m a)), 
-                     listSize :: ProtoRef m Int }
+  DoubleLinkedList { listHead :: Ref m (Maybe (DoubleLinkedItem m a)),
+                     listTail :: Ref m (Maybe (DoubleLinkedItem m a)), 
+                     listSize :: Ref m Int }
 
 -- | Test whether the list is empty.
-listNull :: ProtoRefMonad m => DoubleLinkedList m a -> m Bool
+listNull :: MonadDES m => DoubleLinkedList m a -> Event m Bool
 listNull x =
-  do head <- readProtoRef (listHead x) 
+  do head <- readRef (listHead x) 
      case head of
        Nothing -> return True
        Just _  -> return False
     
 -- | Return the number of elements in the list.
-listCount :: ProtoRefMonad m => DoubleLinkedList m a -> m Int
-listCount x = readProtoRef (listSize x)
+listCount :: MonadDES m => DoubleLinkedList m a -> Event m Int
+listCount x = readRef (listSize x)
 
 -- | Create a new list.
-newList :: ProtoRefMonad m => Session m -> m (DoubleLinkedList m a)
-newList s =
-  do head <- newProtoRef s Nothing 
-     tail <- newProtoRef s Nothing
-     size <- newProtoRef s 0
-     return DoubleLinkedList { listSession = s,
-                               listHead = head,
+newList :: MonadDES m => Simulation m (DoubleLinkedList m a)
+newList =
+  do head <- newRef Nothing 
+     tail <- newRef Nothing
+     size <- newRef 0
+     return DoubleLinkedList { listHead = head,
                                listTail = tail,
                                listSize = size }
 
 -- | Insert a new element in the beginning.
-listInsertFirst :: ProtoRefMonad m => DoubleLinkedList m a -> a -> m ()
+listInsertFirst :: MonadDES m => DoubleLinkedList m a -> a -> Event m ()
 listInsertFirst x v =
-  do let s = listSession x
-     size <- readProtoRef (listSize x)
-     writeProtoRef (listSize x) (size + 1)
-     head <- readProtoRef (listHead x)
+  do size <- readRef (listSize x)
+     writeRef (listSize x) (size + 1)
+     head <- readRef (listHead x)
      case head of
        Nothing ->
-         do prev <- newProtoRef s Nothing
-            next <- newProtoRef s Nothing
+         do prev <- liftSimulation $ newRef Nothing
+            next <- liftSimulation $ newRef Nothing
             let item = Just DoubleLinkedItem { itemVal = v, 
                                                itemPrev = prev, 
                                                itemNext = next }
-            writeProtoRef (listHead x) item
-            writeProtoRef (listTail x) item
+            writeRef (listHead x) item
+            writeRef (listTail x) item
        Just h ->
-         do prev <- newProtoRef s Nothing
-            next <- newProtoRef s head
+         do prev <- liftSimulation $ newRef Nothing
+            next <- liftSimulation $ newRef head
             let item = Just DoubleLinkedItem { itemVal = v,
                                                itemPrev = prev,
                                                itemNext = next }
-            writeProtoRef (itemPrev h) item
-            writeProtoRef (listHead x) item
+            writeRef (itemPrev h) item
+            writeRef (listHead x) item
 
 -- | Add a new element to the end.
-listAddLast :: ProtoRefMonad m => DoubleLinkedList m a -> a -> m ()
+listAddLast :: MonadDES m => DoubleLinkedList m a -> a -> Event m ()
 listAddLast x v =
-  do let s = listSession x
-     size <- readProtoRef (listSize x)
-     writeProtoRef (listSize x) (size + 1)
-     tail <- readProtoRef (listTail x)
+  do size <- readRef (listSize x)
+     writeRef (listSize x) (size + 1)
+     tail <- readRef (listTail x)
      case tail of
        Nothing ->
-         do prev <- newProtoRef s Nothing
-            next <- newProtoRef s Nothing
+         do prev <- liftSimulation $ newRef Nothing
+            next <- liftSimulation $ newRef Nothing
             let item = Just DoubleLinkedItem { itemVal = v, 
                                                itemPrev = prev, 
                                                itemNext = next }
-            writeProtoRef (listHead x) item
-            writeProtoRef (listTail x) item
+            writeRef (listHead x) item
+            writeRef (listTail x) item
        Just t ->
-         do prev <- newProtoRef s tail
-            next <- newProtoRef s Nothing
+         do prev <- liftSimulation $ newRef tail
+            next <- liftSimulation $ newRef Nothing
             let item = Just DoubleLinkedItem { itemVal = v,
                                                itemPrev = prev,
                                                itemNext = next }
-            writeProtoRef (itemNext t) item
-            writeProtoRef (listTail x) item
+            writeRef (itemNext t) item
+            writeRef (listTail x) item
 
 -- | Remove the first element.
-listRemoveFirst :: ProtoRefMonad m => DoubleLinkedList m a -> m ()
+listRemoveFirst :: MonadDES m => DoubleLinkedList m a -> Event m ()
 listRemoveFirst x =
-  do head <- readProtoRef (listHead x) 
+  do head <- readRef (listHead x) 
      case head of
        Nothing ->
          error "Empty list: listRemoveFirst"
        Just h ->
-         do size  <- readProtoRef (listSize x)
-            writeProtoRef (listSize x) (size - 1)
-            head' <- readProtoRef (itemNext h)
+         do size <- readRef (listSize x)
+            writeRef (listSize x) (size - 1)
+            head' <- readRef (itemNext h)
             case head' of
               Nothing ->
-                do writeProtoRef (listHead x) Nothing
-                   writeProtoRef (listTail x) Nothing
+                do writeRef (listHead x) Nothing
+                   writeRef (listTail x) Nothing
               Just h' ->
-                do writeProtoRef (itemPrev h') Nothing
-                   writeProtoRef (listHead x) head'
+                do writeRef (itemPrev h') Nothing
+                   writeRef (listHead x) head'
 
 -- | Remove the last element.
-listRemoveLast :: ProtoRefMonad m => DoubleLinkedList m a -> m ()
+listRemoveLast :: MonadDES m => DoubleLinkedList m a -> Event m ()
 listRemoveLast x =
-  do tail <- readProtoRef (listTail x) 
+  do tail <- readRef (listTail x) 
      case tail of
        Nothing ->
          error "Empty list: listRemoveLast"
        Just t ->
-         do size  <- readProtoRef (listSize x)
-            writeProtoRef (listSize x) (size - 1)
-            tail' <- readProtoRef (itemPrev t)
+         do size <- readRef (listSize x)
+            writeRef (listSize x) (size - 1)
+            tail' <- readRef (itemPrev t)
             case tail' of
               Nothing ->
-                do writeProtoRef (listHead x) Nothing
-                   writeProtoRef (listTail x) Nothing
+                do writeRef (listHead x) Nothing
+                   writeRef (listTail x) Nothing
               Just t' ->
-                do writeProtoRef (itemNext t') Nothing
-                   writeProtoRef (listTail x) tail'
+                do writeRef (itemNext t') Nothing
+                   writeRef (listTail x) tail'
 
 -- | Return the first element.
-listFirst :: ProtoRefMonad m => DoubleLinkedList m a -> m a
+listFirst :: MonadDES m => DoubleLinkedList m a -> Event m a
 listFirst x =
-  do head <- readProtoRef (listHead x)
+  do head <- readRef (listHead x)
      case head of
        Nothing ->
          error "Empty list: listFirst"
@@ -162,9 +159,9 @@ listFirst x =
          return $ itemVal h
 
 -- | Return the last element.
-listLast :: ProtoRefMonad m => DoubleLinkedList m a -> m a
+listLast :: MonadDES m => DoubleLinkedList m a -> Event m a
 listLast x =
-  do tail <- readProtoRef (listTail x)
+  do tail <- readRef (listTail x)
      case tail of
        Nothing ->
          error "Empty list: listLast"

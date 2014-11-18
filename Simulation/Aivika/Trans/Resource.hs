@@ -123,7 +123,7 @@ newLCFSResourceWithMaxCount = newResourceWithMaxCount LCFS
 
 -- | Create a new SIRO resource with the specified initial count which value becomes
 -- the upper bound as well.
-newSIROResource :: MonadDES m
+newSIROResource :: (MonadDES m, QueueStrategy m SIRO)
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (SIROResource m)
@@ -131,7 +131,7 @@ newSIROResource = newResource SIRO
 
 -- | Create a new SIRO resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newSIROResourceWithMaxCount :: MonadDES m
+newSIROResourceWithMaxCount :: (MonadDES m, QueueStrategy m SIRO)
                                => Int
                                -- ^ the initial count of the resource
                                -> Maybe Int
@@ -141,7 +141,7 @@ newSIROResourceWithMaxCount = newResourceWithMaxCount SIRO
 
 -- | Create a new priority resource with the specified initial count which value becomes
 -- the upper bound as well.
-newPriorityResource :: MonadDES m
+newPriorityResource :: (MonadDES m, QueueStrategy m StaticPriorities)
                        => Int
                        -- ^ the initial count (and maximal count too) of the resource
                        -> Simulation m (PriorityResource m)
@@ -149,7 +149,7 @@ newPriorityResource = newResource StaticPriorities
 
 -- | Create a new priority resource with the specified initial and maximum counts,
 -- where 'Nothing' means that the resource has no upper bound.
-newPriorityResourceWithMaxCount :: MonadDES m
+newPriorityResourceWithMaxCount :: (MonadDES m, QueueStrategy m StaticPriorities)
                                    => Int
                                    -- ^ the initial count of the resource
                                    -> Maybe Int

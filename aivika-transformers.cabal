@@ -80,6 +80,7 @@ library
                      Simulation.Aivika.Trans.Queue
                      Simulation.Aivika.Trans.Queue.Infinite
                      Simulation.Aivika.Trans.QueueStrategy
+                     Simulation.Aivika.Trans.QueueStrategy.IO
                      Simulation.Aivika.Trans.Ref
                      Simulation.Aivika.Trans.Ref.Base
                      Simulation.Aivika.Trans.Ref.Base.IO
