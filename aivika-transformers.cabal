@@ -48,6 +48,7 @@ library
     exposed-modules: Simulation.Aivika.Trans
                      Simulation.Aivika.Trans.Activity
                      Simulation.Aivika.Trans.Agent
+                     Simulation.Aivika.Trans.Array
                      Simulation.Aivika.Trans.Arrival
                      Simulation.Aivika.Trans.Circuit
                      Simulation.Aivika.Trans.Comp
