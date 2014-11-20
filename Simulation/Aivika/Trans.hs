@@ -58,7 +58,8 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Transform,
         module Simulation.Aivika.Trans.Transform.Extra,
         module Simulation.Aivika.Trans.Transform.Memo.Unboxed,
-        module Simulation.Aivika.Trans.Var.Unboxed) where
+        module Simulation.Aivika.Trans.Var.Unboxed,
+        module Simulation.Aivika.Trans.Var.Unboxed.IO) where
 
 import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Agent
@@ -107,3 +108,4 @@ import Simulation.Aivika.Trans.Transform
 import Simulation.Aivika.Trans.Transform.Extra
 import Simulation.Aivika.Trans.Transform.Memo.Unboxed
 import Simulation.Aivika.Trans.Var.Unboxed
+import Simulation.Aivika.Trans.Var.Unboxed.IO

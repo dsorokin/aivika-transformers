@@ -27,7 +27,6 @@ module Simulation.Aivika.Trans.Internal.Types
         invokeDynamics,
         invokeEvent) where
 
-import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.Generator
 
 -- | It defines the simulation specs.
@@ -47,7 +46,6 @@ data Method = Euler          -- ^ Euler's method
 
 -- | It indentifies the simulation run.
 data Run m = Run { runSpecs :: Specs m,            -- ^ the simulation specs
-                   runSession :: Session m,        -- ^ the simulation session
                    runIndex :: Int,       -- ^ the current simulation run index
                    runCount :: Int,       -- ^ the total number of runs in this experiment
                    runEventQueue :: EventQueue m,  -- ^ the event queue
@@ -133,7 +131,7 @@ class EventQueueing m where
   data EventQueue m :: *
 
   -- | Create a new event queue by the specified specs with simulation session.
-  newEventQueue :: Session m -> Specs m -> m (EventQueue m)
+  newEventQueue :: Specs m -> m (EventQueue m)
 
   -- | Enqueue the event which must be actuated at the specified time.
   enqueueEvent :: Double -> Event m () -> Event m ()

@@ -30,7 +30,6 @@ module Simulation.Aivika.Trans.Internal.Parameter
         simulationIndex,
         simulationCount,
         simulationSpecs,
-        simulationSession,
         simulationEventQueue,
         starttime,
         stoptime,
@@ -53,9 +52,9 @@ import qualified Data.IntMap as M
 import Data.Array
 
 import Simulation.Aivika.Trans.Exception
-import Simulation.Aivika.Trans.Session
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 
@@ -72,13 +71,11 @@ instance Monad m => Monad (Parameter m) where
        m' r
 
 -- | Run the parameter using the specified specs.
-runParameter :: MonadComp m => Parameter m a -> Specs m -> m a
+runParameter :: MonadDES m => Parameter m a -> Specs m -> m a
 runParameter (Parameter m) sc =
-  do s <- newSession
-     q <- newEventQueue s sc
-     g <- newGenerator s $ spcGeneratorType sc
+  do q <- newEventQueue sc
+     g <- newGenerator $ spcGeneratorType sc
      m Run { runSpecs = sc,
-             runSession = s,
              runIndex = 1,
              runCount = 1,
              runEventQueue = q,
@@ -86,13 +83,11 @@ runParameter (Parameter m) sc =
 
 -- | Run the given number of parameters using the specified specs, 
 --   where each parameter is distinguished by its index 'parameterIndex'.
-runParameters :: MonadComp m => Parameter m a -> Specs m -> Int -> [m a]
+runParameters :: MonadDES m => Parameter m a -> Specs m -> Int -> [m a]
 runParameters (Parameter m) sc runs = map f [1 .. runs]
-  where f i = do s <- newSession
-                 q <- newEventQueue s sc
-                 g <- newGenerator s $ spcGeneratorType sc
+  where f i = do q <- newEventQueue sc
+                 g <- newGenerator $ spcGeneratorType sc
                  m Run { runSpecs = sc,
-                         runSession = s,
                          runIndex = i,
                          runCount = runs,
                          runEventQueue = q,
@@ -337,9 +332,3 @@ simulationEventQueue :: Monad m => Parameter m (EventQueue m)
 {-# INLINE simulationEventQueue #-}
 simulationEventQueue =
   Parameter $ return . runEventQueue
-
--- | Return the simulation session.
-simulationSession :: Monad m => Parameter m (Session m)
-{-# INLINE simulationSession #-}
-simulationSession =
-  Parameter $ return . runSession

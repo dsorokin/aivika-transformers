@@ -1396,7 +1396,7 @@ instance MonadDES m => ResultComputing B.Ref m where
   computeResultData = Just . B.readRef
   computeResultSignal = const UnknownResultSignal
 
-instance MonadDES m => ResultComputing Var m where
+instance MonadVar m => ResultComputing Var m where
 
   computeResultData = Just . readVar
   computeResultSignal = ResultSignal . varChanged_

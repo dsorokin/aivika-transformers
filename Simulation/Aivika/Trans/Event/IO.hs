@@ -22,7 +22,6 @@ import qualified Simulation.Aivika.PriorityQueue as PQ
 
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.DES
-import Simulation.Aivika.Trans.DES.IO
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Types
@@ -39,7 +38,7 @@ instance TemplateIO m => EventQueueing m where
                  -- ^ the actual time of the event queue
                }
   
-  newEventQueue session specs =
+  newEventQueue specs =
     liftIO $
     do f <- newIORef False
        t <- newIORef $ spcStartTime specs

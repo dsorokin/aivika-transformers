@@ -15,6 +15,7 @@ module Simulation.Aivika.Trans.DES (MonadDES) where
 
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Ref.Base
+import Simulation.Aivika.Trans.Internal.Types
 
 -- | It defines a type class of monads for Discrete Event Simulation (DES).
-class (MonadComp m, MonadRef m) => MonadDES m
+class (MonadComp m, MonadRef m, EventQueueing m) => MonadDES m

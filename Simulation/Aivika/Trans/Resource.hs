@@ -59,10 +59,6 @@ import Simulation.Aivika.Trans.Internal.Cont
 import Simulation.Aivika.Trans.Internal.Process
 import Simulation.Aivika.Trans.QueueStrategy
 
-import qualified Simulation.Aivika.Trans.DoubleLinkedList as DLL 
-import qualified Simulation.Aivika.Trans.Vector as V
-import qualified Simulation.Aivika.Trans.PriorityQueue as PQ
-
 -- | The ordinary FCFS (First Come - First Serviced) resource.
 type FCFSResource m = Resource m FCFS
 

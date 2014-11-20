@@ -20,6 +20,7 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Ref.Base.IO
+import Simulation.Aivika.Trans.Event.IO
 
--- | A template-based implementation of the 'MoandDES' type class.
+-- | A template-based implementation of the 'MonadDES' type class.
 instance TemplateIO m => MonadDES m

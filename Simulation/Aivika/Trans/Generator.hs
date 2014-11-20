@@ -19,8 +19,6 @@ import System.Random
 
 import Data.IORef
 
-import Simulation.Aivika.Trans.Session
-
 -- | Defines a monad whithin which computation the random number generator can work.
 class (Functor m, Monad m) => GeneratorMonad m where
 
@@ -55,15 +53,14 @@ class (Functor m, Monad m) => GeneratorMonad m where
   -- with the specified probability and number of trials.
   generateBinomial :: Generator m -> Double -> Int -> m Int
   
-  -- | Create a new random number generator by the specified type with current session.
-  newGenerator :: Session m -> GeneratorType m -> m (Generator m)
+  -- | Create a new random number generator.
+  newGenerator :: GeneratorType m -> m (Generator m)
 
-  -- | Create a new random generator by the specified standard generator within current session.
-  newRandomGenerator :: RandomGen g => Session m -> g -> m (Generator m)
+  -- | Create a new random generator by the specified standard generator.
+  newRandomGenerator :: RandomGen g => g -> m (Generator m)
 
-  -- | Create a new random generator by the specified uniform generator of numbers
-  -- from 0 to 1 within current session.
-  newRandomGenerator01 :: Session m -> m Double -> m (Generator m)
+  -- | Create a new random generator by the specified uniform generator of numbers from 0 to 1.
+  newRandomGenerator01 :: m Double -> m (Generator m)
 
 instance GeneratorMonad IO where
 
@@ -95,26 +92,26 @@ instance GeneratorMonad IO where
   {-# SPECIALISE INLINE generateBinomial :: Generator IO -> Double -> Int -> IO Int #-}
   generateBinomial = generateBinomial01 . generator01
 
-  newGenerator session tp =
+  newGenerator tp =
     case tp of
       SimpleGenerator ->
-        newStdGen >>= newRandomGenerator session
+        newStdGen >>= newRandomGenerator
       SimpleGeneratorWithSeed x ->
-        newRandomGenerator session $ mkStdGen x
+        newRandomGenerator $ mkStdGen x
       CustomGenerator g ->
         g
       CustomGenerator01 g ->
-        newRandomGenerator01 session g
+        newRandomGenerator01 g
 
-  newRandomGenerator session g = 
+  newRandomGenerator g = 
     do r <- newIORef g
        let g01 = do g <- readIORef r
                     let (x, g') = random g
                     writeIORef r g'
                     return x
-       newRandomGenerator01 session g01
+       newRandomGenerator01 g01
 
-  newRandomGenerator01 session g01 =
+  newRandomGenerator01 g01 =
     do gNormal01 <- newNormalGenerator01 g01
        return Generator { generator01 = g01,
                           generatorNormal01 = gNormal01 }

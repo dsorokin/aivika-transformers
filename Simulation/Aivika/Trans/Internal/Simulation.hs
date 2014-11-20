@@ -34,10 +34,9 @@ import Control.Monad.Fix
 import Control.Applicative
 
 import Simulation.Aivika.Trans.Exception
-import Simulation.Aivika.Trans.Session
-import Simulation.Aivika.Trans.ProtoRef
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
@@ -57,13 +56,11 @@ instance Monad m => Monad (Simulation m) where
        m' r
 
 -- | Run the simulation using the specified specs.
-runSimulation :: MonadComp m => Simulation m a -> Specs m -> m a
+runSimulation :: MonadDES m => Simulation m a -> Specs m -> m a
 runSimulation (Simulation m) sc =
-  do s <- newSession
-     q <- newEventQueue s sc
-     g <- newGenerator s $ spcGeneratorType sc
+  do q <- newEventQueue sc
+     g <- newGenerator $ spcGeneratorType sc
      m Run { runSpecs = sc,
-             runSession = s,
              runIndex = 1,
              runCount = 1,
              runEventQueue = q,
@@ -71,13 +68,11 @@ runSimulation (Simulation m) sc =
 
 -- | Run the given number of simulations using the specified specs, 
 --   where each simulation is distinguished by its index 'simulationIndex'.
-runSimulations :: MonadComp m => Simulation m a -> Specs m -> Int -> [m a]
+runSimulations :: MonadDES m => Simulation m a -> Specs m -> Int -> [m a]
 runSimulations (Simulation m) sc runs = map f [1 .. runs]
-  where f i = do s <- newSession
-                 q <- newEventQueue s sc
-                 g <- newGenerator s $ spcGeneratorType sc
+  where f i = do q <- newEventQueue sc
+                 g <- newGenerator $ spcGeneratorType sc
                  m Run { runSpecs = sc,
-                         runSession = s,
                          runIndex = i,
                          runCount = runs,
                          runEventQueue = q,

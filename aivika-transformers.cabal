@@ -71,13 +71,9 @@ library
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
-                     Simulation.Aivika.Trans.PriorityQueue
                      Simulation.Aivika.Trans.Process
                      Simulation.Aivika.Trans.Processor
                      Simulation.Aivika.Trans.Processor.RoundRobbin
-                     Simulation.Aivika.Trans.ProtoArray
-                     Simulation.Aivika.Trans.ProtoArray.Unboxed
-                     Simulation.Aivika.Trans.ProtoRef
                      Simulation.Aivika.Trans.Queue
                      Simulation.Aivika.Trans.Queue.Infinite
                      Simulation.Aivika.Trans.QueueStrategy
@@ -90,7 +86,6 @@ library
                      Simulation.Aivika.Trans.Results
                      Simulation.Aivika.Trans.Results.IO
                      Simulation.Aivika.Trans.SD
-                     Simulation.Aivika.Trans.Session
                      Simulation.Aivika.Trans.Server
                      Simulation.Aivika.Trans.Signal
                      Simulation.Aivika.Trans.Simulation
@@ -107,11 +102,10 @@ library
                      Simulation.Aivika.Trans.Transform.Extra
                      Simulation.Aivika.Trans.Transform.Memo
                      Simulation.Aivika.Trans.Transform.Memo.Unboxed
-                     Simulation.Aivika.Trans.Unboxed
                      Simulation.Aivika.Trans.Var
+                     Simulation.Aivika.Trans.Var.IO
                      Simulation.Aivika.Trans.Var.Unboxed
-                     Simulation.Aivika.Trans.Vector
-                     Simulation.Aivika.Trans.Vector.Unboxed
+                     Simulation.Aivika.Trans.Var.Unboxed.IO
 
     other-modules:   Simulation.Aivika.Trans.Internal.Cont
                      Simulation.Aivika.Trans.Internal.Dynamics

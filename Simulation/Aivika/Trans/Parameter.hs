@@ -26,7 +26,6 @@ module Simulation.Aivika.Trans.Parameter
         simulationIndex,
         simulationCount,
         simulationSpecs,
-        simulationSession,
         generatorParameter,
         starttime,
         stoptime,
