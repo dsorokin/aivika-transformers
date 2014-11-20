@@ -23,7 +23,7 @@ import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Internal.Types
 
 -- | A type class of monads based on which the simulation monads can be built. 
-class (Monad m, MonadException m, GeneratorMonad m) => MonadComp m
+class (Monad m, MonadException m, MonadGenerator m) => MonadComp m
 
 -- | A variant of the standard 'MonadTrans' type class with one difference:
 -- the computation that will be lifted into another must be 'MonadComp' instead of
