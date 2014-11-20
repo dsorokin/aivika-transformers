@@ -27,7 +27,8 @@ import qualified Simulation.Aivika.PriorityQueue as PQ
 import qualified Simulation.Aivika.Vector as V
 
 -- | A template-based implementation of the 'StaticPriorities' queue strategy.
-instance (MonadDES m, TemplateIO m) => QueueStrategy m StaticPriorities where
+instance (MonadDES m, MonadIO m, MonadTemplate m)
+         => QueueStrategy m StaticPriorities where
 
   -- | A queue used by the 'StaticPriorities' strategy.
   newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue a)
@@ -40,7 +41,8 @@ instance (MonadDES m, TemplateIO m) => QueueStrategy m StaticPriorities where
     liftIO $ PQ.queueNull q
 
 -- | A template-based implementation of the 'StaticPriorities' queue strategy.
-instance (QueueStrategy m StaticPriorities, TemplateIO m) => DequeueStrategy m StaticPriorities where
+instance (QueueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
+         => DequeueStrategy m StaticPriorities where
 
   strategyDequeue (StaticPriorityQueue q) =
     liftIO $
@@ -49,13 +51,15 @@ instance (QueueStrategy m StaticPriorities, TemplateIO m) => DequeueStrategy m S
        return i
 
 -- | A template-based implementation of the 'StaticPriorities' queue strategy.
-instance (DequeueStrategy m StaticPriorities, TemplateIO m) => PriorityQueueStrategy m StaticPriorities Double where
+instance (DequeueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
+         => PriorityQueueStrategy m StaticPriorities Double where
 
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i =
     liftIO $ PQ.enqueue q p i
 
 -- | A template-based implementation of the 'SIRO' queue strategy.
-instance (MonadDES m, TemplateIO m) => QueueStrategy m SIRO where
+instance (MonadDES m, MonadIO m, MonadTemplate m)
+         => QueueStrategy m SIRO where
 
   -- | A queue used by the 'SIRO' strategy.
   newtype StrategyQueue m SIRO a = SIROQueue (V.Vector a)
@@ -70,7 +74,8 @@ instance (MonadDES m, TemplateIO m) => QueueStrategy m SIRO where
        return (n == 0)
 
 -- | A template-based implementation of the 'SIRO' queue strategy.
-instance (QueueStrategy m SIRO, TemplateIO m) => DequeueStrategy m SIRO where
+instance (QueueStrategy m SIRO, MonadIO m, MonadTemplate m)
+         => DequeueStrategy m SIRO where
 
   strategyDequeue (SIROQueue q) =
     do n <- liftIO $ V.vectorCount q
@@ -80,7 +85,8 @@ instance (QueueStrategy m SIRO, TemplateIO m) => DequeueStrategy m SIRO where
        return x
 
 -- | A template-based implementation of the 'SIRO' queue strategy.
-instance (DequeueStrategy m SIRO, TemplateIO m) => EnqueueStrategy m SIRO where
+instance (DequeueStrategy m SIRO, MonadIO m, MonadTemplate m)
+         => EnqueueStrategy m SIRO where
 
   strategyEnqueue (SIROQueue q) i =
     liftIO $ V.appendVector q i

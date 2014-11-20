@@ -10,12 +10,11 @@
 -- It defines an explicit type sub-class of 'IO'-based monads on top of which
 -- the simulation monads can be automatically generated.
 --
-module Simulation.Aivika.Trans.Template (TemplateIO) where
+module Simulation.Aivika.Trans.Template (MonadTemplate) where
 
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.Comp
 
--- It defines an explicit type sub-class of 'IO'-based monads on top of which
--- the simulation monads can be automatically generated.
-class (MonadComp m, MonadIO m) => TemplateIO m
+-- It defines a type class based on which the simulation monads can be automatically generated.
+class Monad m => MonadTemplate m

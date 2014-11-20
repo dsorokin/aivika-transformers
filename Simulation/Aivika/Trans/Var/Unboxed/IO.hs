@@ -34,7 +34,7 @@ import Simulation.Aivika.Unboxed
 import qualified Simulation.Aivika.Vector.Unboxed as UV
 
 -- | The 'MonadIO' based monad is an instance of 'MonadVar'.
-instance (MonadDES m, TemplateIO m, Unboxed a) => MonadVar m a where
+instance (MonadDES m, MonadIO m, MonadTemplate m, Unboxed a) => MonadVar m a where
 
   -- | A template-based implementation of the variable.
   data Var m a = 

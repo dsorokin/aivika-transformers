@@ -52,11 +52,9 @@ library
                      Simulation.Aivika.Trans.Arrival
                      Simulation.Aivika.Trans.Circuit
                      Simulation.Aivika.Trans.Comp
-                     Simulation.Aivika.Trans.Comp.IO
                      Simulation.Aivika.Trans.Cont
                      Simulation.Aivika.Trans.DoubleLinkedList
                      Simulation.Aivika.Trans.DES
-                     Simulation.Aivika.Trans.DES.IO
                      Simulation.Aivika.Trans.Dynamics
                      Simulation.Aivika.Trans.Dynamics.Extra
                      Simulation.Aivika.Trans.Dynamics.Memo

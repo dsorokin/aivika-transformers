@@ -31,7 +31,7 @@ import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Array
 
 -- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
-instance TemplateIO m => MonadMemo m where
+instance (MonadIO m, MonadTemplate m) => MonadMemo m where
 
   {-# INLINABLE memoDynamics #-}
   memoDynamics (Dynamics m) = 

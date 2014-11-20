@@ -27,7 +27,7 @@ import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Types
 
 -- | A template-based implementation of the 'EventQueueing' type class.
-instance TemplateIO m => EventQueueing m where
+instance (MonadIO m, MonadTemplate m) => EventQueueing m where
 
   data EventQueue m =
     EventQueue { queuePQ :: PQ.PriorityQueue (Point m -> m ()),
@@ -62,7 +62,7 @@ instance TemplateIO m => EventQueueing m where
     liftIO . PQ.queueCount . queuePQ . runEventQueue . pointRun
 
 -- | Process the pending events.
-processPendingEventsCore :: TemplateIO m => Bool -> Dynamics m ()
+processPendingEventsCore :: (MonadIO m, MonadTemplate m) => Bool -> Dynamics m ()
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -96,7 +96,7 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
                  call q p
 
 -- | Process the pending events synchronously, i.e. without past.
-processPendingEvents :: TemplateIO m => Bool -> Dynamics m ()
+processPendingEvents :: (MonadIO m, MonadTemplate m) => Bool -> Dynamics m ()
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -110,23 +110,23 @@ processPendingEvents includingCurrentEvents = Dynamics r where
   m = processPendingEventsCore includingCurrentEvents
 
 -- | A memoized value.
-processEventsIncludingCurrent :: TemplateIO m => Dynamics m ()
+processEventsIncludingCurrent :: (MonadIO m, MonadTemplate m) => Dynamics m ()
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
-processEventsIncludingEarlier :: TemplateIO m => Dynamics m ()
+processEventsIncludingEarlier :: (MonadIO m, MonadTemplate m) => Dynamics m ()
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
-processEventsIncludingCurrentCore :: TemplateIO m => Dynamics m ()
+processEventsIncludingCurrentCore :: (MonadIO m, MonadTemplate m) => Dynamics m ()
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
-processEventsIncludingEarlierCore :: TemplateIO m => Dynamics m ()
+processEventsIncludingEarlierCore :: (MonadIO m, MonadTemplate m) => Dynamics m ()
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
-processEvents :: TemplateIO m => EventProcessing -> Dynamics m ()
+processEvents :: (MonadIO m, MonadTemplate m) => EventProcessing -> Dynamics m ()
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
