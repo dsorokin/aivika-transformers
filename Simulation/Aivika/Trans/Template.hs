@@ -14,7 +14,7 @@ module Simulation.Aivika.Trans.Template (MonadTemplate) where
 
 import Control.Monad.Trans
 
-import Simulation.Aivika.Trans.Comp
-
 -- It defines a type class based on which the simulation monads can be automatically generated.
 class Monad m => MonadTemplate m
+
+instance MonadTemplate IO

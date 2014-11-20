@@ -23,7 +23,7 @@ import Data.IORef
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Template
 
-instance (Functor m, MonadIO m) => MonadGenerator m where
+instance (Functor m, MonadIO m, MonadTemplate m) => MonadGenerator m where
 
   data Generator m =
     Generator { generator01 :: m Double,
