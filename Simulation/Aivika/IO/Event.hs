@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Event.IO
+-- Module     : Simulation.Aivika.IO.Event
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -11,7 +11,7 @@
 --
 -- The module defines a template-based event queue.
 --
-module Simulation.Aivika.Trans.Event.IO (EventQueueing) where
+module Simulation.Aivika.IO.Event (EventQueue) where
 
 import Control.Monad
 import Control.Monad.Trans

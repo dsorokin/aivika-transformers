@@ -1,8 +1,8 @@
 
-{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Dynamics.Memo.IO
+-- Module     : Simulation.Aivika.IO.Dynamics.Memo.Unboxed
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -12,7 +12,7 @@
 -- The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
 --
 
-module Simulation.Aivika.Trans.Dynamics.Memo.IO where
+module Simulation.Aivika.IO.Dynamics.Memo.Unboxed where
 
 import Control.Monad
 import Control.Monad.Trans
@@ -25,13 +25,13 @@ import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
-import Simulation.Aivika.Trans.Dynamics.Memo
+import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
 import Simulation.Aivika.Trans.Dynamics.Extra
 import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Array
 
 -- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
-instance (MonadIO m, MonadTemplate m) => MonadMemo m where
+instance (MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e where
 
   {-# INLINABLE memoDynamics #-}
   memoDynamics (Dynamics m) = 
@@ -40,7 +40,7 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
            phs = integPhaseBnds sc
            ns  = integIterationBnds sc
            (ph1, ph2) = phs 
-       arr   <- liftIO $ newIOArray_ (ns, phs)
+       arr   <- liftIO $ newIOUArray_ (ns, phs)
        nref  <- liftIO $ newIORef 0
        phref <- liftIO $ newIORef 0
        let r p = 
@@ -73,7 +73,7 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
     Simulation $ \r ->
     do let sc = runSpecs r
            ns = integIterationBnds sc
-       arr  <- liftIO $ newIOArray_ ns
+       arr  <- liftIO $ newIOUArray_ ns
        nref <- liftIO $ newIORef 0
        let r p =
              do let sc = pointSpecs p
@@ -89,25 +89,6 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
                               a `seq` liftIO $ writeArray arr n' a
                               liftIO $ writeIORef nref (n' + 1)
                               loop (n' + 1)
-                n' <- liftIO $ readIORef nref
-                loop n'
-       return $ discreteDynamics $ Dynamics r
-
-  {-# INLINABLE iterateDynamics #-}
-  iterateDynamics (Dynamics m) = 
-    Simulation $ \r ->
-    do let sc = runSpecs r
-       nref <- liftIO $ newIORef 0
-       let r p =
-             do let sc = pointSpecs p
-                    n  = pointIteration p
-                    loop n' = 
-                      unless (n' > n) $
-                      let p' = p { pointIteration = n', pointPhase = 0,
-                                   pointTime = basicTime sc n' 0 }
-                      in do a <- m p'
-                            a `seq` liftIO $ writeIORef nref (n' + 1)
-                            loop (n' + 1)
                 n' <- liftIO $ readIORef nref
                 loop n'
        return $ discreteDynamics $ Dynamics r

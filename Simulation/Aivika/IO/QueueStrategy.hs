@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, FunctionalDependencies, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.QueueStrategy.IO
+-- Module     : Simulation.Aivika.IO.QueueStrategy
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -11,7 +11,7 @@
 --
 -- This module defines some queue strategy instances.
 --
-module Simulation.Aivika.Trans.QueueStrategy.IO where
+module Simulation.Aivika.IO.QueueStrategy where
 
 import Control.Monad.Trans
 

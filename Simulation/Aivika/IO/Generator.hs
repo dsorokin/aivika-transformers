@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Generator.IO
+-- Module     : Simulation.Aivika.IO.Generator
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -11,7 +11,7 @@
 --
 -- Below is defined a random number generator.
 --
-module Simulation.Aivika.Trans.Generator.IO (Generator(..)) where
+module Simulation.Aivika.IO.Generator (Generator) where
 
 import Control.Monad
 import Control.Monad.Trans

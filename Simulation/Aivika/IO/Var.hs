@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Var.IO
+-- Module     : Simulation.Aivika.IO.Var
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -14,7 +14,7 @@
 -- allows using the variable in differential and difference equations of
 -- System Dynamics within hybrid discrete-continuous simulation.
 --
-module Simulation.Aivika.Trans.Var.IO where
+module Simulation.Aivika.IO.Var where
 
 import Control.Monad.Trans
 

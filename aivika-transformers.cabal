@@ -45,7 +45,15 @@ flag haste-inst
 
 library
 
-    exposed-modules: Simulation.Aivika.Trans
+    exposed-modules: Simulation.Aivika.IO.Dynamics.Memo
+                     Simulation.Aivika.IO.Dynamics.Memo.Unboxed
+                     Simulation.Aivika.IO.Event
+                     Simulation.Aivika.IO.Generator
+                     Simulation.Aivika.IO.QueueStrategy
+                     Simulation.Aivika.IO.Ref.Base
+                     Simulation.Aivika.IO.Var
+                     Simulation.Aivika.IO.Var.Unboxed
+                     Simulation.Aivika.Trans
                      Simulation.Aivika.Trans.Activity
                      Simulation.Aivika.Trans.Agent
                      Simulation.Aivika.Trans.Array
@@ -58,15 +66,11 @@ library
                      Simulation.Aivika.Trans.Dynamics
                      Simulation.Aivika.Trans.Dynamics.Extra
                      Simulation.Aivika.Trans.Dynamics.Memo
-                     Simulation.Aivika.Trans.Dynamics.Memo.IO
                      Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
-                     Simulation.Aivika.Trans.Dynamics.Memo.Unboxed.IO
                      Simulation.Aivika.Trans.Dynamics.Random
                      Simulation.Aivika.Trans.Event
-                     Simulation.Aivika.Trans.Event.IO
                      Simulation.Aivika.Trans.Exception
                      Simulation.Aivika.Trans.Generator
-                     Simulation.Aivika.Trans.Generator.IO
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
@@ -76,10 +80,8 @@ library
                      Simulation.Aivika.Trans.Queue
                      Simulation.Aivika.Trans.Queue.Infinite
                      Simulation.Aivika.Trans.QueueStrategy
-                     Simulation.Aivika.Trans.QueueStrategy.IO
                      Simulation.Aivika.Trans.Ref
                      Simulation.Aivika.Trans.Ref.Base
-                     Simulation.Aivika.Trans.Ref.Base.IO
                      Simulation.Aivika.Trans.Resource
                      Simulation.Aivika.Trans.Results.Locale
                      Simulation.Aivika.Trans.Results
@@ -102,9 +104,7 @@ library
                      Simulation.Aivika.Trans.Transform.Memo
                      Simulation.Aivika.Trans.Transform.Memo.Unboxed
                      Simulation.Aivika.Trans.Var
-                     Simulation.Aivika.Trans.Var.IO
                      Simulation.Aivika.Trans.Var.Unboxed
-                     Simulation.Aivika.Trans.Var.Unboxed.IO
 
     other-modules:   Simulation.Aivika.Trans.Internal.Cont
                      Simulation.Aivika.Trans.Internal.Dynamics

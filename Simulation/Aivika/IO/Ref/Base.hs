@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
 
 -- |
--- Module     : Simulation.Aivika.Trans.Ref.Base.IO
+-- Module     : Simulation.Aivika.IO.Ref.Base
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
@@ -11,7 +11,7 @@
 --
 -- The 'MonadIO' based monad is an instance of 'MonadRef'.
 --
-module Simulation.Aivika.Trans.Ref.Base.IO where
+module Simulation.Aivika.IO.Ref.Base where
 
 import Data.IORef
 
