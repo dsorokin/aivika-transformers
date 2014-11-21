@@ -15,6 +15,7 @@ import Control.Exception
 
 import Simulation.Aivika.Trans.Exception
 
+-- | An instance of the type class.
 instance MonadException IO where
 
   {-# INLINE catchComp #-}
