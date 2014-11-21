@@ -45,15 +45,7 @@ flag haste-inst
 
 library
 
-    exposed-modules: Simulation.Aivika.IO.Dynamics.Memo
-                     Simulation.Aivika.IO.Dynamics.Memo.Unboxed
-                     Simulation.Aivika.IO.Event
-                     Simulation.Aivika.IO.Generator
-                     Simulation.Aivika.IO.QueueStrategy
-                     Simulation.Aivika.IO.Ref.Base
-                     Simulation.Aivika.IO.Var
-                     Simulation.Aivika.IO.Var.Unboxed
-                     Simulation.Aivika.Trans
+    exposed-modules: Simulation.Aivika.Trans
                      Simulation.Aivika.Trans.Activity
                      Simulation.Aivika.Trans.Agent
                      Simulation.Aivika.Trans.Array
@@ -105,6 +97,15 @@ library
                      Simulation.Aivika.Trans.Transform.Memo.Unboxed
                      Simulation.Aivika.Trans.Var
                      Simulation.Aivika.Trans.Var.Unboxed
+                     Simulation.Aivika.IO
+                     Simulation.Aivika.IO.Dynamics.Memo
+                     Simulation.Aivika.IO.Dynamics.Memo.Unboxed
+                     Simulation.Aivika.IO.Event
+                     Simulation.Aivika.IO.Generator
+                     Simulation.Aivika.IO.QueueStrategy
+                     Simulation.Aivika.IO.Ref.Base
+                     Simulation.Aivika.IO.Var
+                     Simulation.Aivika.IO.Var.Unboxed
 
     other-modules:   Simulation.Aivika.Trans.Internal.Cont
                      Simulation.Aivika.Trans.Internal.Dynamics

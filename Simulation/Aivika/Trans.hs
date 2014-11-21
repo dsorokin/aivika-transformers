@@ -8,16 +8,10 @@
 -- Tested with: GHC 7.8.3
 --
 -- This module re-exports the most part of the library functionality.
--- But there are modules that must be imported explicitly, though.
+-- There are modules that must be imported explicitly, though.
 --
 module Simulation.Aivika.Trans
        (-- * Modules
-        module Simulation.Aivika.IO.Dynamics.Memo.Unboxed,
-        module Simulation.Aivika.IO.Event,
-        module Simulation.Aivika.IO.Generator,
-        module Simulation.Aivika.IO.QueueStrategy,
-        module Simulation.Aivika.IO.Ref.Base,
-        module Simulation.Aivika.IO.Var.Unboxed,
         module Simulation.Aivika.Trans.Activity,
         module Simulation.Aivika.Trans.Agent,
         module Simulation.Aivika.Trans.Arrival,
@@ -60,12 +54,6 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Transform.Memo.Unboxed,
         module Simulation.Aivika.Trans.Var.Unboxed) where
 
-import Simulation.Aivika.IO.Dynamics.Memo.Unboxed
-import Simulation.Aivika.IO.Event
-import Simulation.Aivika.IO.Generator
-import Simulation.Aivika.IO.QueueStrategy
-import Simulation.Aivika.IO.Ref.Base
-import Simulation.Aivika.IO.Var.Unboxed
 import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Agent
 import Simulation.Aivika.Trans.Arrival
