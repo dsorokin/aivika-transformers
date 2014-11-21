@@ -12,6 +12,7 @@
 --
 module Simulation.Aivika.Trans
        (-- * Modules
+        module Simulation.Aivika.IO.Comp,
         module Simulation.Aivika.IO.Dynamics.Memo.Unboxed,
         module Simulation.Aivika.IO.Event,
         module Simulation.Aivika.IO.Exception,
@@ -21,6 +22,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.IO.Ref.Base,
         module Simulation.Aivika.IO.Var.Unboxed) where
 
+import Simulation.Aivika.IO.Comp
 import Simulation.Aivika.IO.Dynamics.Memo.Unboxed
 import Simulation.Aivika.IO.Event
 import Simulation.Aivika.IO.Exception
