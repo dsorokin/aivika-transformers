@@ -103,6 +103,7 @@ library
                      Simulation.Aivika.IO.Event
                      Simulation.Aivika.IO.Generator
                      Simulation.Aivika.IO.QueueStrategy
+                     Simulation.Aivika.IO.Signal
                      Simulation.Aivika.IO.Ref.Base
                      Simulation.Aivika.IO.Var
                      Simulation.Aivika.IO.Var.Unboxed

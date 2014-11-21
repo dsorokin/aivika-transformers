@@ -39,12 +39,6 @@ module Simulation.Aivika.Trans.Signal
         newSignalInIntegTimes,
         newSignalInStartTime,
         newSignalInStopTime,
-        -- * Signal History
-        SignalHistory,
-        signalHistorySignal,
-        newSignalHistory,
-        newSignalHistoryStartingWith,
-        readSignalHistory,
         -- * Signalable Computations
         Signalable(..),
         signalableChanged,
@@ -68,9 +62,6 @@ import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Arrival (Arrival(..))
-
-import qualified Simulation.Aivika.Vector as V
-import qualified Simulation.Aivika.Vector.Unboxed as UV
 
 -- | The signal source that can publish its signal.
 data SignalSource m a =
@@ -258,49 +249,6 @@ apSignal f m =
 emptySignal :: MonadDES m => Signal m a
 emptySignal =
   Signal { handleSignal = \h -> return mempty }
-                                    
--- | Represents the history of the signal values.
-data SignalHistory m a =
-  SignalHistory { signalHistorySignal :: Signal m a,  
-                  -- ^ The signal for which the history is created.
-                  signalHistoryTimes  :: UV.Vector Double,
-                  signalHistoryValues :: V.Vector a }
-
--- | Create a history of the signal values.
-newSignalHistory :: (MonadDES m, MonadIO m) => Signal m a -> Event m (SignalHistory m a)
-newSignalHistory =
-  newSignalHistoryStartingWith Nothing
-
--- | Create a history of the signal values starting with
--- the optional initial value.
-newSignalHistoryStartingWith :: (MonadDES m, MonadIO m) => Maybe a -> Signal m a -> Event m (SignalHistory m a)
-newSignalHistoryStartingWith init signal =
-  Event $ \p ->
-  do ts <- liftIO UV.newVector
-     xs <- liftIO V.newVector
-     case init of
-       Nothing -> return ()
-       Just a ->
-         liftIO $
-         do UV.appendVector ts (pointTime p)
-            V.appendVector xs a
-     invokeEvent p $
-       handleSignal_ signal $ \a ->
-       Event $ \p ->
-       liftIO $
-       do UV.appendVector ts (pointTime p)
-          V.appendVector xs a
-     return SignalHistory { signalHistorySignal = signal,
-                            signalHistoryTimes  = ts,
-                            signalHistoryValues = xs }
-       
--- | Read the history of signal values.
-readSignalHistory :: (MonadDES m, MonadIO m) => SignalHistory m a -> Event m (Array Int Double, Array Int a)
-readSignalHistory history =
-  Event $ \p ->
-  do xs <- liftIO $ UV.freezeVector (signalHistoryTimes history)
-     ys <- liftIO $ V.freezeVector (signalHistoryValues history)
-     return (xs, ys)     
      
 -- | Trigger the signal with the current time.
 triggerSignalWithCurrentTime :: MonadDES m => SignalSource m Double -> Event m ()
