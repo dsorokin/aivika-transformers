@@ -106,6 +106,7 @@ library
                      Simulation.Aivika.IO.Exception
                      Simulation.Aivika.IO.Generator
                      Simulation.Aivika.IO.QueueStrategy
+                     Simulation.Aivika.IO.SD
                      Simulation.Aivika.IO.Signal
                      Simulation.Aivika.IO.Ref.Base
                      Simulation.Aivika.IO.Var
