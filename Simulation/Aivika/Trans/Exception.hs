@@ -12,7 +12,6 @@
 module Simulation.Aivika.Trans.Exception
        (MonadException(..)) where
 
-import Control.Monad.Trans
 import Control.Exception
 
 -- | A computation within which we can throw an exception.
@@ -26,14 +25,3 @@ class Monad m => MonadException m where
 
   -- | Throw an exception.
   throwComp :: Exception e => e -> m a
-
-instance MonadException IO where
-
-  {-# INLINE catchComp #-}
-  catchComp = catch
-
-  {-# INLINE finallyComp #-}
-  finallyComp = finally
-
-  {-# INLINE throwComp #-}
-  throwComp = throw

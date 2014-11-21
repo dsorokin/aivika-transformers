@@ -101,6 +101,7 @@ library
                      Simulation.Aivika.IO.Dynamics.Memo
                      Simulation.Aivika.IO.Dynamics.Memo.Unboxed
                      Simulation.Aivika.IO.Event
+                     Simulation.Aivika.IO.Exception
                      Simulation.Aivika.IO.Generator
                      Simulation.Aivika.IO.QueueStrategy
                      Simulation.Aivika.IO.Signal

@@ -14,6 +14,7 @@ module Simulation.Aivika.Trans
        (-- * Modules
         module Simulation.Aivika.IO.Dynamics.Memo.Unboxed,
         module Simulation.Aivika.IO.Event,
+        module Simulation.Aivika.IO.Exception,
         module Simulation.Aivika.IO.Generator,
         module Simulation.Aivika.IO.QueueStrategy,
         module Simulation.Aivika.IO.Signal,
@@ -22,6 +23,7 @@ module Simulation.Aivika.Trans
 
 import Simulation.Aivika.IO.Dynamics.Memo.Unboxed
 import Simulation.Aivika.IO.Event
+import Simulation.Aivika.IO.Exception
 import Simulation.Aivika.IO.Generator
 import Simulation.Aivika.IO.QueueStrategy
 import Simulation.Aivika.IO.Signal
