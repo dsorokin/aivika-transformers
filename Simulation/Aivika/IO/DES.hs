@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3
 --
--- It instantiates a class of monads for Discrete Event Simulation (DES).
+-- It instantiates a class of 'IO'-based monads for Discrete Event Simulation (DES).
 --
 module Simulation.Aivika.IO.DES where
 
