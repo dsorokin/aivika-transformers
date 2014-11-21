@@ -45,17 +45,15 @@ instance (MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e whe
        let r p = 
              do let n  = pointIteration p
                     ph = pointPhase p
-                    i  = (n, ph)
                     loop n' ph' = 
                       if (n' > n) || ((n' == n) && (ph' > ph)) 
                       then 
-                        liftIO $ readArray arr i
+                        liftIO $ readArray arr (ph, n)
                       else 
                         let p' = p { pointIteration = n', pointPhase = ph',
                                      pointTime = basicTime sc n' ph' }
-                            i' = (n', ph')
                         in do a <- m p'
-                              a `seq` liftIO $ writeArray arr i' a
+                              a `seq` liftIO $ writeArray arr (ph', n') a
                               if ph' >= phu 
                                 then do liftIO $ writeIORef phref 0
                                         liftIO $ writeIORef nref (n' + 1)
