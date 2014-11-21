@@ -10,7 +10,7 @@
 -- This module re-exports the most part of the library functionality related
 -- to 'IO'-based computation.
 --
-module Simulation.Aivika.Trans
+module Simulation.Aivika.IO
        (-- * Modules
         module Simulation.Aivika.IO.Comp,
         module Simulation.Aivika.IO.DES,
