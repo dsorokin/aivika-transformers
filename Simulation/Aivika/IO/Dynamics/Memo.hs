@@ -37,10 +37,9 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
   memoDynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc  = runSpecs r
-           phs = integPhaseBnds sc
-           ns  = integIterationBnds sc
-           (ph1, ph2) = phs 
-       arr   <- liftIO $ newIOArray_ (ns, phs)
+           (phl, phu) = integPhaseBnds sc
+           (nl, nu)   = integIterationBnds sc
+       arr   <- liftIO $ newIOArray_ ((phl, nl), (phu, nu))
        nref  <- liftIO $ newIORef 0
        phref <- liftIO $ newIORef 0
        let r p = 
@@ -57,7 +56,7 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
                             i' = (n', ph')
                         in do a <- m p'
                               a `seq` liftIO $ writeArray arr i' a
-                              if ph' >= ph2 
+                              if ph' >= phu 
                                 then do liftIO $ writeIORef phref 0
                                         liftIO $ writeIORef nref (n' + 1)
                                         loop (n' + 1) 0
@@ -72,8 +71,8 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
   memo0Dynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc = runSpecs r
-           ns = integIterationBnds sc
-       arr  <- liftIO $ newIOArray_ ns
+           bnds = integIterationBnds sc
+       arr  <- liftIO $ newIOArray_ bnds
        nref <- liftIO $ newIORef 0
        let r p =
              do let sc = pointSpecs p
