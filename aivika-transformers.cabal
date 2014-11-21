@@ -99,6 +99,7 @@ library
                      Simulation.Aivika.Trans.Var.Unboxed
                      Simulation.Aivika.IO
                      Simulation.Aivika.IO.Comp
+                     Simulation.Aivika.IO.DES
                      Simulation.Aivika.IO.Dynamics.Memo
                      Simulation.Aivika.IO.Dynamics.Memo.Unboxed
                      Simulation.Aivika.IO.Event
