@@ -17,6 +17,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans
+import Simulation.Aivika.IO
 
 meanUpTime = 1.0
 meanRepairTime = 0.5
@@ -27,7 +28,7 @@ specs = Specs { spcStartTime = 0.0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
      
-model :: MonadComp m => Simulation m (Results m)
+model :: Simulation IO (Results IO)
 model =
   do -- number of machines currently up
      nUp <- newRef 2

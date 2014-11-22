@@ -27,7 +27,7 @@ data Person m = Person { personAgent :: Agent m,
                          personPotentialAdopter :: AgentState m,
                          personAdopter :: AgentState m }
               
-createPerson :: MonadDES m => Simulation m (Person m) 
+createPerson :: Simulation IO (Person IO) 
 createPerson =    
   do agent <- newAgent
      potentialAdopter <- newState agent
@@ -36,14 +36,14 @@ createPerson =
                      personPotentialAdopter = potentialAdopter,
                      personAdopter = adopter }
        
-createPersons :: MonadDES m => Simulation m (Array Int (Person m))
+createPersons :: Simulation IO (Array Int (Person IO))
 createPersons =
   do list <- forM [1 .. n] $ \i ->
        do p <- createPerson
           return (i, p)
      return $ array (1, n) list
      
-definePerson :: MonadDES m => Person m -> Array Int (Person m) -> Ref m Int -> Ref m Int -> Event m ()
+definePerson :: Person IO -> Array Int (Person IO) -> Ref IO Int -> Ref IO Int -> Event IO ()
 definePerson p ps potentialAdopters adopters =
   do setStateActivation (personPotentialAdopter p) $
        do modifyRef potentialAdopters $ \a -> a + 1
@@ -72,19 +72,19 @@ definePerson p ps potentialAdopters adopters =
      setStateDeactivation (personAdopter p) $
        modifyRef adopters $ \a -> a - 1
         
-definePersons :: MonadDES m => Array Int (Person m) -> Ref m Int -> Ref m Int -> Event m ()
+definePersons :: Array Int (Person IO) -> Ref IO Int -> Ref IO Int -> Event IO ()
 definePersons ps potentialAdopters adopters =
   forM_ (elems ps) $ \p -> 
   definePerson p ps potentialAdopters adopters
                                
-activatePerson :: MonadDES m => Person m -> Event m ()
+activatePerson :: Person IO -> Event IO ()
 activatePerson p = selectState (personPotentialAdopter p)
 
-activatePersons :: MonadDES m => Array Int (Person m) -> Event m ()
+activatePersons :: Array Int (Person IO) -> Event IO ()
 activatePersons ps =
   forM_ (elems ps) $ \p -> activatePerson p
 
-model :: MonadDES m => Simulation m (Results m)
+model :: Simulation IO (Results IO)
 model =
   do potentialAdopters <- newRef 0
      adopters <- newRef 0
