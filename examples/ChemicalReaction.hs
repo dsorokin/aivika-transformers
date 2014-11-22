@@ -1,8 +1,6 @@
 
 {-# LANGUAGE RecursiveDo #-}
 
-import Control.Monad.Fix
-
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.SystemDynamics
 import Simulation.Aivika.IO
@@ -13,9 +11,7 @@ specs = Specs { spcStartTime = 0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
 
-type M = IO
-
-model :: Simulation M (Results M)
+model :: Simulation IO (Results IO)
 model = 
   mdo a <- integ (- ka * a) 100
       b <- integ (ka * a - kb * b) 0
@@ -30,4 +26,5 @@ model =
 main =
   printSimulationResultsInStopTime
   printResultSourceInEnglish
+
   model specs

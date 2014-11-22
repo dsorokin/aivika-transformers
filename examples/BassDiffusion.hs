@@ -9,6 +9,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans
+import Simulation.Aivika.IO
 
 n = 500    -- the number of agents
 
@@ -26,7 +27,7 @@ data Person m = Person { personAgent :: Agent m,
                          personPotentialAdopter :: AgentState m,
                          personAdopter :: AgentState m }
               
-createPerson :: MonadComp m => Simulation m (Person m) 
+createPerson :: MonadDES m => Simulation m (Person m) 
 createPerson =    
   do agent <- newAgent
      potentialAdopter <- newState agent
@@ -35,14 +36,14 @@ createPerson =
                      personPotentialAdopter = potentialAdopter,
                      personAdopter = adopter }
        
-createPersons :: MonadComp m => Simulation m (Array Int (Person m))
+createPersons :: MonadDES m => Simulation m (Array Int (Person m))
 createPersons =
   do list <- forM [1 .. n] $ \i ->
        do p <- createPerson
           return (i, p)
      return $ array (1, n) list
      
-definePerson :: MonadComp m => Person m -> Array Int (Person m) -> Ref m Int -> Ref m Int -> Simulation m ()
+definePerson :: MonadDES m => Person m -> Array Int (Person m) -> Ref m Int -> Ref m Int -> Event m ()
 definePerson p ps potentialAdopters adopters =
   do setStateActivation (personPotentialAdopter p) $
        do modifyRef potentialAdopters $ \a -> a + 1
@@ -71,26 +72,26 @@ definePerson p ps potentialAdopters adopters =
      setStateDeactivation (personAdopter p) $
        modifyRef adopters $ \a -> a - 1
         
-definePersons :: MonadComp m => Array Int (Person m) -> Ref m Int -> Ref m Int -> Simulation m ()
+definePersons :: MonadDES m => Array Int (Person m) -> Ref m Int -> Ref m Int -> Event m ()
 definePersons ps potentialAdopters adopters =
   forM_ (elems ps) $ \p -> 
   definePerson p ps potentialAdopters adopters
                                
-activatePerson :: MonadComp m => Person m -> Event m ()
+activatePerson :: MonadDES m => Person m -> Event m ()
 activatePerson p = selectState (personPotentialAdopter p)
 
-activatePersons :: MonadComp m => Array Int (Person m) -> Event m ()
+activatePersons :: MonadDES m => Array Int (Person m) -> Event m ()
 activatePersons ps =
   forM_ (elems ps) $ \p -> activatePerson p
 
-model :: MonadComp m => Simulation m (Results m)
+model :: MonadDES m => Simulation m (Results m)
 model =
   do potentialAdopters <- newRef 0
      adopters <- newRef 0
      ps <- createPersons
-     definePersons ps potentialAdopters adopters
      runEventInStartTime $
-       activatePersons ps
+       do definePersons ps potentialAdopters adopters
+          activatePersons ps
      return $ 
        results
        [resultSource 
