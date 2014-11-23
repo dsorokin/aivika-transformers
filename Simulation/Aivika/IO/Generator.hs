@@ -25,6 +25,8 @@ import Simulation.Aivika.Trans.Template
 
 instance (Functor m, MonadIO m, MonadTemplate m) => MonadGenerator m where
 
+  {-# SPECIALISE instance MonadGenerator IO #-}
+
   data Generator m =
     Generator { generator01 :: m Double,
                 -- ^ the generator of uniform numbers from 0 to 1
