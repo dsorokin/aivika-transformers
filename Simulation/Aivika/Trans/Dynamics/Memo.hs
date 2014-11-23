@@ -47,6 +47,7 @@ class Monad m => MonadMemo m where
 
 -- | Memoize and unzip the computation of pairs, applying the 'memoDynamics' function.
 unzipDynamics :: MonadMemo m => Dynamics m (a, b) -> Simulation m (Dynamics m a, Dynamics m b)
+{-# INLINABLE unzipDynamics #-}
 unzipDynamics m =
   Simulation $ \r ->
   do m' <- invokeSimulation r (memoDynamics m)
@@ -62,6 +63,7 @@ unzipDynamics m =
 
 -- | Memoize and unzip the computation of pairs, applying the 'memo0Dynamics' function.
 unzip0Dynamics :: MonadMemo m => Dynamics m (a, b) -> Simulation m (Dynamics m a, Dynamics m b)
+{-# INLINABLE unzip0Dynamics #-}
 unzip0Dynamics m =
   Simulation $ \r ->
   do m' <- invokeSimulation r (memo0Dynamics m)

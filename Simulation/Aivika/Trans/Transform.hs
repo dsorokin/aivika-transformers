@@ -52,27 +52,33 @@ newtype Transform m a b =
 
 instance Monad m => C.Category (Transform m) where
 
+  {-# INLINE id #-}
   id = Transform return
   
+  {-# INLINE (.) #-}
   (Transform g) . (Transform f) =
     Transform $ \a -> f a >>= g
 
 instance MonadSD m => Arrow (Transform m) where
 
+  {-# INLINE arr #-}
   arr f = Transform $ return . fmap f
 
+  {-# INLINABLE first #-}
   first (Transform f) =
     Transform $ \bd ->
     do (b, d) <- M.unzip0Dynamics bd
        c <- f b
        return $ liftM2 (,) c d 
 
+  {-# INLINABLE second #-}
   second (Transform f) =
     Transform $ \db ->
     do (d, b) <- M.unzip0Dynamics db
        c <- f b
        return $ liftM2 (,) d c
 
+  {-# INLINABLE (***) #-}
   (Transform f) *** (Transform g) =
     Transform $ \bb' ->
     do (b, b') <- M.unzip0Dynamics bb'
@@ -80,6 +86,7 @@ instance MonadSD m => Arrow (Transform m) where
        c' <- g b'
        return $ liftM2 (,) c c'
 
+  {-# INLINABLE (&&&) #-}
   (Transform f) &&& (Transform g) =
     Transform $ \b ->
     do c  <- f b
@@ -88,6 +95,7 @@ instance MonadSD m => Arrow (Transform m) where
 
 instance (MonadSD m, MonadFix m) => ArrowLoop (Transform m) where
 
+  {-# INLINABLE loop #-}
   loop (Transform f) =
     Transform $ \b ->
     mdo let bd = liftM2 (,) b d
@@ -97,6 +105,7 @@ instance (MonadSD m, MonadFix m) => ArrowLoop (Transform m) where
 
 -- | A transform that returns the current modeling time.
 timeTransform :: Monad m => Transform m a Double
+{-# INLINE timeTransform #-}
 timeTransform = Transform $ const $ return time
 
 -- | Return a delayed transform by the specified lag time and initial value.
@@ -106,6 +115,7 @@ delayTransform :: MonadSD m
                   => Dynamics m Double     -- ^ the lag time
                   -> Dynamics m a       -- ^ the initial value
                   -> Transform m a a    -- ^ the delayed transform
+{-# INLINE delayTransform #-}
 delayTransform lagTime init =
   Transform $ \a -> delayI a lagTime init
   
@@ -118,6 +128,7 @@ integTransform :: (MonadSD m, MonadFix m)
                   -- ^ the initial value
                   -> Transform m Double Double
                   -- ^ map the derivative to an integral
+{-# INLINE integTransform #-}
 integTransform init = Transform $ \diff -> integ diff init
   
 -- | Like 'integTransform' but allows either setting a new 'Left' value of the integral,
@@ -127,6 +138,7 @@ integTransformEither :: (MonadSD m, MonadFix m)
                         -- ^ the initial value
                         -> Transform m (Either Double Double) Double
                         -- ^ map either a new 'Left' value or the 'Right' derivative to an integral
+{-# INLINE integTransformEither #-}
 integTransformEither init = Transform $ \diff -> integEither diff init
 
 -- | Return a transform that maps the difference to a sum
@@ -138,6 +150,7 @@ sumTransform :: (MonadSD m, MonadFix m, Num a, MU.MonadMemo m a)
                 -- ^ the initial value
                 -> Transform m a a
                 -- ^ map the difference to a sum
+{-# INLINE sumTransform #-}
 sumTransform init = Transform $ \diff -> diffsum diff init
 
 -- | Like 'sumTransform' but allows either setting a new 'Left' value of the sum,
@@ -147,4 +160,5 @@ sumTransformEither :: (MonadSD m, MonadFix m, Num a, MU.MonadMemo m a)
                       -- ^ the initial value
                       -> Transform m (Either a a) a
                       -- ^ map either a new 'Left' value or the 'Right' difference to a sum
+{-# INLINE sumTransformEither #-}
 sumTransformEither init = Transform $ \diff -> diffsumEither diff init

@@ -27,6 +27,7 @@ import Simulation.Aivika.Trans.SD
 -- using the interpolation that knows of the Runge-Kutta method. The values are
 -- calculated sequentially starting from 'starttime'.
 memoTransform :: (MonadSD m, MonadMemo m e) => Transform m e e
+{-# INLINE memoTransform #-}
 memoTransform = Transform memoDynamics 
 
 -- | A transform that memoizes and order the computation in the integration time points using 
@@ -36,4 +37,5 @@ memoTransform = Transform memoDynamics
 -- that are used by this method to integrate. In general case you should 
 -- prefer the 'memo0Transform' computation above 'memoTransform'.
 memo0Transform :: (MonadSD m, MonadMemo m e) => Transform m e e
+{-# INLINE memo0Transform #-}
 memo0Transform =  Transform memo0Dynamics
