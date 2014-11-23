@@ -33,8 +33,7 @@ import Simulation.Aivika.Trans.Array
 -- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
 instance (MonadIO m, MonadTemplate m) => MonadMemo m where
 
-  {-# INLINABLE memoDynamics #-}
-  {-# SPECIALISE memoDynamics :: Dynamics IO a -> Simulation IO (Dynamics IO a) #-}
+  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO a -> Simulation IO (Dynamics IO a) #-}
   memoDynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc  = runSpecs r
@@ -66,8 +65,7 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
                 loop n' ph'
        return $ interpolateDynamics $ Dynamics r
 
-  {-# INLINABLE memo0Dynamics #-}
-  {-# SPECIALISE memo0Dynamics :: Dynamics IO a -> Simulation IO (Dynamics IO a) #-}
+  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO a -> Simulation IO (Dynamics IO a) #-}
   memo0Dynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc = runSpecs r
@@ -92,8 +90,7 @@ instance (MonadIO m, MonadTemplate m) => MonadMemo m where
                 loop n'
        return $ discreteDynamics $ Dynamics r
 
-  {-# INLINABLE iterateDynamics #-}
-  {-# SPECIALISE iterateDynamics :: Dynamics IO () -> Simulation IO (Dynamics IO ()) #-}
+  {-# SPECIALISE INLINE iterateDynamics :: Dynamics IO () -> Simulation IO (Dynamics IO ()) #-}
   iterateDynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc = runSpecs r

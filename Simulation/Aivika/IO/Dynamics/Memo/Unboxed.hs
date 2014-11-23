@@ -33,10 +33,9 @@ import Simulation.Aivika.Trans.Array
 -- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
 instance (MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e where
 
-  {-# INLINABLE memoDynamics #-}
-  {-# SPECIALISE memoDynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
-  {-# SPECIALISE memoDynamics :: Dynamics IO Float -> Simulation IO (Dynamics IO Float) #-}
-  {-# SPECIALISE memoDynamics :: Dynamics IO Int -> Simulation IO (Dynamics IO Int) #-}
+  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
+  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO Float -> Simulation IO (Dynamics IO Float) #-}
+  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO Int -> Simulation IO (Dynamics IO Int) #-}
   memoDynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc  = runSpecs r
@@ -68,10 +67,9 @@ instance (MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e whe
                 loop n' ph'
        return $ interpolateDynamics $ Dynamics r
 
-  {-# INLINABLE memo0Dynamics #-}
-  {-# SPECIALISE memo0Dynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
-  {-# SPECIALISE memo0Dynamics :: Dynamics IO Float -> Simulation IO (Dynamics IO Float) #-}
-  {-# SPECIALISE memo0Dynamics :: Dynamics IO Int -> Simulation IO (Dynamics IO Int) #-}
+  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
+  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO Float -> Simulation IO (Dynamics IO Float) #-}
+  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO Int -> Simulation IO (Dynamics IO Int) #-}
   memo0Dynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc = runSpecs r
