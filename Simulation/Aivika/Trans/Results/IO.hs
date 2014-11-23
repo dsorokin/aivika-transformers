@@ -89,6 +89,7 @@ hPrintResultSourceIndented :: (MonadDES m, MonadIO m)
                               -> ResultLocalisation
                               -- ^ a localisation
                               -> ResultSourcePrint m
+{-# INLINABLE hPrintResultSourceIndented #-}
 hPrintResultSourceIndented h indent loc source@(ResultItemSource (ResultItem x)) =
   hPrintResultSourceIndentedLabelled h indent (resultItemName x) loc source
 hPrintResultSourceIndented h indent loc source@(ResultVectorSource x) =
@@ -110,6 +111,7 @@ hPrintResultSourceIndentedLabelled :: (MonadDES m, MonadIO m)
                                       -> ResultLocalisation
                                       -- ^ a localisation
                                       -> ResultSourcePrint m
+{-# INLINABLE hPrintResultSourceIndentedLabelled #-}
 hPrintResultSourceIndentedLabelled h indent label loc (ResultItemSource (ResultItem x)) =
   case resultValueData (resultItemToStringValue x) of
     Just m ->
@@ -177,6 +179,7 @@ printResultSourceIndented :: (MonadDES m, MonadIO m)
                              -> ResultLocalisation
                              -- ^ a localisation
                              -> ResultSourcePrint m
+{-# INLINABLE printResultSourceIndented #-}
 printResultSourceIndented = hPrintResultSourceIndented stdout
 
 -- | Print a localised text representation of the results by the specified source.
@@ -186,6 +189,7 @@ hPrintResultSource :: (MonadDES m, MonadIO m)
                       -> ResultLocalisation
                       -- ^ a localisation
                       -> ResultSourcePrint m
+{-# INLINABLE hPrintResultSource #-}
 hPrintResultSource h = hPrintResultSourceIndented h 0
 
 -- | Print a localised text representation of the results by the specified source.
@@ -193,22 +197,27 @@ printResultSource :: (MonadDES m, MonadIO m)
                      => ResultLocalisation
                      -- ^ a localisation
                      -> ResultSourcePrint m
+{-# INLINABLE printResultSource #-}
 printResultSource = hPrintResultSource stdout
 
 -- | Print in Russian a text representation of the results by the specified source.
 hPrintResultSourceInRussian :: (MonadDES m, MonadIO m) => Handle -> ResultSourcePrint m
+{-# INLINABLE hPrintResultSourceInRussian #-}
 hPrintResultSourceInRussian h = hPrintResultSource h russianResultLocalisation
 
 -- | Print in English a text representation of the results by the specified source.
 hPrintResultSourceInEnglish :: (MonadDES m, MonadIO m) => Handle -> ResultSourcePrint m
+{-# INLINABLE hPrintResultSourceInEnglish #-}
 hPrintResultSourceInEnglish h = hPrintResultSource h englishResultLocalisation
 
 -- | Print in Russian a text representation of the results by the specified source.
 printResultSourceInRussian :: (MonadDES m, MonadIO m) => ResultSourcePrint m
+{-# INLINABLE printResultSourceInRussian #-}
 printResultSourceInRussian = hPrintResultSourceInRussian stdout
 
 -- | Print in English a text representation of the results by the specified source.
 printResultSourceInEnglish :: (MonadDES m, MonadIO m) => ResultSourcePrint m
+{-# INLINABLE printResultSourceInEnglish #-}
 printResultSourceInEnglish = hPrintResultSourceInEnglish stdout
 
 -- | Show a localised text representation of the results by the specified source
@@ -219,6 +228,7 @@ showResultSourceIndented :: MonadDES m
                             -> ResultLocalisation
                             -- ^ a localisation
                             -> ResultSourceShowS m
+{-# INLINABLE showResultSourceIndented #-}
 showResultSourceIndented indent loc source@(ResultItemSource (ResultItem x)) =
   showResultSourceIndentedLabelled indent (resultItemName x) loc source
 showResultSourceIndented indent loc source@(ResultVectorSource x) =
@@ -237,6 +247,7 @@ showResultSourceIndentedLabelled :: MonadDES m
                                     -> ResultLocalisation
                                     -- ^ a localisation
                                     -> ResultSourceShowS m
+{-# INLINABLE showResultSourceIndentedLabelled #-}
 showResultSourceIndentedLabelled indent label loc (ResultItemSource (ResultItem x)) =
   case resultValueData (resultItemToStringValue x) of
     Just m ->
@@ -304,18 +315,22 @@ showResultSource :: MonadDES m
                     => ResultLocalisation
                     -- ^ a localisation
                     -> ResultSourceShowS m
+{-# INLINABLE showResultSource #-}
 showResultSource = showResultSourceIndented 0
 
 -- | Show in Russian a text representation of the results by the specified source.
 showResultSourceInRussian :: MonadDES m => ResultSourceShowS m
+{-# INLINABLE showResultSourceInRussian #-}
 showResultSourceInRussian = showResultSource russianResultLocalisation
 
 -- | Show in English a text representation of the results by the specified source.
 showResultSourceInEnglish :: MonadDES m => ResultSourceShowS m
+{-# INLINABLE showResultSourceInEnglish #-}
 showResultSourceInEnglish = showResultSource englishResultLocalisation
 
 -- | Print the results with the information about the modeling time.
 printResultsWithTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Event m ()
+{-# INLINABLE printResultsWithTime #-}
 printResultsWithTime print results =
   do let x1 = textResultSource "----------"
          x2 = timeResultSource
@@ -329,16 +344,19 @@ printResultsWithTime print results =
 
 -- | Print the simulation results in start time.
 printResultsInStartTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
+{-# INLINABLE printResultsInStartTime #-}
 printResultsInStartTime print results =
   runEventInStartTime $ printResultsWithTime print results
 
 -- | Print the simulation results in stop time.
 printResultsInStopTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
+{-# INLINABLE printResultsInStopTime #-}
 printResultsInStopTime print results =
   runEventInStopTime $ printResultsWithTime print results
 
 -- | Print the simulation results in the integration time points.
 printResultsInIntegTimes :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
+{-# INLINABLE printResultsInIntegTimes #-}
 printResultsInIntegTimes print results =
   do let loop (m : ms) = m >> loop ms
          loop [] = return ()
@@ -348,12 +366,14 @@ printResultsInIntegTimes print results =
 
 -- | Print the simulation results in the specified time.
 printResultsInTime :: (MonadDES m, MonadIO m) => Double -> ResultSourcePrint m -> Results m -> Simulation m ()
+{-# INLINABLE printResultsInTime #-}
 printResultsInTime t print results =
   runDynamicsInTime t $ runEvent $
   printResultsWithTime print results
 
 -- | Print the simulation results in the specified time points.
 printResultsInTimes :: (MonadDES m, MonadIO m) => [Double] -> ResultSourcePrint m -> Results m -> Simulation m ()
+{-# INLINABLE printResultsInTimes #-}
 printResultsInTimes ts print results =
   do let loop (m : ms) = m >> loop ms
          loop [] = return ()
@@ -363,6 +383,7 @@ printResultsInTimes ts print results =
 
 -- | Show the results with the information about the modeling time.
 showResultsWithTime :: MonadDES m => ResultSourceShowS m -> Results m -> Event m ShowS
+{-# INLINABLE showResultsWithTime #-}
 showResultsWithTime f results =
   do let x1 = textResultSource "----------"
          x2 = timeResultSource
@@ -381,11 +402,13 @@ showResultsWithTime f results =
 
 -- | Show the simulation results in start time.
 showResultsInStartTime :: MonadDES m => ResultSourceShowS m -> Results m -> Simulation m ShowS
+{-# INLINABLE showResultsInStartTime #-}
 showResultsInStartTime f results =
   runEventInStartTime $ showResultsWithTime f results
 
 -- | Show the simulation results in stop time.
 showResultsInStopTime :: MonadDES m => ResultSourceShowS m -> Results m -> Simulation m ShowS
+{-# INLINABLE showResultsInStopTime #-}
 showResultsInStopTime f results =
   runEventInStopTime $ showResultsWithTime f results
 
@@ -394,6 +417,7 @@ showResultsInStopTime f results =
 -- It may consume much memory, for we have to traverse all the integration
 -- points to create the resulting function within the 'Simulation' computation.
 showResultsInIntegTimes :: MonadDES m => ResultSourceShowS m -> Results m -> Simulation m ShowS
+{-# INLINABLE showResultsInIntegTimes #-}
 showResultsInIntegTimes f results =
   do let loop (m : ms) = return (.) `ap` m `ap` loop ms
          loop [] = return id
@@ -403,6 +427,7 @@ showResultsInIntegTimes f results =
 
 -- | Show the simulation results in the specified time point.
 showResultsInTime :: MonadDES m => Double -> ResultSourceShowS m -> Results m -> Simulation m ShowS
+{-# INLINABLE showResultsInTime #-}
 showResultsInTime t f results =
   runDynamicsInTime t $ runEvent $
   showResultsWithTime f results
@@ -412,6 +437,7 @@ showResultsInTime t f results =
 -- It may consume much memory, for we have to traverse all the specified
 -- points to create the resulting function within the 'Simulation' computation.
 showResultsInTimes :: MonadDES m => [Double] -> ResultSourceShowS m -> Results m -> Simulation m ShowS
+{-# INLINABLE showResultsInTimes #-}
 showResultsInTimes ts f results =
   do let loop (m : ms) = return (.) `ap` m `ap` loop ms
          loop [] = return id
@@ -421,42 +447,49 @@ showResultsInTimes ts f results =
 
 -- | Run the simulation and then print the results in the start time.
 printSimulationResultsInStartTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+{-# INLINABLE printSimulationResultsInStartTime #-}
 printSimulationResultsInStartTime print model specs =
   flip runSimulation specs $
   model >>= printResultsInStartTime print
 
 -- | Run the simulation and then print the results in the final time.
 printSimulationResultsInStopTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+{-# INLINABLE printSimulationResultsInStopTime #-}
 printSimulationResultsInStopTime print model specs =
   flip runSimulation specs $
   model >>= printResultsInStopTime print
 
 -- | Run the simulation and then print the results in the integration time points.
 printSimulationResultsInIntegTimes :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+{-# INLINABLE printSimulationResultsInIntegTimes #-}
 printSimulationResultsInIntegTimes print model specs =
   flip runSimulation specs $
   model >>= printResultsInIntegTimes print
 
 -- | Run the simulation and then print the results in the specified time point.
 printSimulationResultsInTime :: (MonadDES m, MonadIO m) => Double -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+{-# INLINABLE printSimulationResultsInTime #-}
 printSimulationResultsInTime t print model specs =
   flip runSimulation specs $
   model >>= printResultsInTime t print
 
 -- | Run the simulation and then print the results in the specified time points.
 printSimulationResultsInTimes :: (MonadDES m, MonadIO m) => [Double] -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+{-# INLINABLE printSimulationResultsInTimes #-}
 printSimulationResultsInTimes ts print model specs =
   flip runSimulation specs $
   model >>= printResultsInTimes ts print
 
 -- | Run the simulation and then show the results in the start time.
 showSimulationResultsInStartTime :: MonadDES m => ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
+{-# INLINABLE showSimulationResultsInStartTime #-}
 showSimulationResultsInStartTime f model specs =
   flip runSimulation specs $
   model >>= showResultsInStartTime f
 
 -- | Run the simulation and then show the results in the final time.
 showSimulationResultsInStopTime :: MonadDES m => ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
+{-# INLINABLE showSimulationResultsInStopTime #-}
 showSimulationResultsInStopTime f model specs =
   flip runSimulation specs $
   model >>= showResultsInStopTime f
@@ -466,12 +499,14 @@ showSimulationResultsInStopTime f model specs =
 -- It may consume much memory, for we have to traverse all the integration
 -- points to create the resulting function within the 'IO' computation.
 showSimulationResultsInIntegTimes :: MonadDES m => ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
+{-# INLINABLE showSimulationResultsInIntegTimes #-}
 showSimulationResultsInIntegTimes f model specs =
   flip runSimulation specs $
   model >>= showResultsInIntegTimes f
 
 -- | Run the simulation and then show the results in the integration time point.
 showSimulationResultsInTime :: MonadDES m => Double -> ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
+{-# INLINABLE showSimulationResultsInTime #-}
 showSimulationResultsInTime t f model specs =
   flip runSimulation specs $
   model >>= showResultsInTime t f
@@ -481,6 +516,7 @@ showSimulationResultsInTime t f model specs =
 -- It may consume much memory, for we have to traverse all the specified
 -- points to create the resulting function within the 'IO' computation.
 showSimulationResultsInTimes :: MonadDES m => [Double] -> ResultSourceShowS m -> Simulation m (Results m) -> Specs m -> m ShowS
+{-# INLINABLE showSimulationResultsInTimes #-}
 showSimulationResultsInTimes ts f model specs =
   flip runSimulation specs $
   model >>= showResultsInTimes ts f
