@@ -38,6 +38,7 @@ data Ref m a =
 
 -- | Create a new reference.
 newRef :: MonadDES m => a -> Simulation m (Ref m a)
+{-# INLINABLE newRef #-}
 newRef a =
   Simulation $ \r ->
   do x <- invokeSimulation r $ B.newRef a
@@ -47,16 +48,19 @@ newRef a =
      
 -- | Read the value of a reference.
 readRef :: MonadDES m => Ref m a -> Event m a
+{-# INLINE readRef #-}
 readRef r = B.readRef (refValue r)
 
 -- | Write a new value into the reference.
 writeRef :: MonadDES m => Ref m a -> a -> Event m ()
+{-# INLINABLE writeRef #-}
 writeRef r a = Event $ \p -> 
   do a `seq` invokeEvent p $ B.writeRef (refValue r) a
      invokeEvent p $ triggerSignal (refChangedSource r) a
 
 -- | Mutate the contents of the reference.
 modifyRef :: MonadDES m => Ref m a -> (a -> a) -> Event m ()
+{-# INLINABLE modifyRef #-}
 modifyRef r f = Event $ \p -> 
   do a <- invokeEvent p $ B.readRef (refValue r)
      let b = f a
@@ -65,11 +69,15 @@ modifyRef r f = Event $ \p ->
 
 -- | Return a signal that notifies about every change of the reference state.
 refChanged :: Ref m a -> Signal m a
+{-# INLINE refChanged #-}
 refChanged r = publishSignal (refChangedSource r)
 
 -- | Return a signal that notifies about every change of the reference state.
 refChanged_ :: MonadDES m => Ref m a -> Signal m ()
+{-# INLINABLE refChanged_ #-}
 refChanged_ r = mapSignal (const ()) $ refChanged r
 
 instance MonadDES m => Eq (Ref m a) where
+
+  {-# INLINE (==) #-}
   r1 == r2 = (refValue r1) == (refValue r2)

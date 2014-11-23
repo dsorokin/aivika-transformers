@@ -46,4 +46,6 @@ class Monad m => MonadRef m where
   equalRef :: Ref m a -> Ref m a -> Bool
 
 instance MonadRef m => Eq (Ref m a) where
+
+  {-# INLINE (==) #-}
   (==) = equalRef

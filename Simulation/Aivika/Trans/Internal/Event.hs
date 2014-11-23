@@ -132,6 +132,7 @@ instance Monad m => ParameterLift Event m where
 
 -- | Exception handling within 'Event' computations.
 catchEvent :: (MonadException m, Exception e) => Event m a -> (e -> Event m a) -> Event m a
+{-# INLINABLE catchEvent #-}
 catchEvent (Event m) h =
   Event $ \p -> 
   catchComp (m p) $ \e ->
@@ -139,12 +140,14 @@ catchEvent (Event m) h =
                            
 -- | A computation with finalization part like the 'finally' function.
 finallyEvent :: MonadException m => Event m a -> Event m b -> Event m a
+{-# INLINABLE finallyEvent #-}
 finallyEvent (Event m) (Event m') =
   Event $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
 throwEvent :: (MonadException m, Exception e) => e -> Event m a
+{-# INLINABLE throwEvent #-}
 throwEvent e =
   Event $ \p ->
   throwComp e
@@ -159,21 +162,25 @@ instance MonadFix m => MonadFix (Event m) where
 -- | Run the 'Event' computation in the start time involving all
 -- pending 'CurrentEvents' in the processing too.
 runEventInStartTime :: MonadDES m => Event m a -> Simulation m a
+{-# INLINE runEventInStartTime #-}
 runEventInStartTime = runDynamicsInStartTime . runEvent
 
 -- | Run the 'Event' computation in the stop time involving all
 -- pending 'CurrentEvents' in the processing too.
 runEventInStopTime :: MonadDES m => Event m a -> Simulation m a
+{-# INLINE runEventInStopTime #-}
 runEventInStopTime = runDynamicsInStopTime . runEvent
 
 -- | Actuate the event handler in the specified time points.
 enqueueEventWithTimes :: MonadDES m => [Double] -> Event m () -> Event m ()
+{-# INLINABLE enqueueEventWithTimes #-}
 enqueueEventWithTimes ts e = loop ts
   where loop []       = return ()
         loop (t : ts) = enqueueEvent t $ e >> loop ts
        
 -- | Actuate the event handler in the specified time points.
 enqueueEventWithPoints :: MonadDES m => [Point m] -> Event m () -> Event m ()
+{-# INLINABLE enqueueEventWithPoints #-}
 enqueueEventWithPoints xs (Event e) = loop xs
   where loop []       = return ()
         loop (x : xs) = enqueueEvent (pointTime x) $ 
@@ -183,6 +190,7 @@ enqueueEventWithPoints xs (Event e) = loop xs
                            
 -- | Actuate the event handler in the integration time points.
 enqueueEventWithIntegTimes :: MonadDES m => Event m () -> Event m ()
+{-# INLINABLE enqueueEventWithIntegTimes #-}
 enqueueEventWithIntegTimes e =
   Event $ \p ->
   let points = integPointsStartingFrom p
@@ -200,6 +208,7 @@ data EventCancellation m =
 
 -- | Enqueue the event with an ability to cancel it.
 enqueueEventWithCancellation :: MonadDES m => Double -> Event m () -> Event m (EventCancellation m)
+{-# INLINABLE enqueueEventWithCancellation #-}
 enqueueEventWithCancellation t e =
   Event $ \p ->
   do let r = pointRun p
@@ -230,6 +239,7 @@ enqueueEventWithCancellation t e =
 -- | Memoize the 'Event' computation, always returning the same value
 -- within a simulation run.
 memoEvent :: MonadDES m => Event m a -> Simulation m (Event m a)
+{-# INLINABLE memoEvent #-}
 memoEvent m =
   Simulation $ \r ->
   do ref <- invokeSimulation r $ newRef Nothing
@@ -251,6 +261,7 @@ memoEvent m =
 -- flows in one direction only. This synchronization is a key difference
 -- between the 'Event' and 'Dynamics' computations.
 memoEventInTime :: MonadDES m => Event m a -> Simulation m (Event m a)
+{-# INLINABLE memoEventInTime #-}
 memoEventInTime m =
   Simulation $ \r ->
   do ref <- invokeSimulation r $ newRef Nothing
@@ -266,6 +277,7 @@ memoEventInTime m =
 
 -- | Enqueue the event which must be actuated with the current modeling time but later.
 yieldEvent :: MonadDES m => Event m () -> Event m ()
+{-# INLINABLE yieldEvent #-}
 yieldEvent m =
   Event $ \p ->
   invokeEvent p $
@@ -287,6 +299,7 @@ instance Monad m => Monoid (DisposableEvent m) where
 
 -- | Show the debug message with the current simulation time.
 traceEvent :: MonadDES m => String -> Event m a -> Event m a
+{-# INLINABLE traceEvent #-}
 traceEvent message m =
   Event $ \p ->
   trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
