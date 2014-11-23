@@ -25,6 +25,8 @@ import Simulation.Aivika.Trans.Template
 -- | The 'MonadIO' based monad is an instance of 'MonadRef'.
 instance (MonadIO m, MonadTemplate m) => MonadRef m where
 
+  {-# SPECIALISE instance MonadRef IO #-}
+
   -- | A type safe wrapper for the 'IORef' reference.
   newtype Ref m a = Ref { refValue :: IORef a }
 

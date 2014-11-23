@@ -29,6 +29,8 @@ import Simulation.Aivika.Trans.Internal.Types
 -- | A template-based implementation of the 'EventQueueing' type class.
 instance (MonadIO m, MonadTemplate m) => EventQueueing m where
 
+  {-# SPECIALISE instance EventQueueing IO #-}
+
   data EventQueue m =
     EventQueue { queuePQ :: PQ.PriorityQueue (Point m -> m ()),
                  -- ^ the underlying priority queue
