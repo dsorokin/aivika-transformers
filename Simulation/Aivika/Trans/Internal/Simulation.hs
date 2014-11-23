@@ -57,6 +57,7 @@ instance Monad m => Monad (Simulation m) where
 
 -- | Run the simulation using the specified specs.
 runSimulation :: MonadDES m => Simulation m a -> Specs m -> m a
+{-# INLINABLE runSimulation #-}
 runSimulation (Simulation m) sc =
   do q <- newEventQueue sc
      g <- newGenerator $ spcGeneratorType sc
@@ -69,6 +70,7 @@ runSimulation (Simulation m) sc =
 -- | Run the given number of simulations using the specified specs, 
 --   where each simulation is distinguished by its index 'simulationIndex'.
 runSimulations :: MonadDES m => Simulation m a -> Specs m -> Int -> [m a]
+{-# INLINABLE runSimulations #-}
 runSimulations (Simulation m) sc runs = map f [1 .. runs]
   where f i = do q <- newEventQueue sc
                  g <- newGenerator $ spcGeneratorType sc
@@ -129,6 +131,7 @@ instance Monad m => ParameterLift Simulation m where
     
 -- | Exception handling within 'Simulation' computations.
 catchSimulation :: (MonadException m, Exception e) => Simulation m a -> (e -> Simulation m a) -> Simulation m a
+{-# INLINABLE catchSimulation #-}
 catchSimulation (Simulation m) h =
   Simulation $ \r -> 
   catchComp (m r) $ \e ->
@@ -136,12 +139,14 @@ catchSimulation (Simulation m) h =
                            
 -- | A computation with finalization part like the 'finally' function.
 finallySimulation :: MonadException m => Simulation m a -> Simulation m b -> Simulation m a
+{-# INLINABLE finallySimulation #-}
 finallySimulation (Simulation m) (Simulation m') =
   Simulation $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
 throwSimulation :: (MonadException m, Exception e) => e -> Simulation m a
+{-# INLINABLE throwSimulation #-}
 throwSimulation e =
   Simulation $ \r ->
   throwComp e

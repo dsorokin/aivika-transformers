@@ -75,6 +75,7 @@ scan1Dynamics :: MonadFix m
                  => (a -> a -> a)
                  -> (Dynamics m a -> Simulation m (Dynamics m a))
                  -> (Dynamics m a -> Simulation m (Dynamics m a))
+{-# INLINABLE scan1Dynamics #-}
 scan1Dynamics f tr m =
   mdo y <- tr $ Dynamics $ \p ->
         case pointIteration p of
@@ -98,6 +99,7 @@ scanDynamics :: MonadFix m
                 -> a
                 -> (Dynamics m a -> Simulation m (Dynamics m a))
                 -> (Dynamics m b -> Simulation m (Dynamics m a))
+{-# INLINABLE scanDynamics #-}
 scanDynamics f acc tr m =
   mdo y <- tr $ Dynamics $ \p ->
         case pointIteration p of

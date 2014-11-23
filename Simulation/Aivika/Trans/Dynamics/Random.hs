@@ -41,6 +41,7 @@ memoRandomUniformDynamics :: MonadSD m
                              => Dynamics m Double     -- ^ minimum
                              -> Dynamics m Double     -- ^ maximum
                              -> Simulation m (Dynamics m Double)
+{-# INLINABLE memoRandomUniformDynamics #-}
 memoRandomUniformDynamics min max =
   memo0Dynamics $
   Dynamics $ \p ->
@@ -55,6 +56,7 @@ memoRandomUniformIntDynamics :: MonadSD m
                                 => Dynamics m Int     -- ^ minimum
                                 -> Dynamics m Int     -- ^ maximum
                                 -> Simulation m (Dynamics m Int)
+{-# INLINABLE memoRandomUniformIntDynamics #-}
 memoRandomUniformIntDynamics min max =
   memo0Dynamics $
   Dynamics $ \p ->
@@ -69,6 +71,7 @@ memoRandomNormalDynamics :: MonadSD m
                             => Dynamics m Double     -- ^ mean
                             -> Dynamics m Double     -- ^ deviation
                             -> Simulation m (Dynamics m Double)
+{-# INLINABLE memoRandomNormalDynamics #-}
 memoRandomNormalDynamics mu nu =
   memo0Dynamics $
   Dynamics $ \p ->
@@ -83,6 +86,7 @@ memoRandomExponentialDynamics :: MonadSD m
                                  => Dynamics m Double
                                  -- ^ the mean (the reciprocal of the rate)
                                  -> Simulation m (Dynamics m Double)
+{-# INLINABLE memoRandomExponentialDynamics #-}
 memoRandomExponentialDynamics mu =
   memo0Dynamics $
   Dynamics $ \p ->
@@ -99,6 +103,7 @@ memoRandomErlangDynamics :: MonadSD m
                             -> Dynamics m Int
                             -- ^ the shape
                             -> Simulation m (Dynamics m Double)
+{-# INLINABLE memoRandomErlangDynamics #-}
 memoRandomErlangDynamics beta m =
   memo0Dynamics $
   Dynamics $ \p ->
@@ -113,6 +118,7 @@ memoRandomPoissonDynamics :: MonadSD m
                              => Dynamics m Double
                              -- ^ the mean
                              -> Simulation m (Dynamics m Int)
+{-# INLINABLE memoRandomPoissonDynamics #-}
 memoRandomPoissonDynamics mu =
   memo0Dynamics $
   Dynamics $ \p ->
@@ -126,6 +132,7 @@ memoRandomBinomialDynamics :: MonadSD m
                               => Dynamics m Double  -- ^ the probability
                               -> Dynamics m Int  -- ^ the number of trials
                               -> Simulation m (Dynamics m Int)
+{-# INLINABLE memoRandomBinomialDynamics #-}
 memoRandomBinomialDynamics prob trials =
   memo0Dynamics $
   Dynamics $ \p ->

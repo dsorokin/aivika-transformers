@@ -135,6 +135,7 @@ integEuler :: Monad m
               -> Dynamics m Double 
               -> Point m
               -> m Double
+{-# INLINABLE integEuler #-}
 integEuler (Dynamics f) (Dynamics i) (Dynamics y) p = 
   case pointIteration p of
     0 -> 
@@ -154,6 +155,7 @@ integRK2 :: Monad m
             -> Dynamics m Double
             -> Point m
             -> m Double
+{-# INLINABLE integRK2 #-}
 integRK2 (Dynamics f) (Dynamics i) (Dynamics y) p =
   case pointPhase p of
     0 -> case pointIteration p of
@@ -192,6 +194,7 @@ integRK4 :: Monad m
             -> Dynamics m Double
             -> Point m
             -> m Double
+{-# INLINABLE integRK4 #-}
 integRK4 (Dynamics f) (Dynamics i) (Dynamics y) p =
   case pointPhase p of
     0 -> case pointIteration p of
@@ -271,6 +274,7 @@ integ :: (MonadSD m, MonadFix m)
          => Dynamics m Double                  -- ^ the derivative
          -> Dynamics m Double                  -- ^ the initial value
          -> Simulation m (Dynamics m Double)   -- ^ the integral
+{-# INLINABLE integ #-}
 integ diff i =
   mdo y <- MU.memoDynamics z
       z <- Simulation $ \r ->
@@ -286,6 +290,7 @@ integEulerEither :: Monad m
                     -> Dynamics m Double 
                     -> Point m
                     -> m Double
+{-# INLINABLE integEulerEither #-}
 integEulerEither (Dynamics f) (Dynamics i) (Dynamics y) p = 
   case pointIteration p of
     0 -> 
@@ -313,6 +318,7 @@ integEither :: (MonadSD m, MonadFix m)
                -> Dynamics m Double
                -- ^ the initial value
                -> Simulation m (Dynamics m Double)
+{-# INLINABLE integEither #-}
 integEither diff i =
   mdo y <- MU.memoDynamics z
       z <- Simulation $ \r ->
@@ -334,6 +340,7 @@ smoothI :: (MonadSD m, MonadFix m)
            -> Dynamics m Double                  -- ^ time
            -> Dynamics m Double                  -- ^ the initial value
            -> Simulation m (Dynamics m Double)   -- ^ the first order exponential smooth
+{-# INLINABLE smoothI #-}
 smoothI x t i =
   mdo y <- integ ((x - y) / t) i
       return y
@@ -346,6 +353,7 @@ smooth :: (MonadSD m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to smooth over time
           -> Dynamics m Double                  -- ^ time
           -> Simulation m (Dynamics m Double)   -- ^ the first order exponential smooth
+{-# INLINABLE smooth #-}
 smooth x t = smoothI x t x
 
 -- | Return the third order exponential smooth.
@@ -366,6 +374,7 @@ smooth3I :: (MonadSD m, MonadFix m)
             -> Dynamics m Double                  -- ^ time
             -> Dynamics m Double                  -- ^ the initial value
             -> Simulation m (Dynamics m Double)   -- ^ the third order exponential smooth
+{-# INLINABLE smooth3I #-}
 smooth3I x t i =
   mdo y  <- integ ((s2 - y) / t') i
       s2 <- integ ((s1 - s2) / t') i
@@ -381,6 +390,7 @@ smooth3 :: (MonadSD m, MonadFix m)
            => Dynamics m Double                  -- ^ the value to smooth over time
            -> Dynamics m Double                  -- ^ time
            -> Simulation m (Dynamics m Double)   -- ^ the third order exponential smooth
+{-# INLINABLE smooth3 #-}
 smooth3 x t = smooth3I x t x
 
 -- | Return the n'th order exponential smooth.
@@ -395,6 +405,7 @@ smoothNI :: (MonadSD m, MonadFix m)
             -> Int                                -- ^ the order
             -> Dynamics m Double                  -- ^ the initial value
             -> Simulation m (Dynamics m Double)   -- ^ the n'th order exponential smooth
+{-# INLINABLE smoothNI #-}
 smoothNI x t n i =
   mdo s <- forM [1 .. n] $ \k ->
         if k == 1
@@ -413,6 +424,7 @@ smoothN :: (MonadSD m, MonadFix m)
            -> Dynamics m Double                  -- ^ time
            -> Int                                -- ^ the order
            -> Simulation m (Dynamics m Double)   -- ^ the n'th order exponential smooth
+{-# INLINABLE smoothN #-}
 smoothN x t n = smoothNI x t n x
 
 -- | Return the first order exponential delay.
@@ -430,6 +442,7 @@ delay1I :: (MonadSD m, MonadFix m)
            -> Dynamics m Double                  -- ^ time
            -> Dynamics m Double                  -- ^ the initial value
            -> Simulation m (Dynamics m Double)   -- ^ the first order exponential delay
+{-# INLINABLE delay1I #-}
 delay1I x t i =
   mdo y <- integ (x - y / t) (i * t)
       return $ y / t
@@ -442,6 +455,7 @@ delay1 :: (MonadSD m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to conserve
           -> Dynamics m Double                  -- ^ time
           -> Simulation m (Dynamics m Double)   -- ^ the first order exponential delay
+{-# INLINABLE delay1 #-}
 delay1 x t = delay1I x t x
 
 -- | Return the third order exponential delay.
@@ -450,6 +464,7 @@ delay3I :: (MonadSD m, MonadFix m)
            -> Dynamics m Double                  -- ^ time
            -> Dynamics m Double                  -- ^ the initial value
            -> Simulation m (Dynamics m Double)   -- ^ the third order exponential delay
+{-# INLINABLE delay3I #-}
 delay3I x t i =
   mdo y  <- integ (s2 / t' - y / t') (i * t')
       s2 <- integ (s1 / t' - s2 / t') (i * t')
@@ -465,6 +480,7 @@ delay3 :: (MonadSD m, MonadFix m)
           => Dynamics m Double                  -- ^ the value to conserve
           -> Dynamics m Double                  -- ^ time
           -> Simulation m (Dynamics m Double)   -- ^ the third order exponential delay
+{-# INLINABLE delay3 #-}
 delay3 x t = delay3I x t x
 
 -- | Return the n'th order exponential delay.
@@ -474,6 +490,7 @@ delayNI :: (MonadSD m, MonadFix m)
            -> Int                                -- ^ the order
            -> Dynamics m Double                  -- ^ the initial value
            -> Simulation m (Dynamics m Double)   -- ^ the n'th order exponential delay
+{-# INLINABLE delayNI #-}
 delayNI x t n i =
   mdo s <- forM [1 .. n] $ \k ->
         if k == 1
@@ -492,6 +509,7 @@ delayN :: (MonadSD m, MonadFix m)
           -> Dynamics m Double                  -- ^ time
           -> Int                                -- ^ the order
           -> Simulation m (Dynamics m Double)   -- ^ the n'th order exponential delay
+{-# INLINABLE delayN #-}
 delayN x t n = delayNI x t n x
 
 -- | Return the forecast.
@@ -508,6 +526,7 @@ forecast :: (MonadSD m, MonadFix m)
             -> Dynamics m Double                  -- ^ the average time
             -> Dynamics m Double                  -- ^ the time horizon
             -> Simulation m (Dynamics m Double)   -- ^ the forecast
+{-# INLINABLE forecast #-}
 forecast x at hz =
   do y <- smooth x at
      return $ x * (1.0 + (x / y - 1.0) / at * hz)
@@ -526,6 +545,7 @@ trend :: (MonadSD m, MonadFix m)
          -> Dynamics m Double                  -- ^ the average time
          -> Dynamics m Double                  -- ^ the initial value
          -> Simulation m (Dynamics m Double)   -- ^ the fractional change rate
+{-# INLINABLE trend #-}
 trend x at i =
   do y <- smoothI x at (x / (1.0 + i * at))
      return $ (x / y - 1.0) / at
@@ -544,6 +564,7 @@ diffsum :: (MonadSD m, MonadFix m,
            => Dynamics m a                  -- ^ the difference
            -> Dynamics m a                  -- ^ the initial value
            -> Simulation m (Dynamics m a)   -- ^ the sum
+{-# INLINABLE diffsum #-}
 diffsum (Dynamics diff) (Dynamics i) =
   mdo y <-
         MU.memo0Dynamics $
@@ -572,6 +593,7 @@ diffsumEither :: (MonadSD m, MonadFix m,
                  -- ^ the initial value
                  -> Simulation m (Dynamics m a)
                  -- ^ the sum
+{-# INLINABLE diffsumEither #-}
 diffsumEither (Dynamics diff) (Dynamics i) =
   mdo y <-
         MU.memo0Dynamics $
@@ -601,6 +623,7 @@ diffsumEither (Dynamics diff) (Dynamics i) =
 
 -- | Lookup @x@ in a table of pairs @(x, y)@ using linear interpolation.
 lookupDynamics :: Monad m => Dynamics m Double -> Array Int (Double, Double) -> Dynamics m Double
+{-# INLINABLE lookupDynamics #-}
 lookupDynamics (Dynamics m) tbl =
   Dynamics $ \p ->
   do a <- m p
@@ -608,6 +631,7 @@ lookupDynamics (Dynamics m) tbl =
 
 -- | Lookup @x@ in a table of pairs @(x, y)@ using stepwise function.
 lookupStepwiseDynamics :: Monad m => Dynamics m Double -> Array Int (Double, Double) -> Dynamics m Double
+{-# INLINABLE lookupStepwiseDynamics #-}
 lookupStepwiseDynamics (Dynamics m) tbl =
   Dynamics $ \p ->
   do a <- m p
@@ -622,6 +646,7 @@ delay :: Monad m
          => Dynamics m a          -- ^ the value to delay
          -> Dynamics m Double     -- ^ the lag time
          -> Dynamics m a          -- ^ the delayed value
+{-# INLINABLE delay #-}
 delay (Dynamics x) (Dynamics d) = discreteDynamics $ Dynamics r 
   where
     r p = do 
@@ -652,6 +677,7 @@ delayI :: MonadSD m
           -> Dynamics m Double               -- ^ the lag time
           -> Dynamics m a                    -- ^ the initial value
           -> Simulation m (Dynamics m a)     -- ^ the delayed value
+{-# INLINABLE delayI #-}
 delayI (Dynamics x) (Dynamics d) (Dynamics i) = M.memo0Dynamics $ Dynamics r 
   where
     r p = do 
@@ -697,6 +723,7 @@ npv :: (MonadSD m, MonadFix m)
        -> Dynamics m Double                  -- ^ the initial value
        -> Dynamics m Double                  -- ^ factor
        -> Simulation m (Dynamics m Double)   -- ^ the Net Present Value (NPV)
+{-# INLINABLE npv #-}
 npv stream rate init factor =
   mdo let dt' = liftParameter dt
       df <- integ (- df * rate) 1
@@ -721,6 +748,7 @@ npve :: (MonadSD m, MonadFix m)
         -> Dynamics m Double                  -- ^ the initial value
         -> Dynamics m Double                  -- ^ factor
         -> Simulation m (Dynamics m Double)   -- ^ the Net Present Value End (NPVE)
+{-# INLINABLE npve #-}
 npve stream rate init factor =
   mdo let dt' = liftParameter dt
       df <- integ (- df * rate / (1 + rate * dt')) (1 / (1 + rate * dt'))
@@ -734,6 +762,7 @@ step :: Monad m
         -> Dynamics m Double
         -- ^ the step time
         -> Dynamics m Double
+{-# INLINABLE step #-}
 step h st =
   discreteDynamics $
   Dynamics $ \p ->
@@ -753,6 +782,7 @@ pulse :: Monad m
          -> Dynamics m Double
          -- ^ the interval width
          -> Dynamics m Double
+{-# INLINABLE pulse #-}
 pulse st w =
   discreteDynamics $
   Dynamics $ \p ->
@@ -776,6 +806,7 @@ pulseP :: Monad m
           -> Dynamics m Double
           -- ^ the time period
           -> Dynamics m Double
+{-# INLINABLE pulseP #-}
 pulseP st w period =
   discreteDynamics $
   Dynamics $ \p ->
@@ -803,6 +834,7 @@ ramp :: Monad m
         -> Dynamics m Double
         -- ^ the end time
         -> Dynamics m Double
+{-# INLINABLE ramp #-}
 ramp slope st e =
   discreteDynamics $
   Dynamics $ \p ->

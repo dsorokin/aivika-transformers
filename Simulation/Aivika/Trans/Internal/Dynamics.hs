@@ -62,26 +62,31 @@ instance Monad m => Monad (Dynamics m) where
 
 -- | Run the 'Dynamics' computation in the initial time point.
 runDynamicsInStartTime :: Dynamics m a -> Simulation m a
+{-# INLINABLE runDynamicsInStartTime #-}
 runDynamicsInStartTime (Dynamics m) =
   Simulation $ m . integStartPoint
 
 -- | Run the 'Dynamics' computation in the final time point.
 runDynamicsInStopTime :: Dynamics m a -> Simulation m a
+{-# INLINABLE runDynamicsInStopTime #-}
 runDynamicsInStopTime (Dynamics m) =
   Simulation $ m . integStopPoint
 
 -- | Run the 'Dynamics' computation in all integration time points.
 runDynamicsInIntegTimes :: Monad m => Dynamics m a -> Simulation m [m a]
+{-# INLINABLE runDynamicsInIntegTimes #-}
 runDynamicsInIntegTimes (Dynamics m) =
   Simulation $ return . map m . integPoints
 
 -- | Run the 'Dynamics' computation in the specified time point.
 runDynamicsInTime :: Double -> Dynamics m a -> Simulation m a
+{-# INLINABLE runDynamicsInTime #-}
 runDynamicsInTime t (Dynamics m) =
   Simulation $ \r -> m $ pointAt r t
 
 -- | Run the 'Dynamics' computation in the specified time points.
 runDynamicsInTimes :: Monad m => [Double] -> Dynamics m a -> Simulation m [m a]
+{-# INLINABLE runDynamicsInTimes #-}
 runDynamicsInTimes ts (Dynamics m) =
   Simulation $ \r -> return $ map (m . pointAt r) ts 
 
@@ -233,6 +238,7 @@ instance Monad m => ParameterLift Dynamics m where
   
 -- | Exception handling within 'Dynamics' computations.
 catchDynamics :: (MonadException m, Exception e) => Dynamics m a -> (e -> Dynamics m a) -> Dynamics m a
+{-# INLINABLE catchDynamics #-}
 catchDynamics (Dynamics m) h =
   Dynamics $ \p -> 
   catchComp (m p) $ \e ->
@@ -240,12 +246,14 @@ catchDynamics (Dynamics m) h =
                            
 -- | A computation with finalization part like the 'finally' function.
 finallyDynamics :: MonadException m => Dynamics m a -> Dynamics m b -> Dynamics m a
+{-# INLINABLE finallyDynamics #-}
 finallyDynamics (Dynamics m) (Dynamics m') =
   Dynamics $ \p ->
   finallyComp (m p) (m' p)
 
 -- | Like the standard 'throw' function.
 throwDynamics :: (MonadException m, Exception e) => e -> Dynamics m a
+{-# INLINABLE throwDynamics #-}
 throwDynamics e =
   Dynamics $ \p ->
   throwComp e
@@ -280,6 +288,7 @@ integPhase = Dynamics $ return . pointPhase
 
 -- | Show the debug message with the current simulation time.
 traceDynamics :: Monad m => String -> Dynamics m a -> Dynamics m a
+{-# INLINABLE traceDynamics #-}
 traceDynamics message m =
   Dynamics $ \p ->
   trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $

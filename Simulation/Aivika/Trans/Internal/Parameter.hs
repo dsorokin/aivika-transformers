@@ -72,6 +72,7 @@ instance Monad m => Monad (Parameter m) where
 
 -- | Run the parameter using the specified specs.
 runParameter :: MonadDES m => Parameter m a -> Specs m -> m a
+{-# INLINABLE runParameter #-}
 runParameter (Parameter m) sc =
   do q <- newEventQueue sc
      g <- newGenerator $ spcGeneratorType sc
@@ -84,6 +85,7 @@ runParameter (Parameter m) sc =
 -- | Run the given number of parameters using the specified specs, 
 --   where each parameter is distinguished by its index 'parameterIndex'.
 runParameters :: MonadDES m => Parameter m a -> Specs m -> Int -> [m a]
+{-# INLINABLE runParameters #-}
 runParameters (Parameter m) sc runs = map f [1 .. runs]
   where f i = do q <- newEventQueue sc
                  g <- newGenerator $ spcGeneratorType sc
@@ -251,6 +253,7 @@ instance Monad m => ParameterLift Parameter m where
     
 -- | Exception handling within 'Parameter' computations.
 catchParameter :: (MonadException m, Exception e) => Parameter m a -> (e -> Parameter m a) -> Parameter m a
+{-# INLINABLE catchParameter #-}
 catchParameter (Parameter m) h =
   Parameter $ \r -> 
   catchComp (m r) $ \e ->
@@ -258,12 +261,14 @@ catchParameter (Parameter m) h =
                            
 -- | A computation with finalization part like the 'finally' function.
 finallyParameter :: MonadException m => Parameter m a -> Parameter m b -> Parameter m a
+{-# INLINABLE finallyParameter #-}
 finallyParameter (Parameter m) (Parameter m') =
   Parameter $ \r ->
   finallyComp (m r) (m' r)
 
 -- | Like the standard 'throw' function.
 throwParameter :: (MonadException m, Exception e) => e -> Parameter m a
+{-# INLINABLE throwParameter #-}
 throwParameter e =
   Parameter $ \r ->
   throwComp e
@@ -303,6 +308,7 @@ memoParameter x =
 -- values from the table are used, it takes again the first value of the table,
 -- then the second one and so on.
 tableParameter :: Monad m => Array Int a -> Parameter m a
+{-# INLINABLE tableParameter #-}
 tableParameter t =
   do i <- simulationIndex
      return $ t ! (((i - i1) `mod` n) + i1)
