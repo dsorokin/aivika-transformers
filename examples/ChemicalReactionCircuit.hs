@@ -11,9 +11,9 @@
 {-# LANGUAGE Arrows #-}
 
 import Control.Arrow
-import Control.Monad.Fix
 
 import Simulation.Aivika.Trans
+import Simulation.Aivika.IO
 
 specs = Specs { spcStartTime = 0, 
                 spcStopTime = 13, 
@@ -21,7 +21,7 @@ specs = Specs { spcStartTime = 0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
 
-circuit :: (MonadComp m, MonadFix m) => Circuit m () [Double]
+circuit :: Circuit IO () [Double]
 circuit =
   let ka = 1
       kb = 1
@@ -34,7 +34,7 @@ circuit =
         c  <- integCircuit 0 -< dc
     returnA -< [a, b, c]
 
-model :: (MonadComp m, MonadFix m) => Simulation m [Double]
+model :: Simulation IO [Double]
 model =
   do results <-
        runTransform (circuitTransform circuit) $
