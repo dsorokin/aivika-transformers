@@ -32,6 +32,8 @@ import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Signal
 
+import Simulation.Aivika.IO.DES
+
 import qualified Simulation.Aivika.Vector as V
 import qualified Simulation.Aivika.Vector.Unboxed as UV
                                     
@@ -45,6 +47,7 @@ data SignalHistory m a =
 -- | Create a history of the signal values.
 newSignalHistory :: (MonadDES m, MonadIO m, MonadTemplate m)
                     => Signal m a -> Event m (SignalHistory m a)
+{-# SPECIALISE INLINE newSignalHistory :: Signal IO a -> Event IO (SignalHistory IO a) #-}
 newSignalHistory =
   newSignalHistoryStartingWith Nothing
 
@@ -52,6 +55,7 @@ newSignalHistory =
 -- the optional initial value.
 newSignalHistoryStartingWith :: (MonadDES m, MonadIO m, MonadTemplate m)
                                 => Maybe a -> Signal m a -> Event m (SignalHistory m a)
+{-# SPECIALISE INLINE newSignalHistoryStartingWith :: Maybe a -> Signal IO a -> Event IO (SignalHistory IO a) #-}
 newSignalHistoryStartingWith init signal =
   Event $ \p ->
   do ts <- liftIO UV.newVector
@@ -75,6 +79,7 @@ newSignalHistoryStartingWith init signal =
 -- | Read the history of signal values.
 readSignalHistory :: (MonadDES m, MonadIO m, MonadTemplate m)
                      => SignalHistory m a -> Event m (Array Int Double, Array Int a)
+{-# SPECIALISE INLINE readSignalHistory :: SignalHistory IO a -> Event IO (Array Int Double, Array Int a) #-}
 readSignalHistory history =
   Event $ \p ->
   liftIO $

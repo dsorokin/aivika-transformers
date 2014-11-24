@@ -106,6 +106,7 @@ handleSignal_ signal h =
      
 -- | Create a new signal source.
 newSignalSource :: MonadDES m => Simulation m (SignalSource m a)
+{-# INLINABLE newSignalSource #-}
 newSignalSource =
   do list <- newRef []
      let queue  = SignalHandlerQueue { queueList = list }
@@ -124,6 +125,7 @@ newSignalSource =
 
 -- | Trigger all next signal handlers.
 triggerSignalHandlers :: MonadDES m => SignalHandlerQueue m a -> a -> Event m ()
+{-# INLINABLE triggerSignalHandlers #-}
 triggerSignalHandlers q a =
   Event $ \p ->
   do hs <- invokeEvent p $ readRef (queueList q)
@@ -132,6 +134,7 @@ triggerSignalHandlers q a =
             
 -- | Enqueue the handler and return its representative in the queue.            
 enqueueSignalHandler :: MonadDES m => SignalHandlerQueue m a -> (a -> Event m ()) -> Event m (SignalHandler m a)
+{-# INLINABLE enqueueSignalHandler #-}
 enqueueSignalHandler q h =
   Event $ \p ->
   do r <- invokeSimulation (pointRun p) $ newRef ()
@@ -142,6 +145,7 @@ enqueueSignalHandler q h =
 
 -- | Dequeue the handler representative.
 dequeueSignalHandler :: MonadDES m => SignalHandlerQueue m a -> SignalHandler m a -> Event m ()
+{-# INLINABLE dequeueSignalHandler #-}
 dequeueSignalHandler q h = 
   modifyRef (queueList q) (delete h)
 
@@ -158,7 +162,7 @@ instance MonadDES m => Monoid (Signal m a) where
   {-# INLINE mappend #-}
   mappend = merge2Signals
 
-  {-# INLINE mconcat #-}
+  {-# INLINABLE mconcat #-}
   mconcat [] = emptySignal
   mconcat [x1] = x1
   mconcat [x1, x2] = merge2Signals x1 x2
@@ -170,6 +174,7 @@ instance MonadDES m => Monoid (Signal m a) where
   
 -- | Map the signal according the specified function.
 mapSignal :: MonadDES m => (a -> b) -> Signal m a -> Signal m b
+{-# INLINABLE mapSignal #-}
 mapSignal f m =
   Signal { handleSignal = \h -> 
             handleSignal m $ h . f }
@@ -177,6 +182,7 @@ mapSignal f m =
 -- | Filter only those signal values that satisfy to 
 -- the specified predicate.
 filterSignal :: MonadDES m => (a -> Bool) -> Signal m a -> Signal m a
+{-# INLINABLE filterSignal #-}
 filterSignal p m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a ->
@@ -185,6 +191,7 @@ filterSignal p m =
 -- | Filter only those signal values that satisfy to 
 -- the specified predicate.
 filterSignalM :: MonadDES m => (a -> Event m Bool) -> Signal m a -> Signal m a
+{-# INLINABLE filterSignalM #-}
 filterSignalM p m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a ->
@@ -193,6 +200,7 @@ filterSignalM p m =
   
 -- | Merge two signals.
 merge2Signals :: MonadDES m => Signal m a -> Signal m a -> Signal m a
+{-# INLINABLE merge2Signals #-}
 merge2Signals m1 m2 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -201,6 +209,7 @@ merge2Signals m1 m2 =
 
 -- | Merge three signals.
 merge3Signals :: MonadDES m => Signal m a -> Signal m a -> Signal m a -> Signal m a
+{-# INLINABLE merge3Signals #-}
 merge3Signals m1 m2 m3 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -212,6 +221,7 @@ merge3Signals m1 m2 m3 =
 merge4Signals :: MonadDES m
                  => Signal m a -> Signal m a -> Signal m a
                  -> Signal m a -> Signal m a
+{-# INLINABLE merge4Signals #-}
 merge4Signals m1 m2 m3 m4 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -224,6 +234,7 @@ merge4Signals m1 m2 m3 m4 =
 merge5Signals :: MonadDES m
                  => Signal m a -> Signal m a -> Signal m a
                  -> Signal m a -> Signal m a -> Signal m a
+{-# INLINABLE merge5Signals #-}
 merge5Signals m1 m2 m3 m4 m5 =
   Signal { handleSignal = \h ->
             do x1 <- handleSignal m1 h
@@ -235,28 +246,33 @@ merge5Signals m1 m2 m3 m4 m5 =
 
 -- | Compose the signal.
 mapSignalM :: MonadDES m => (a -> Event m b) -> Signal m a -> Signal m b
+{-# INLINABLE mapSignalM #-}
 mapSignalM f m =
   Signal { handleSignal = \h ->
             handleSignal m (f >=> h) }
   
 -- | Transform the signal.
 apSignal :: MonadDES m => Event m (a -> b) -> Signal m a -> Signal m b
+{-# INLINABLE apSignal #-}
 apSignal f m =
   Signal { handleSignal = \h ->
             handleSignal m $ \a -> do { x <- f; h (x a) } }
 
 -- | An empty signal which is never triggered.
 emptySignal :: MonadDES m => Signal m a
+{-# INLINABLE emptySignal #-}
 emptySignal =
   Signal { handleSignal = \h -> return mempty }
      
 -- | Trigger the signal with the current time.
 triggerSignalWithCurrentTime :: MonadDES m => SignalSource m Double -> Event m ()
+{-# INLINABLE triggerSignalWithCurrentTime #-}
 triggerSignalWithCurrentTime s =
   Event $ \p -> invokeEvent p $ triggerSignal s (pointTime p)
 
 -- | Return a signal that is triggered in the specified time points.
 newSignalInTimes :: MonadDES m => [Double] -> Event m (Signal m Double)
+{-# INLINABLE newSignalInTimes #-}
 newSignalInTimes xs =
   do s <- liftSimulation newSignalSource
      enqueueEventWithTimes xs $ triggerSignalWithCurrentTime s
@@ -265,6 +281,7 @@ newSignalInTimes xs =
 -- | Return a signal that is triggered in the integration time points.
 -- It should be called with help of 'runEventInStartTime'.
 newSignalInIntegTimes :: MonadDES m => Event m (Signal m Double)
+{-# INLINABLE newSignalInIntegTimes #-}
 newSignalInIntegTimes =
   do s <- liftSimulation newSignalSource
      enqueueEventWithIntegTimes $ triggerSignalWithCurrentTime s
@@ -273,6 +290,7 @@ newSignalInIntegTimes =
 -- | Return a signal that is triggered in the start time.
 -- It should be called with help of 'runEventInStartTime'.
 newSignalInStartTime :: MonadDES m => Event m (Signal m Double)
+{-# INLINABLE newSignalInStartTime #-}
 newSignalInStartTime =
   do s <- liftSimulation newSignalSource
      t <- liftParameter starttime
@@ -281,6 +299,7 @@ newSignalInStartTime =
 
 -- | Return a signal that is triggered in the final time.
 newSignalInStopTime :: MonadDES m => Event m (Signal m Double)
+{-# INLINABLE newSignalInStopTime #-}
 newSignalInStopTime =
   do s <- liftSimulation newSignalSource
      t <- liftParameter stoptime
@@ -298,6 +317,7 @@ data Signalable m a =
 
 -- | Return a signal notifying that the value has changed.
 signalableChanged :: MonadDES m => Signalable m a -> Signal m a
+{-# INLINABLE signalableChanged #-}
 signalableChanged x = mapSignalM (const $ readSignalable x) $ signalableChanged_ x
 
 instance Functor m => Functor (Signalable m) where
@@ -315,12 +335,14 @@ instance (MonadDES m, Monoid a) => Monoid (Signalable m a) where
 
 -- | Return an identity.
 emptySignalable :: (MonadDES m, Monoid a) => Signalable m a
+{-# INLINABLE emptySignalable #-}
 emptySignalable =
   Signalable { readSignalable = return mempty,
                signalableChanged_ = mempty }
 
 -- | An associative operation.
 appendSignalable :: (MonadDES m, Monoid a) => Signalable m a -> Signalable m a -> Signalable m a
+{-# INLINABLE appendSignalable #-}
 appendSignalable m1 m2 =
   Signalable { readSignalable = liftM2 (<>) (readSignalable m1) (readSignalable m2),
                signalableChanged_ = (signalableChanged_ m1) <> (signalableChanged_ m2) }
@@ -328,6 +350,7 @@ appendSignalable m1 m2 =
 -- | Transform a signal so that the resulting signal returns a sequence of arrivals
 -- saving the information about the time points at which the original signal was received.
 arrivalSignal :: MonadDES m => Signal m a -> Signal m (Arrival a)
+{-# INLINABLE arrivalSignal #-}
 arrivalSignal m = 
   Signal { handleSignal = \h ->
              do r <- liftSimulation $ newRef Nothing
@@ -346,6 +369,7 @@ arrivalSignal m =
 
 -- | Show the debug message with the current simulation time.
 traceSignal :: MonadDES m => String -> Signal m a -> Signal m a 
+{-# INLINABLE traceSignal #-}
 traceSignal message m =
   Signal { handleSignal = \h ->
             handleSignal m $ traceEvent message . h }
