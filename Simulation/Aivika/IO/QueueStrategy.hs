@@ -23,12 +23,16 @@ import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Template
 
+import Simulation.Aivika.IO.DES
+
 import qualified Simulation.Aivika.PriorityQueue as PQ
 import qualified Simulation.Aivika.Vector as V
 
 -- | A template-based implementation of the 'StaticPriorities' queue strategy.
 instance (MonadDES m, MonadIO m, MonadTemplate m)
          => QueueStrategy m StaticPriorities where
+
+  {-# SPECIALISE instance QueueStrategy IO StaticPriorities #-}
 
   -- | A queue used by the 'StaticPriorities' strategy.
   newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue a)
@@ -44,6 +48,8 @@ instance (MonadDES m, MonadIO m, MonadTemplate m)
 instance (QueueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
          => DequeueStrategy m StaticPriorities where
 
+  {-# SPECIALISE instance DequeueStrategy IO StaticPriorities #-}
+
   strategyDequeue (StaticPriorityQueue q) =
     liftIO $
     do (_, i) <- PQ.queueFront q
@@ -54,12 +60,16 @@ instance (QueueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
 instance (DequeueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
          => PriorityQueueStrategy m StaticPriorities Double where
 
+  {-# SPECIALISE instance PriorityQueueStrategy IO StaticPriorities Double #-}
+
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i =
     liftIO $ PQ.enqueue q p i
 
 -- | A template-based implementation of the 'SIRO' queue strategy.
 instance (MonadDES m, MonadIO m, MonadTemplate m)
          => QueueStrategy m SIRO where
+
+  {-# SPECIALISE instance QueueStrategy IO SIRO #-}
 
   -- | A queue used by the 'SIRO' strategy.
   newtype StrategyQueue m SIRO a = SIROQueue (V.Vector a)
@@ -77,6 +87,8 @@ instance (MonadDES m, MonadIO m, MonadTemplate m)
 instance (QueueStrategy m SIRO, MonadIO m, MonadTemplate m)
          => DequeueStrategy m SIRO where
 
+  {-# SPECIALISE instance DequeueStrategy IO SIRO #-}
+
   strategyDequeue (SIROQueue q) =
     do n <- liftIO $ V.vectorCount q
        i <- liftParameter $ randomUniformInt 0 (n - 1)
@@ -87,6 +99,8 @@ instance (QueueStrategy m SIRO, MonadIO m, MonadTemplate m)
 -- | A template-based implementation of the 'SIRO' queue strategy.
 instance (DequeueStrategy m SIRO, MonadIO m, MonadTemplate m)
          => EnqueueStrategy m SIRO where
+
+  {-# SPECIALISE instance EnqueueStrategy IO SIRO #-}
 
   strategyEnqueue (SIROQueue q) i =
     liftIO $ V.appendVector q i

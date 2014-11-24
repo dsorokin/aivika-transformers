@@ -24,4 +24,6 @@ import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Template
 
 -- | A template-based instantiation of the 'MonadComp' type class. 
-instance (Functor m, Monad m, MonadIO m, MonadException m, MonadTemplate m) => MonadComp m
+instance (Functor m, Monad m, MonadIO m, MonadException m, MonadTemplate m) => MonadComp m where
+
+  {-# SPECIALISE instance MonadComp IO #-}

@@ -24,4 +24,6 @@ import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.Template
 
 -- | A template-based instantiation of the 'MonadSD' type class.
-instance (MonadComp m, MonadIO m, MonadTemplate m) => MonadSD m
+instance (MonadComp m, MonadIO m, MonadTemplate m) => MonadSD m where
+  
+  {-# SPECIALISE instance MonadSD IO #-}

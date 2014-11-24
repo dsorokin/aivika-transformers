@@ -24,4 +24,6 @@ import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Template
 
 -- | A template-based instantiation of the 'MonadDES' type class.
-instance (MonadComp m, MonadIO m, MonadTemplate m) => MonadDES m
+instance (MonadComp m, MonadIO m, MonadTemplate m) => MonadDES m where
+
+  {-# SPECIALISE instance MonadDES IO #-}
