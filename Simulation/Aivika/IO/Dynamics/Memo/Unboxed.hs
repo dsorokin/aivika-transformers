@@ -37,9 +37,7 @@ instance (MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e whe
   {-# SPECIALISE instance MonadMemo IO Float #-}
   {-# SPECIALISE instance MonadMemo IO Int #-}
 
-  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
-  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO Float -> Simulation IO (Dynamics IO Float) #-}
-  {-# SPECIALISE INLINE memoDynamics :: Dynamics IO Int -> Simulation IO (Dynamics IO Int) #-}
+  {-# INLINE memoDynamics #-}
   memoDynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc  = runSpecs r
@@ -71,9 +69,7 @@ instance (MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e whe
                 loop n' ph'
        return $ interpolateDynamics $ Dynamics r
 
-  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO Double -> Simulation IO (Dynamics IO Double) #-}
-  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO Float -> Simulation IO (Dynamics IO Float) #-}
-  {-# SPECIALISE INLINE memo0Dynamics :: Dynamics IO Int -> Simulation IO (Dynamics IO Int) #-}
+  {-# INLINE memo0Dynamics #-}
   memo0Dynamics (Dynamics m) = 
     Simulation $ \r ->
     do let sc = runSpecs r
