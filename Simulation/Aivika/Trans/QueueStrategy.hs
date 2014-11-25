@@ -13,16 +13,12 @@
 --
 module Simulation.Aivika.Trans.QueueStrategy where
 
-import Control.Monad.Trans
+import Control.Monad
 
-import Simulation.Aivika.Trans.DES
-import Simulation.Aivika.Trans.Simulation
-import Simulation.Aivika.Trans.Event
-
-import qualified Simulation.Aivika.Trans.DoubleLinkedList as LL
+import Simulation.Aivika.Trans.Internal.Types
 
 -- | Defines the basic queue strategy.
-class MonadDES m => QueueStrategy m s where
+class Monad m => QueueStrategy m s where
 
   -- | The strategy queue.
   data StrategyQueue m s :: * -> *
@@ -83,57 +79,3 @@ data SIRO = SIRO deriving (Eq, Ord, Show)
 
 -- | Strategy: Static Priorities. It uses the priority queue.
 data StaticPriorities = StaticPriorities deriving (Eq, Ord, Show)
-
--- | An implementation of the 'FCFS' queue strategy.
-instance MonadDES m => QueueStrategy m FCFS where
-
-  -- | A queue used by the 'FCFS' strategy.
-  newtype StrategyQueue m FCFS a = FCFSQueue (LL.DoubleLinkedList m a)
-
-  {-# INLINABLE newStrategyQueue #-}
-  newStrategyQueue s = fmap FCFSQueue LL.newList
-
-  {-# INLINABLE strategyQueueNull #-}
-  strategyQueueNull (FCFSQueue q) = LL.listNull q
-
--- | An implementation of the 'FCFS' queue strategy.
-instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
-
-  {-# INLINABLE strategyDequeue #-}
-  strategyDequeue (FCFSQueue q) =
-    do i <- LL.listFirst q
-       LL.listRemoveFirst q
-       return i
-
--- | An implementation of the 'FCFS' queue strategy.
-instance DequeueStrategy m FCFS => EnqueueStrategy m FCFS where
-
-  {-# INLINABLE strategyEnqueue #-}
-  strategyEnqueue (FCFSQueue q) i = LL.listAddLast q i
-
--- | An implementation of the 'LCFS' queue strategy.
-instance MonadDES m => QueueStrategy m LCFS where
-
-  -- | A queue used by the 'LCFS' strategy.
-  newtype StrategyQueue m LCFS a = LCFSQueue (LL.DoubleLinkedList m a)
-
-  {-# INLINABLE newStrategyQueue #-}
-  newStrategyQueue s = fmap LCFSQueue LL.newList
-       
-  {-# INLINABLE strategyQueueNull #-}
-  strategyQueueNull (LCFSQueue q) = LL.listNull q
-
--- | An implementation of the 'LCFS' queue strategy.
-instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
-
-  {-# INLINABLE strategyDequeue #-}
-  strategyDequeue (LCFSQueue q) =
-    do i <- LL.listFirst q
-       LL.listRemoveFirst q
-       return i
-
--- | An implementation of the 'LCFS' queue strategy.
-instance DequeueStrategy m LCFS => EnqueueStrategy m LCFS where
-
-  {-# INLINABLE strategyEnqueue #-}
-  strategyEnqueue (LCFSQueue q) i = LL.listInsertFirst q i

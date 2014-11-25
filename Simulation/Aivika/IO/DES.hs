@@ -23,6 +23,8 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Template
 
+import Simulation.Aivika.IO.QueueStrategy
+
 -- | A template-based instantiation of the 'MonadDES' type class.
 instance (MonadComp m, MonadIO m, MonadTemplate m) => MonadDES m where
 
