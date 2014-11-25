@@ -127,6 +127,7 @@ invokeProcess pid (Process m) = m pid
 
 -- | Hold the process for the specified time period.
 holdProcess :: MonadDES m => Double -> Process m ()
+{-# INLINABLE holdProcess #-}
 holdProcess dt =
   Process $ \pid ->
   Cont $ \c ->
@@ -146,6 +147,7 @@ holdProcess dt =
 -- | Interrupt a process with the specified identifier if the process
 -- is held by computation 'holdProcess'.
 interruptProcess :: MonadDES m => ProcessId m -> Event m ()
+{-# INLINABLE interruptProcess #-}
 interruptProcess pid =
   Event $ \p ->
   do let x = processInterruptCont pid
@@ -160,12 +162,14 @@ interruptProcess pid =
             
 -- | Test whether the process with the specified identifier was interrupted.
 processInterrupted :: MonadDES m => ProcessId m -> Event m Bool
+{-# INLINABLE processInterrupted #-}
 processInterrupted pid =
   Event $ \p ->
   invokeEvent p $ readRef (processInterruptRef pid)
 
 -- | Passivate the process.
 passivateProcess :: MonadDES m => Process m ()
+{-# INLINABLE passivateProcess #-}
 passivateProcess =
   Process $ \pid ->
   Cont $ \c ->
@@ -178,6 +182,7 @@ passivateProcess =
 
 -- | Test whether the process with the specified identifier is passivated.
 processPassive :: MonadDES m => ProcessId m -> Event m Bool
+{-# INLINABLE processPassive #-}
 processPassive pid =
   Event $ \p ->
   do let x = processReactCont pid
@@ -186,6 +191,7 @@ processPassive pid =
 
 -- | Reactivate a process with the specified identifier.
 reactivateProcess :: MonadDES m => ProcessId m -> Event m ()
+{-# INLINABLE reactivateProcess #-}
 reactivateProcess pid =
   Event $ \p ->
   do let x = processReactCont pid
@@ -199,6 +205,7 @@ reactivateProcess pid =
 
 -- | Prepare the processes identifier for running.
 processIdPrepare :: MonadDES m => ProcessId m -> Event m ()
+{-# INLINABLE processIdPrepare #-}
 processIdPrepare pid =
   Event $ \p ->
   do y <- invokeEvent p $ readRef (processStarted pid)
@@ -219,6 +226,7 @@ processIdPrepare pid =
 -- To run the process at the specified time, you can use
 -- the 'enqueueProcess' function.
 runProcess :: MonadDES m => Process m () -> Event m ()
+{-# INLINABLE runProcess #-}
 runProcess p =
   do pid <- liftSimulation newProcessId
      runProcessUsingId pid p
@@ -230,6 +238,7 @@ runProcess p =
 -- To run the process at the specified time, you can use
 -- the 'enqueueProcessUsingId' function.
 runProcessUsingId :: MonadDES m => ProcessId m -> Process m () -> Event m ()
+{-# INLINABLE runProcessUsingId #-}
 runProcessUsingId pid p =
   do processIdPrepare pid
      runCont m cont econt ccont (processCancelSource pid) False
@@ -241,44 +250,52 @@ runProcessUsingId pid p =
 -- | Run the process in the start time immediately involving all pending
 -- 'CurrentEvents' in the computation too.
 runProcessInStartTime :: MonadDES m => Process m () -> Simulation m ()
+{-# INLINABLE runProcessInStartTime #-}
 runProcessInStartTime = runEventInStartTime . runProcess
 
 -- | Run the process in the start time immediately using the specified identifier
 -- and involving all pending 'CurrentEvents' in the computation too.
 runProcessInStartTimeUsingId :: MonadDES m => ProcessId m -> Process m () -> Simulation m ()
+{-# INLINABLE runProcessInStartTimeUsingId #-}
 runProcessInStartTimeUsingId pid p =
   runEventInStartTime $ runProcessUsingId pid p
 
 -- | Run the process in the final simulation time immediately involving all
 -- pending 'CurrentEvents' in the computation too.
 runProcessInStopTime :: MonadDES m => Process m () -> Simulation m ()
+{-# INLINABLE runProcessInStopTime #-}
 runProcessInStopTime = runEventInStopTime . runProcess
 
 -- | Run the process in the final simulation time immediately using 
 -- the specified identifier and involving all pending 'CurrentEvents'
 -- in the computation too.
 runProcessInStopTimeUsingId :: MonadDES m => ProcessId m -> Process m () -> Simulation m ()
+{-# INLINABLE runProcessInStopTimeUsingId #-}
 runProcessInStopTimeUsingId pid p =
   runEventInStopTime $ runProcessUsingId pid p
 
 -- | Enqueue the process that will be then started at the specified time
 -- from the event queue.
 enqueueProcess :: MonadDES m => Double -> Process m () -> Event m ()
+{-# INLINABLE enqueueProcess #-}
 enqueueProcess t p =
   enqueueEvent t $ runProcess p
 
 -- | Enqueue the process that will be then started at the specified time
 -- from the event queue.
 enqueueProcessUsingId :: MonadDES m => Double -> ProcessId m -> Process m () -> Event m ()
+{-# INLINABLE enqueueProcessUsingId #-}
 enqueueProcessUsingId t pid p =
   enqueueEvent t $ runProcessUsingId pid p
 
 -- | Return the current process identifier.
 processId :: MonadDES m => Process m (ProcessId m)
+{-# INLINABLE processId #-}
 processId = Process return
 
 -- | Create a new process identifier.
 newProcessId :: MonadDES m => Simulation m (ProcessId m)
+{-# INLINABLE newProcessId #-}
 newProcessId =
   Simulation $ \r ->
   do x <- invokeSimulation r $ newRef Nothing
@@ -296,10 +313,12 @@ newProcessId =
 
 -- | Cancel a process with the specified identifier, interrupting it if needed.
 cancelProcessWithId :: MonadDES m => ProcessId m -> Event m ()
+{-# INLINABLE cancelProcessWithId #-}
 cancelProcessWithId pid = contCancellationInitiate (processCancelSource pid)
 
 -- | The process cancels itself.
 cancelProcess :: MonadDES m => Process m a
+{-# INLINABLE cancelProcess #-}
 cancelProcess =
   do pid <- processId
      liftEvent $ cancelProcessWithId pid
@@ -308,15 +327,18 @@ cancelProcess =
 
 -- | Test whether the process with the specified identifier was cancelled.
 processCancelled :: MonadDES m => ProcessId m -> Event m Bool
+{-# INLINABLE processCancelled #-}
 processCancelled pid = contCancellationInitiated (processCancelSource pid)
 
 -- | Return a signal that notifies about cancelling the process with 
 -- the specified identifier.
 processCancelling :: ProcessId m -> Signal m ()
+{-# INLINABLE processCancelling #-}
 processCancelling pid = contCancellationInitiating (processCancelSource pid)
 
 -- | Register a handler that will be invoked in case of cancelling the current process.
 whenCancellingProcess :: MonadDES m => Event m () -> Process m ()
+{-# INLINABLE whenCancellingProcess #-}
 whenCancellingProcess h =
   Process $ \pid ->
   liftEvent $
@@ -389,6 +411,7 @@ instance MonadDES m => ProcessLift Process m where
 
 -- | Exception handling within 'Process' computations.
 catchProcess :: (MonadDES m, Exception e) => Process m a -> (e -> Process m a) -> Process m a
+{-# INLINABLE catchProcess #-}
 catchProcess (Process m) h =
   Process $ \pid ->
   catchCont (m pid) $ \e ->
@@ -396,6 +419,7 @@ catchProcess (Process m) h =
                            
 -- | A computation with finalization part.
 finallyProcess :: MonadDES m => Process m a -> Process m b -> Process m a
+{-# INLINABLE finallyProcess #-}
 finallyProcess (Process m) (Process m') =
   Process $ \pid ->
   finallyCont (m pid) (m' pid)
@@ -408,6 +432,7 @@ finallyProcess (Process m) (Process m') =
 -- functions like the stated one that use the 'throw' function but within the 'IO' computation,
 -- which allows already handling the exception.
 throwProcess :: (MonadDES m, Exception e) => e -> Process m a
+{-# INLINABLE throwProcess #-}
 throwProcess = liftEvent . throwEvent
 
 -- | Execute the specified computations in parallel within
@@ -422,6 +447,7 @@ throwProcess = liftEvent . throwEvent
 --
 -- New 'ProcessId' identifiers will be assigned to the started processes.
 processParallel :: MonadDES m => [Process m a] -> Process m [a]
+{-# INLINABLE processParallel #-}
 processParallel xs =
   liftSimulation (processParallelCreateIds xs) >>= processParallelUsingIds 
 
@@ -429,6 +455,7 @@ processParallel xs =
 -- It will be more efficient than as you would specify the process identifiers
 -- with help of the 'processUsingId' combinator and then would call 'processParallel'.
 processParallelUsingIds :: MonadDES m => [(ProcessId m, Process m a)] -> Process m [a]
+{-# INLINABLE processParallelUsingIds #-}
 processParallelUsingIds xs =
   Process $ \pid ->
   do liftEvent $ processParallelPrepare xs
@@ -438,11 +465,13 @@ processParallelUsingIds xs =
 
 -- | Like 'processParallel' but ignores the result.
 processParallel_ :: MonadDES m => [Process m a] -> Process m ()
+{-# INLINABLE processParallel_ #-}
 processParallel_ xs =
   liftSimulation (processParallelCreateIds xs) >>= processParallelUsingIds_ 
 
 -- | Like 'processParallelUsingIds' but ignores the result.
 processParallelUsingIds_ :: MonadDES m => [(ProcessId m, Process m a)] -> Process m ()
+{-# INLINABLE processParallelUsingIds_ #-}
 processParallelUsingIds_ xs =
   Process $ \pid ->
   do liftEvent $ processParallelPrepare xs
@@ -452,12 +481,14 @@ processParallelUsingIds_ xs =
 
 -- | Create the new process identifiers.
 processParallelCreateIds :: MonadDES m => [Process m a] -> Simulation m [(ProcessId m, Process m a)]
+{-# INLINABLE processParallelCreateIds #-}
 processParallelCreateIds xs =
   do pids <- liftSimulation $ forM xs $ const newProcessId
      return $ zip pids xs
 
 -- | Prepare the processes for parallel execution.
 processParallelPrepare :: MonadDES m => [(ProcessId m, Process m a)] -> Event m ()
+{-# INLINABLE processParallelPrepare #-}
 processParallelPrepare xs =
   Event $ \p ->
   forM_ xs $ invokeEvent p . processIdPrepare . fst
@@ -471,6 +502,7 @@ processParallelPrepare xs =
 -- that is the nested process cannot be interrupted using only the parent
 -- process identifier.
 processUsingId :: MonadDES m => ProcessId m -> Process m a -> Process m a
+{-# INLINABLE processUsingId #-}
 processUsingId pid x =
   Process $ \pid' ->
   do liftEvent $ processIdPrepare pid
@@ -479,16 +511,19 @@ processUsingId pid x =
 -- | Spawn the child process. In case of cancelling one of the processes,
 -- other process will be cancelled too.
 spawnProcess :: MonadDES m => Process m () -> Process m ()
+{-# INLINABLE spawnProcess #-}
 spawnProcess = spawnProcessWith CancelTogether
 
 -- | Spawn the child process specifying the process identifier.
 -- In case of cancelling one of the processes, other process will be cancelled too.
 spawnProcessUsingId :: MonadDES m => ProcessId m -> Process m () -> Process m ()
+{-# INLINABLE spawnProcessUsingId #-}
 spawnProcessUsingId = spawnProcessUsingIdWith CancelTogether
 
 -- | Spawn the child process specifying how the child and parent processes
 -- should be cancelled in case of need.
 spawnProcessWith :: MonadDES m => ContCancellation -> Process m () -> Process m ()
+{-# INLINABLE spawnProcessWith #-}
 spawnProcessWith cancellation x =
   do pid <- liftSimulation newProcessId
      spawnProcessUsingIdWith cancellation pid x
@@ -496,6 +531,7 @@ spawnProcessWith cancellation x =
 -- | Spawn the child process specifying how the child and parent processes
 -- should be cancelled in case of need.
 spawnProcessUsingIdWith :: MonadDES m => ContCancellation -> ProcessId m -> Process m () -> Process m ()
+{-# INLINABLE spawnProcessUsingIdWith #-}
 spawnProcessUsingIdWith cancellation pid x =
   Process $ \pid' ->
   do liftEvent $ processIdPrepare pid
@@ -503,6 +539,7 @@ spawnProcessUsingIdWith cancellation pid x =
 
 -- | Await the signal.
 processAwait :: MonadDES m => Signal m a -> Process m a
+{-# INLINABLE processAwait #-}
 processAwait signal =
   Process $ \pid -> contAwait signal
 
@@ -514,6 +551,7 @@ data MemoResult a = MemoComputed a
 -- | Memoize the process so that it would always return the same value
 -- within the simulation run.
 memoProcess :: MonadDES m => Process m a -> Simulation m (Process m a)
+{-# INLINABLE memoProcess #-}
 memoProcess x =
   Simulation $ \r ->
   do started  <- invokeSimulation r $ newRef False
@@ -552,12 +590,14 @@ memoProcess x =
 
 -- | Zip two parallel processes waiting for the both.
 zipProcessParallel :: MonadDES m => Process m a -> Process m b -> Process m (a, b)
+{-# INLINABLE zipProcessParallel #-}
 zipProcessParallel x y =
   do [Left a, Right b] <- processParallel [fmap Left x, fmap Right y]
      return (a, b)
 
 -- | Zip three parallel processes waiting for their results.
 zip3ProcessParallel :: MonadDES m => Process m a -> Process m b -> Process m c -> Process m (a, b, c)
+{-# INLINABLE zip3ProcessParallel #-}
 zip3ProcessParallel x y z =
   do [Left a,
       Right (Left b),
@@ -571,6 +611,7 @@ zip3ProcessParallel x y z =
 -- processes could be applied independently, although they will refer
 -- to the same pair of values.
 unzipProcess :: MonadDES m => Process m (a, b) -> Simulation m (Process m a, Process m b)
+{-# INLINABLE unzipProcess #-}
 unzipProcess xy =
   do xy' <- memoProcess xy
      return (fmap fst xy', fmap snd xy')
@@ -586,6 +627,7 @@ unzipProcess xy =
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
 timeoutProcess :: MonadDES m => Double -> Process m a -> Process m (Maybe a)
+{-# INLINABLE timeoutProcess #-}
 timeoutProcess timeout p =
   do pid <- liftSimulation newProcessId
      timeoutProcessUsingId timeout pid p
@@ -601,6 +643,7 @@ timeoutProcess timeout p =
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
 timeoutProcessUsingId :: MonadDES m => Double -> ProcessId m -> Process m a -> Process m (Maybe a)
+{-# INLINABLE timeoutProcessUsingId #-}
 timeoutProcessUsingId timeout pid p =
   do s <- liftSimulation newSignalSource
      timeoutPid <- liftSimulation newProcessId
@@ -629,6 +672,7 @@ timeoutProcessUsingId timeout pid p =
 -- | Yield to allow other 'Process' and 'Event' computations to run
 -- at the current simulation time point.
 processYield :: MonadDES m => Process m ()
+{-# INLINABLE processYield #-}
 processYield =
   Process $ \pid ->
   Cont $ \c ->
@@ -642,6 +686,7 @@ processYield =
 -- (see 'cancelProcessWithId'), but then only its finalization parts (see 'finallyProcess')
 -- will be called, usually, to release the resources acquired before.
 neverProcess :: MonadDES m => Process m a
+{-# INLINABLE neverProcess #-}
 neverProcess =
   Process $ \pid ->
   Cont $ \c ->
@@ -651,6 +696,7 @@ neverProcess =
 
 -- | Show the debug message with the current simulation time.
 traceProcess :: MonadDES m => String -> Process m a -> Process m a
+{-# INLINABLE traceProcess #-}
 traceProcess message m =
   Process $ \pid ->
   traceCont message $

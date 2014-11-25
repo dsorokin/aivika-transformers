@@ -80,6 +80,7 @@ data ContCancellationSource m =
 
 -- | Create the cancellation source.
 newContCancellationSource :: MonadDES m => Simulation m (ContCancellationSource m)
+{-# INLINABLE newContCancellationSource #-}
 newContCancellationSource =
   Simulation $ \r ->
   do r1 <- invokeSimulation r $ newRef False
@@ -92,26 +93,31 @@ newContCancellationSource =
 
 -- | Signal when the cancellation is intiating.
 contCancellationInitiating :: ContCancellationSource m -> Signal m ()
+{-# INLINABLE contCancellationInitiating #-}
 contCancellationInitiating =
   publishSignal . contCancellationInitiatingSource
 
 -- | Whether the cancellation was initiated.
 contCancellationInitiated :: MonadDES m => ContCancellationSource m -> Event m Bool
+{-# INLINABLE contCancellationInitiated #-}
 contCancellationInitiated =
   readRef . contCancellationInitiatedRef
 
 -- | Whether the cancellation was activated.
 contCancellationActivated :: MonadDES m => ContCancellationSource m -> Event m Bool
+{-# INLINABLE contCancellationActivated #-}
 contCancellationActivated =
   readRef . contCancellationActivatedRef
 
 -- | Deactivate the cancellation.
 contCancellationDeactivate :: MonadDES m => ContCancellationSource m -> Event m ()
+{-# INLINABLE contCancellationDeactivate #-}
 contCancellationDeactivate x =
   writeRef (contCancellationActivatedRef x) False
 
 -- | If the main computation is cancelled then all the nested ones will be cancelled too.
 contCancellationBind :: MonadDES m => ContCancellationSource m -> [ContCancellationSource m] -> Event m (DisposableEvent m)
+{-# INLINABLE contCancellationBind #-}
 contCancellationBind x ys =
   Event $ \p ->
   do hs1 <- forM ys $ \y ->
@@ -134,6 +140,7 @@ contCancellationConnect :: MonadDES m
                            -- ^ the child
                            -> Event m (DisposableEvent m)
                            -- ^ computation of the disposable handler
+{-# INLINABLE contCancellationConnect #-}
 contCancellationConnect parent cancellation child =
   Event $ \p ->
   do let m1 =
@@ -158,6 +165,7 @@ contCancellationConnect parent cancellation child =
 
 -- | Initiate the cancellation.
 contCancellationInitiate :: MonadDES m => ContCancellationSource m -> Event m ()
+{-# INLINABLE contCancellationInitiate #-}
 contCancellationInitiate x =
   Event $ \p ->
   do f <- invokeEvent p $ readRef (contCancellationInitiatedRef x)
@@ -294,6 +302,7 @@ cancelCont c =
 
 -- | Like @return a >>= k@.
 callCont :: MonadDES m => (a -> Cont m b) -> a -> ContParams m b -> Event m ()
+{-# INLINABLE callCont #-}
 callCont k a c =
   Event $ \p ->
   do z <- invokeEvent p $ contCanceled c
@@ -303,6 +312,7 @@ callCont k a c =
 
 -- | Exception handling within 'Cont' computations.
 catchCont :: (MonadDES m, Exception e) => Cont m a -> (e -> Cont m a) -> Cont m a
+{-# INLINABLE catchCont #-}
 catchCont (Cont m) h = 
   Cont $ \c0 ->
   Event $ \p -> 
@@ -319,6 +329,7 @@ catchCont (Cont m) h =
                
 -- | A computation with finalization part.
 finallyCont :: MonadDES m => Cont m a -> Cont m b -> Cont m a
+{-# INLINABLE finallyCont #-}
 finallyCont (Cont m) (Cont m') = 
   Cont $ \c0 -> 
   Event $ \p ->
@@ -356,6 +367,7 @@ finallyCont (Cont m) (Cont m') =
 -- functions like the stated one that use the 'throw' function but within the 'IO' computation,
 -- which allows already handling the exception.
 throwCont :: (MonadDES m, Exception e) => e -> Cont m a
+{-# INLINABLE throwCont #-}
 throwCont = liftEvent . throwEvent
 
 -- | Run the 'Cont' computation with the specified cancelation source 
@@ -374,6 +386,7 @@ runCont :: MonadDES m
            -> Bool
            -- ^ whether to support the exception handling from the beginning
            -> Event m ()
+{-# INLINABLE runCont #-}
 runCont (Cont m) cont econt ccont cancelSource catchFlag = 
   m ContParams { contCont = cont,
                  contAux  = 
@@ -455,6 +468,7 @@ contParallel :: MonadDES m
                 -- the nested computation,
                 -- the cancellation source
                 -> Cont m [a]
+{-# INLINABLE contParallel #-}
 contParallel xs =
   Cont $ \c ->
   Event $ \p ->
@@ -519,6 +533,7 @@ contParallel_ :: MonadDES m
                  -- the nested computation,
                  -- the cancellation source
                  -> Cont m ()
+{-# INLINABLE contParallel_ #-}
 contParallel_ xs =
   Cont $ \c ->
   Event $ \p ->
@@ -574,6 +589,7 @@ contParallel_ xs =
 
 -- | Rerun the 'Cont' computation with the specified cancellation source.
 rerunCont :: MonadDES m => Cont m a -> ContCancellationSource m -> Cont m a
+{-# INLINABLE rerunCont #-}
 rerunCont x cancelSource =
   Cont $ \c ->
   Event $ \p ->
@@ -601,6 +617,7 @@ rerunCont x cancelSource =
 
 -- | Run the 'Cont' computation in parallel but connect the cancellation sources.
 spawnCont :: MonadDES m => ContCancellation -> Cont m () -> ContCancellationSource m -> Cont m ()
+{-# INLINABLE spawnCont #-}
 spawnCont cancellation x cancelSource =
   Cont $ \c ->
   Event $ \p ->
@@ -632,6 +649,7 @@ spawnCont cancellation x cancelSource =
 
 -- | Freeze the computation parameters temporarily.
 contFreeze :: MonadDES m => ContParams m a -> Event m (Event m (Maybe (ContParams m a)))
+{-# INLINABLE contFreeze #-}
 contFreeze c =
   Event $ \p ->
   do let r = pointRun p
@@ -668,6 +686,7 @@ contFreeze c =
      
 -- | Await the signal.
 contAwait :: MonadDES m => Signal m a -> Cont m a
+{-# INLINABLE contAwait #-}
 contAwait signal =
   Cont $ \c ->
   Event $ \p ->
@@ -692,6 +711,7 @@ contAwait signal =
 
 -- | Show the debug message with the current simulation time.
 traceCont :: MonadDES m => String -> Cont m a -> Cont m a
+{-# INLINABLE traceCont #-}
 traceCont message (Cont m) =
   Cont $ \c ->
   Event $ \p ->
