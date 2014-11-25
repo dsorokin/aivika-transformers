@@ -37,10 +37,12 @@ instance (MonadDES m, MonadIO m, MonadTemplate m)
   -- | A queue used by the 'StaticPriorities' strategy.
   newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue a)
 
+  {-# SPECIALISE INLINE newStrategyQueue :: StaticPriorities -> Simulation IO (StrategyQueue IO StaticPriorities a) #-}
   newStrategyQueue s =
     fmap StaticPriorityQueue $
     liftIO $ PQ.newQueue
 
+  {-# SPECIALISE INLINE strategyQueueNull :: StrategyQueue IO StaticPriorities a -> Event IO Bool #-}
   strategyQueueNull (StaticPriorityQueue q) =
     liftIO $ PQ.queueNull q
 
@@ -50,6 +52,7 @@ instance (QueueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
 
   {-# SPECIALISE instance DequeueStrategy IO StaticPriorities #-}
 
+  {-# SPECIALISE INLINE strategyDequeue :: StrategyQueue IO StaticPriorities a -> Event IO a #-}
   strategyDequeue (StaticPriorityQueue q) =
     liftIO $
     do (_, i) <- PQ.queueFront q
@@ -62,6 +65,7 @@ instance (DequeueStrategy m StaticPriorities, MonadIO m, MonadTemplate m)
 
   {-# SPECIALISE instance PriorityQueueStrategy IO StaticPriorities Double #-}
 
+  {-# SPECIALISE INLINE strategyEnqueueWithPriority :: StrategyQueue IO StaticPriorities a -> Double -> a -> Event IO () #-}
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i =
     liftIO $ PQ.enqueue q p i
 
@@ -74,10 +78,12 @@ instance (MonadDES m, MonadIO m, MonadTemplate m)
   -- | A queue used by the 'SIRO' strategy.
   newtype StrategyQueue m SIRO a = SIROQueue (V.Vector a)
   
+  {-# SPECIALISE INLINE newStrategyQueue :: SIRO -> Simulation IO (StrategyQueue IO SIRO a) #-}
   newStrategyQueue s =
     fmap SIROQueue $
     liftIO $ V.newVector
 
+  {-# SPECIALISE INLINE strategyQueueNull :: StrategyQueue IO SIRO a -> Event IO Bool #-}
   strategyQueueNull (SIROQueue q) =
     liftIO $
     do n <- V.vectorCount q
@@ -89,6 +95,7 @@ instance (QueueStrategy m SIRO, MonadIO m, MonadTemplate m)
 
   {-# SPECIALISE instance DequeueStrategy IO SIRO #-}
 
+  {-# SPECIALISE INLINE strategyDequeue :: StrategyQueue IO SIRO a -> Event IO a #-}
   strategyDequeue (SIROQueue q) =
     do n <- liftIO $ V.vectorCount q
        i <- liftParameter $ randomUniformInt 0 (n - 1)
@@ -102,5 +109,6 @@ instance (DequeueStrategy m SIRO, MonadIO m, MonadTemplate m)
 
   {-# SPECIALISE instance EnqueueStrategy IO SIRO #-}
 
+  {-# SPECIALISE INLINE strategyEnqueue :: StrategyQueue IO SIRO a -> a -> Event IO () #-}
   strategyEnqueue (SIROQueue q) i =
     liftIO $ V.appendVector q i

@@ -87,6 +87,7 @@ newFCFSResource :: MonadDES m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (FCFSResource m)
+{-# INLINABLE newFCFSResource #-}
 newFCFSResource = newResource FCFS
 
 -- | Create a new FCFS resource with the specified initial and maximum counts,
@@ -97,6 +98,7 @@ newFCFSResourceWithMaxCount :: MonadDES m
                                -> Maybe Int
                                -- ^ the maximum count of the resource, which can be indefinite
                                -> Simulation m (FCFSResource m)
+{-# INLINABLE newFCFSResourceWithMaxCount #-}
 newFCFSResourceWithMaxCount = newResourceWithMaxCount FCFS
 
 -- | Create a new LCFS resource with the specified initial count which value becomes
@@ -105,6 +107,7 @@ newLCFSResource :: MonadDES m
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (LCFSResource m)
+{-# INLINABLE newLCFSResource #-}
 newLCFSResource = newResource LCFS
 
 -- | Create a new LCFS resource with the specified initial and maximum counts,
@@ -115,6 +118,7 @@ newLCFSResourceWithMaxCount :: MonadDES m
                                -> Maybe Int
                                -- ^ the maximum count of the resource, which can be indefinite
                                -> Simulation m (LCFSResource m)
+{-# INLINABLE newLCFSResourceWithMaxCount #-}
 newLCFSResourceWithMaxCount = newResourceWithMaxCount LCFS
 
 -- | Create a new SIRO resource with the specified initial count which value becomes
@@ -123,6 +127,7 @@ newSIROResource :: (MonadDES m, QueueStrategy m SIRO)
                    => Int
                    -- ^ the initial count (and maximal count too) of the resource
                    -> Simulation m (SIROResource m)
+{-# INLINABLE newSIROResource #-}
 newSIROResource = newResource SIRO
 
 -- | Create a new SIRO resource with the specified initial and maximum counts,
@@ -133,6 +138,7 @@ newSIROResourceWithMaxCount :: (MonadDES m, QueueStrategy m SIRO)
                                -> Maybe Int
                                -- ^ the maximum count of the resource, which can be indefinite
                                -> Simulation m (SIROResource m)
+{-# INLINABLE newSIROResourceWithMaxCount #-}
 newSIROResourceWithMaxCount = newResourceWithMaxCount SIRO
 
 -- | Create a new priority resource with the specified initial count which value becomes
@@ -141,6 +147,7 @@ newPriorityResource :: (MonadDES m, QueueStrategy m StaticPriorities)
                        => Int
                        -- ^ the initial count (and maximal count too) of the resource
                        -> Simulation m (PriorityResource m)
+{-# INLINABLE newPriorityResource #-}
 newPriorityResource = newResource StaticPriorities
 
 -- | Create a new priority resource with the specified initial and maximum counts,
@@ -151,6 +158,7 @@ newPriorityResourceWithMaxCount :: (MonadDES m, QueueStrategy m StaticPriorities
                                    -> Maybe Int
                                    -- ^ the maximum count of the resource, which can be indefinite
                                    -> Simulation m (PriorityResource m)
+{-# INLINABLE newPriorityResourceWithMaxCount #-}
 newPriorityResourceWithMaxCount = newResourceWithMaxCount StaticPriorities
 
 -- | Create a new resource with the specified queue strategy and initial count.
@@ -161,6 +169,7 @@ newResource :: (MonadDES m, QueueStrategy m s)
                -> Int
                -- ^ the initial count (and maximal count too) of the resource
                -> Simulation m (Resource m s)
+{-# INLINABLE newResource #-}
 newResource s count =
   Simulation $ \r ->
   do when (count < 0) $
@@ -184,6 +193,7 @@ newResourceWithMaxCount :: (MonadDES m, QueueStrategy m s)
                            -> Maybe Int
                            -- ^ the maximum count of the resource, which can be indefinite
                            -> Simulation m (Resource m s)
+{-# INLINABLE newResourceWithMaxCount #-}
 newResourceWithMaxCount s count maxCount =
   Simulation $ \r ->
   do when (count < 0) $
@@ -206,6 +216,7 @@ newResourceWithMaxCount s count maxCount =
 
 -- | Return the current count of the resource.
 resourceCount :: MonadDES m => Resource m s -> Event m Int
+{-# INLINABLE resourceCount #-}
 resourceCount r =
   Event $ \p -> invokeEvent p $ readRef (resourceCountRef r)
 
@@ -216,6 +227,7 @@ requestResource :: (MonadDES m, EnqueueStrategy m s)
                    => Resource m s 
                    -- ^ the requested resource
                    -> Process m ()
+{-# INLINABLE requestResource #-}
 requestResource r =
   Process $ \pid ->
   Cont $ \c ->
@@ -238,6 +250,7 @@ requestResourceWithPriority :: (MonadDES m, PriorityQueueStrategy m s p)
                                -> p
                                -- ^ the priority
                                -> Process m ()
+{-# INLINABLE requestResourceWithPriority #-}
 requestResourceWithPriority r priority =
   Process $ \pid ->
   Cont $ \c ->
@@ -257,6 +270,7 @@ releaseResource :: (MonadDES m, DequeueStrategy m s)
                    => Resource m s
                    -- ^ the resource to release
                    -> Process m ()
+{-# INLINABLE releaseResource #-}
 releaseResource r = 
   Process $ \_ ->
   Cont $ \c ->
@@ -270,6 +284,7 @@ releaseResourceWithinEvent :: (MonadDES m, DequeueStrategy m s)
                               => Resource m s
                               -- ^ the resource to release
                               -> Event m ()
+{-# INLINABLE releaseResourceWithinEvent #-}
 releaseResourceWithinEvent r =
   Event $ \p ->
   do a <- invokeEvent p $ readRef (resourceCountRef r)
@@ -300,6 +315,7 @@ tryRequestResourceWithinEvent :: MonadDES m
                                  => Resource m s
                                  -- ^ the resource which we try to request for
                                  -> Event m Bool
+{-# INLINABLE tryRequestResourceWithinEvent #-}
 tryRequestResourceWithinEvent r =
   Event $ \p ->
   do a <- invokeEvent p $ readRef (resourceCountRef r)
@@ -318,6 +334,7 @@ usingResource :: (MonadDES m, EnqueueStrategy m s)
                  -- ^ the action we are going to apply having the resource
                  -> Process m a
                  -- ^ the result of the action
+{-# INLINABLE usingResource #-}
 usingResource r m =
   do requestResource r
      finallyProcess m $ releaseResource r
@@ -335,6 +352,7 @@ usingResourceWithPriority :: (MonadDES m, PriorityQueueStrategy m s p)
                              -- ^ the action we are going to apply having the resource
                              -> Process m a
                              -- ^ the result of the action
+{-# INLINABLE usingResourceWithPriority #-}
 usingResourceWithPriority r priority m =
   do requestResourceWithPriority r priority
      finallyProcess m $ releaseResource r

@@ -90,13 +90,16 @@ instance MonadDES m => QueueStrategy m FCFS where
   -- | A queue used by the 'FCFS' strategy.
   newtype StrategyQueue m FCFS a = FCFSQueue (LL.DoubleLinkedList m a)
 
+  {-# INLINABLE newStrategyQueue #-}
   newStrategyQueue s = fmap FCFSQueue LL.newList
 
+  {-# INLINABLE strategyQueueNull #-}
   strategyQueueNull (FCFSQueue q) = LL.listNull q
 
 -- | An implementation of the 'FCFS' queue strategy.
 instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
 
+  {-# INLINABLE strategyDequeue #-}
   strategyDequeue (FCFSQueue q) =
     do i <- LL.listFirst q
        LL.listRemoveFirst q
@@ -105,6 +108,7 @@ instance QueueStrategy m FCFS => DequeueStrategy m FCFS where
 -- | An implementation of the 'FCFS' queue strategy.
 instance DequeueStrategy m FCFS => EnqueueStrategy m FCFS where
 
+  {-# INLINABLE strategyEnqueue #-}
   strategyEnqueue (FCFSQueue q) i = LL.listAddLast q i
 
 -- | An implementation of the 'LCFS' queue strategy.
@@ -113,13 +117,16 @@ instance MonadDES m => QueueStrategy m LCFS where
   -- | A queue used by the 'LCFS' strategy.
   newtype StrategyQueue m LCFS a = LCFSQueue (LL.DoubleLinkedList m a)
 
+  {-# INLINABLE newStrategyQueue #-}
   newStrategyQueue s = fmap LCFSQueue LL.newList
        
+  {-# INLINABLE strategyQueueNull #-}
   strategyQueueNull (LCFSQueue q) = LL.listNull q
 
 -- | An implementation of the 'LCFS' queue strategy.
 instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
 
+  {-# INLINABLE strategyDequeue #-}
   strategyDequeue (LCFSQueue q) =
     do i <- LL.listFirst q
        LL.listRemoveFirst q
@@ -128,4 +135,5 @@ instance QueueStrategy m LCFS => DequeueStrategy m LCFS where
 -- | An implementation of the 'LCFS' queue strategy.
 instance DequeueStrategy m LCFS => EnqueueStrategy m LCFS where
 
+  {-# INLINABLE strategyEnqueue #-}
   strategyEnqueue (LCFSQueue q) i = LL.listInsertFirst q i

@@ -42,6 +42,7 @@ data DoubleLinkedList m a =
 
 -- | Test whether the list is empty.
 listNull :: MonadDES m => DoubleLinkedList m a -> Event m Bool
+{-# INLINABLE listNull #-}
 listNull x =
   do head <- readRef (listHead x) 
      case head of
@@ -50,10 +51,12 @@ listNull x =
     
 -- | Return the number of elements in the list.
 listCount :: MonadDES m => DoubleLinkedList m a -> Event m Int
+{-# INLINABLE listCount #-}
 listCount x = readRef (listSize x)
 
 -- | Create a new list.
 newList :: MonadDES m => Simulation m (DoubleLinkedList m a)
+{-# INLINABLE newList #-}
 newList =
   do head <- newRef Nothing 
      tail <- newRef Nothing
@@ -64,6 +67,7 @@ newList =
 
 -- | Insert a new element in the beginning.
 listInsertFirst :: MonadDES m => DoubleLinkedList m a -> a -> Event m ()
+{-# INLINABLE listInsertFirst #-}
 listInsertFirst x v =
   do size <- readRef (listSize x)
      writeRef (listSize x) (size + 1)
@@ -88,6 +92,7 @@ listInsertFirst x v =
 
 -- | Add a new element to the end.
 listAddLast :: MonadDES m => DoubleLinkedList m a -> a -> Event m ()
+{-# INLINABLE listAddLast #-}
 listAddLast x v =
   do size <- readRef (listSize x)
      writeRef (listSize x) (size + 1)
@@ -112,6 +117,7 @@ listAddLast x v =
 
 -- | Remove the first element.
 listRemoveFirst :: MonadDES m => DoubleLinkedList m a -> Event m ()
+{-# INLINABLE listRemoveFirst #-}
 listRemoveFirst x =
   do head <- readRef (listHead x) 
      case head of
@@ -131,6 +137,7 @@ listRemoveFirst x =
 
 -- | Remove the last element.
 listRemoveLast :: MonadDES m => DoubleLinkedList m a -> Event m ()
+{-# INLINABLE listRemoveLast #-}
 listRemoveLast x =
   do tail <- readRef (listTail x) 
      case tail of
@@ -150,6 +157,7 @@ listRemoveLast x =
 
 -- | Return the first element.
 listFirst :: MonadDES m => DoubleLinkedList m a -> Event m a
+{-# INLINABLE listFirst #-}
 listFirst x =
   do head <- readRef (listHead x)
      case head of
@@ -160,6 +168,7 @@ listFirst x =
 
 -- | Return the last element.
 listLast :: MonadDES m => DoubleLinkedList m a -> Event m a
+{-# INLINABLE listLast #-}
 listLast x =
   do tail <- readRef (listTail x)
      case tail of
