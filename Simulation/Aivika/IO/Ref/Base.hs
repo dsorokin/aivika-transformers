@@ -30,25 +30,25 @@ instance (MonadIO m, MonadTemplate m) => MonadRef m where
   -- | A type safe wrapper for the 'IORef' reference.
   newtype Ref m a = Ref { refValue :: IORef a }
 
-  {-# SPECIALISE INLINE newRef :: a -> Simulation IO (Ref IO a) #-}
+  {-# INLINE newRef #-}
   newRef a =
     Simulation $ \r ->
     do x <- liftIO $ newIORef a
        return Ref { refValue = x }
      
-  {-# SPECIALISE INLINE readRef :: Ref IO a -> Event IO a #-}
+  {-# INLINE readRef #-}
   readRef r = Event $ \p ->
     liftIO $ readIORef (refValue r)
 
-  {-# SPECIALISE INLINE writeRef :: Ref IO a -> a -> Event IO () #-}
+  {-# INLINE writeRef #-}
   writeRef r a = Event $ \p -> 
     a `seq` liftIO $ writeIORef (refValue r) a
 
-  {-# SPECIALISE INLINE modifyRef :: Ref IO a -> (a -> a) -> Event IO () #-}
+  {-# INLINE modifyRef #-}
   modifyRef r f = Event $ \p -> 
     do a <- liftIO $ readIORef (refValue r)
        let b = f a
        b `seq` liftIO $ writeIORef (refValue r) b
 
-  {-# SPECIALISE INLINE equalRef :: Ref IO a -> Ref IO a -> Bool #-}
+  {-# INLINE equalRef #-}
   equalRef (Ref r1) (Ref r2) = (r1 == r2)
