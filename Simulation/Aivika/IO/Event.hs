@@ -40,7 +40,7 @@ instance (MonadIO m, MonadTemplate m) => EventQueueing m where
                  -- ^ the actual time of the event queue
                }
 
-  {-# SPECIALISE INLINE newEventQueue :: Specs IO -> IO (EventQueue IO) #-}
+  {-# INLINABLE newEventQueue #-}
   newEventQueue specs =
     liftIO $
     do f <- newIORef False
@@ -50,26 +50,26 @@ instance (MonadIO m, MonadTemplate m) => EventQueueing m where
                            queueBusy = f,
                            queueTime = t }
 
-  {-# SPECIALISE INLINE enqueueEvent :: Double -> Event IO () -> Event IO () #-}
+  {-# INLINE enqueueEvent #-}
   enqueueEvent t (Event m) =
     Event $ \p ->
     let pq = queuePQ $ runEventQueue $ pointRun p
     in liftIO $ PQ.enqueue pq t m
 
-  {-# SPECIALISE INLINE runEventWith :: EventProcessing -> Event IO a -> Dynamics IO a #-}
+  {-# INLINE runEventWith #-}
   runEventWith processing (Event e) =
     Dynamics $ \p ->
     do invokeDynamics p $ processEvents processing
        e p
 
-  {-# SPECIALISE INLINE eventQueueCount :: Event IO Int #-}
+  {-# INLINE eventQueueCount #-}
   eventQueueCount =
     Event $
     liftIO . PQ.queueCount . queuePQ . runEventQueue . pointRun
 
 -- | Process the pending events.
 processPendingEventsCore :: (MonadIO m, MonadTemplate m) => Bool -> Dynamics m ()
-{-# SPECIALISE INLINE processPendingEventsCore :: Bool -> Dynamics IO () #-}
+{-# INLINE processPendingEventsCore #-}
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -104,7 +104,7 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
 
 -- | Process the pending events synchronously, i.e. without past.
 processPendingEvents :: (MonadIO m, MonadTemplate m) => Bool -> Dynamics m ()
-{-# SPECIALISE INLINE processPendingEvents :: Bool -> Dynamics IO () #-}
+{-# INLINE processPendingEvents #-}
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
     do let q = runEventQueue $ pointRun p
@@ -119,27 +119,27 @@ processPendingEvents includingCurrentEvents = Dynamics r where
 
 -- | A memoized value.
 processEventsIncludingCurrent :: (MonadIO m, MonadTemplate m) => Dynamics m ()
-{-# SPECIALISE INLINE processEventsIncludingCurrent :: Dynamics IO () #-}
+{-# INLINE processEventsIncludingCurrent #-}
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
 processEventsIncludingEarlier :: (MonadIO m, MonadTemplate m) => Dynamics m ()
-{-# SPECIALISE INLINE processEventsIncludingEarlier :: Dynamics IO () #-}
+{-# INLINE processEventsIncludingEarlier #-}
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
 processEventsIncludingCurrentCore :: (MonadIO m, MonadTemplate m) => Dynamics m ()
-{-# SPECIALISE INLINE processEventsIncludingCurrentCore :: Dynamics IO () #-}
+{-# INLINE processEventsIncludingCurrentCore #-}
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
 processEventsIncludingEarlierCore :: (MonadIO m, MonadTemplate m) => Dynamics m ()
-{-# SPECIALISE INLINE processEventsIncludingEarlierCore :: Dynamics IO () #-}
+{-# INLINE processEventsIncludingEarlierCore #-}
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
 processEvents :: (MonadIO m, MonadTemplate m) => EventProcessing -> Dynamics m ()
-{-# SPECIALISE INLINE processEvents :: EventProcessing -> Dynamics IO () #-}
+{-# INLINABLE processEvents #-}
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
