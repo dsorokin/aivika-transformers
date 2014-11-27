@@ -34,28 +34,28 @@ instance (Functor m, MonadIO m, MonadTemplate m) => MonadGenerator m where
                 -- ^ the generator of normal numbers with mean 0 and variance 1
               }
 
-  {-# SPECIALISE INLINE generateUniform :: Generator IO -> Double -> Double -> IO Double #-}
+  {-# INLINE generateUniform #-}
   generateUniform = generateUniform01 . generator01
 
-  {-# SPECIALISE INLINE generateUniformInt :: Generator IO -> Int -> Int -> IO Int #-}
+  {-# INLINE generateUniformInt #-}
   generateUniformInt = generateUniformInt01 . generator01
 
-  {-# SPECIALISE INLINE generateUniform :: Generator IO -> Double -> Double -> IO Double #-}
+  {-# INLINE generateNormal #-}
   generateNormal = generateNormal01 . generatorNormal01
 
-  {-# SPECIALISE INLINE generateExponential :: Generator IO -> Double -> IO Double #-}
+  {-# INLINE generateExponential #-}
   generateExponential = generateExponential01 . generator01
 
-  {-# SPECIALISE INLINE generateErlang :: Generator IO -> Double -> Int -> IO Double #-}
+  {-# INLINE generateErlang #-}
   generateErlang = generateErlang01 . generator01
 
-  {-# SPECIALISE INLINE generatePoisson :: Generator IO -> Double -> IO Int #-}
+  {-# INLINE generatePoisson #-}
   generatePoisson = generatePoisson01 . generator01
 
-  {-# SPECIALISE INLINE generateBinomial :: Generator IO -> Double -> Int -> IO Int #-}
+  {-# INLINE generateBinomial #-}
   generateBinomial = generateBinomial01 . generator01
 
-  {-# SPECIALISE INLINE newGenerator :: GeneratorType IO -> IO (Generator IO) #-}
+  {-# INLINABLE newGenerator #-}
   newGenerator tp =
     case tp of
       SimpleGenerator ->
@@ -67,7 +67,7 @@ instance (Functor m, MonadIO m, MonadTemplate m) => MonadGenerator m where
       CustomGenerator01 g ->
         newRandomGenerator01 g
 
-  {-# SPECIALISE INLINE newRandomGenerator :: RandomGen g => g -> IO (Generator IO) #-}
+  {-# INLINABLE newRandomGenerator #-}
   newRandomGenerator g = 
     do r <- liftIO $ newIORef g
        let g01 = do g <- liftIO $ readIORef r
@@ -76,7 +76,7 @@ instance (Functor m, MonadIO m, MonadTemplate m) => MonadGenerator m where
                     return x
        newRandomGenerator01 g01
 
-  {-# SPECIALISE INLINE newRandomGenerator01 :: IO Double -> IO (Generator IO) #-}
+  {-# INLINABLE newRandomGenerator01 #-}
   newRandomGenerator01 g01 =
     do gNormal01 <- newNormalGenerator01 g01
        return Generator { generator01 = g01,
@@ -91,7 +91,7 @@ generateUniform01 :: Monad m
                      -> Double
                      -- ^ maximum
                      -> m Double
-{-# SPECIALISE INLINE generateUniform01 :: IO Double -> Double -> Double -> IO Double #-}
+{-# INLINE generateUniform01 #-}
 generateUniform01 g min max =
   do x <- g
      return $ min + x * (max - min)
@@ -105,7 +105,7 @@ generateUniformInt01 :: Monad m
                         -> Int
                         -- ^ maximum
                         -> m Int
-{-# SPECIALISE INLINE generateUniformInt01 :: IO Double -> Int -> Int -> IO Int #-}
+{-# INLINE generateUniformInt01 #-}
 generateUniformInt01 g min max =
   do x <- g
      let min' = fromIntegral min
@@ -121,7 +121,7 @@ generateNormal01 :: Monad m
                     -> Double
                     -- ^ variance
                     -> m Double
-{-# SPECIALISE INLINE generateNormal01 :: IO Double -> Double -> Double -> IO Double #-}
+{-# INLINE generateNormal01 #-}
 generateNormal01 g mu nu =
   do x <- g
      return $ mu + nu * x
@@ -132,7 +132,7 @@ newNormalGenerator01 :: MonadIO m
                         => m Double
                         -- ^ the generator
                         -> m (m Double)
-{-# SPECIALISE INLINE newNormalGenerator01 :: IO Double -> IO (IO Double) #-}
+{-# INLINABLE newNormalGenerator01 #-}
 newNormalGenerator01 g =
   do nextRef <- liftIO $ newIORef 0.0
      flagRef <- liftIO $ newIORef False
@@ -175,7 +175,7 @@ generateExponential01 :: Monad m
                          -> Double
                          -- ^ the mean
                          -> m Double
-{-# SPECIALISE INLINE generateExponential01 :: IO Double -> Double -> IO Double #-}
+{-# INLINE generateExponential01 #-}
 generateExponential01 g mu =
   do x <- g
      return (- log x * mu)
@@ -189,7 +189,7 @@ generateErlang01 :: Monad m
                     -> Int
                     -- ^ the shape
                     -> m Double
-{-# SPECIALISE INLINE generateErlang01 :: IO Double -> Double -> Int -> IO Double #-}
+{-# INLINABLE generateErlang01 #-}
 generateErlang01 g beta m =
   do x <- loop m 1
      return (- log x * beta)
@@ -206,7 +206,7 @@ generatePoisson01 :: Monad m
                      -> Double
                      -- ^ the mean
                      -> m Int
-{-# SPECIALISE INLINE generatePoisson01 :: IO Double -> Double -> IO Int #-}
+{-# INLINABLE generatePoisson01 #-}
 generatePoisson01 g mu =
   do prob0 <- g
      let loop prob prod acc
@@ -226,7 +226,7 @@ generateBinomial01 :: Monad m
                       -> Int
                       -- ^ the number of trials
                       -> m Int
-{-# SPECIALISE INLINE generateBinomial01 :: IO Double -> Double -> Int -> IO Int #-}
+{-# INLINABLE generateBinomial01 #-}
 generateBinomial01 g prob trials = loop trials 0 where
   loop n acc
     | n < 0     = error "Negative number of trials: generateBinomial."
