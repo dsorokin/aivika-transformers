@@ -30,11 +30,15 @@ import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Var
 
+import Simulation.Aivika.IO.DES
+
 import qualified Simulation.Aivika.Vector as V
 import qualified Simulation.Aivika.Vector.Unboxed as UV
 
 -- | The 'MonadIO' based monad is an instance of 'MonadVar'.
 instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
+
+  {-# SPECIALISE instance MonadVar IO #-}
 
   -- | A template-based implementation of the variable.
   data Var m a = 
@@ -42,7 +46,8 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
           varMS    :: V.Vector a,
           varYS    :: V.Vector a,
           varChangedSource :: SignalSource m a }
-     
+
+  {-# INLINABLE newVar #-}
   newVar a =
     Simulation $ \r ->
     do xs <- liftIO UV.newVector
@@ -57,6 +62,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
                     varYS = ms,
                     varChangedSource = s }
 
+  {-# INLINABLE varMemo #-}
   varMemo v =
     runEventWith CurrentEventsOrFromPast $
     Event $ \p ->
@@ -81,6 +87,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
                         then V.readVector ms i
                         else V.readVector ms $ - (i + 1) - 1
 
+  {-# INLINABLE readVar #-}
   readVar v = 
     Event $ \p ->
     liftIO $
@@ -97,6 +104,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
                    then V.readVector ys i
                    else V.readVector ys $ - (i + 1) - 1
 
+  {-# INLINABLE writeVar #-}
   writeVar v a =
     Event $ \p ->
     do let xs = varXS v
@@ -117,6 +125,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
                       V.appendVector ys $! a
        invokeEvent p $ triggerSignal s a
 
+  {-# INLINABLE modifyVar #-}
   modifyVar v f =
     Event $ \p ->
     do let xs = varXS v
@@ -141,6 +150,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
                       liftIO $ V.appendVector ys $! b
                       invokeEvent p $ triggerSignal s b
 
+  {-# INLINABLE freezeVar #-}
   freezeVar v =
     Event $ \p ->
     liftIO $
@@ -149,6 +159,8 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadVar m where
        ys <- V.freezeVector (varYS v)
        return (xs, ms, ys)
      
+  {-# INLINE varChanged #-}
   varChanged v = publishSignal (varChangedSource v)
 
+  {-# INLINE varChanged_ #-}
   varChanged_ v = mapSignal (const ()) $ varChanged v     
