@@ -136,18 +136,22 @@ data QueueItem a =
   
 -- | Create a new infinite FCFS queue.  
 newFCFSQueue :: MonadDES m => Event m (FCFSQueue m a)
+{-# INLINE newFCFSQueue #-}
 newFCFSQueue = newQueue FCFS FCFS
   
 -- | Create a new infinite LCFS queue.  
 newLCFSQueue :: MonadDES m => Event m (LCFSQueue m a)  
+{-# INLINE newLCFSQueue #-}
 newLCFSQueue = newQueue LCFS FCFS
   
 -- | Create a new infinite SIRO queue.  
 newSIROQueue :: (MonadDES m, QueueStrategy m SIRO) => Event m (SIROQueue m a)  
+{-# INLINE newSIROQueue #-}
 newSIROQueue = newQueue SIRO FCFS
   
 -- | Create a new infinite priority queue.
 newPriorityQueue :: (MonadDES m, QueueStrategy m StaticPriorities) => Event m (PriorityQueue m a)  
+{-# INLINE newPriorityQueue #-}
 newPriorityQueue = newQueue StaticPriorities FCFS
   
 -- | Create a new infinite queue with the specified strategies.  
@@ -159,6 +163,7 @@ newQueue :: (MonadDES m,
             -> so
             -- ^ the strategy applied to the dequeueing (output) processes when the queue is empty
             -> Event m (Queue m sm so a)  
+{-# INLINABLE newQueue #-}
 newQueue sm so =
   do t  <- liftDynamics time
      i  <- liftSimulation $ newRef 0
@@ -192,6 +197,7 @@ newQueue sm so =
 --
 -- See also 'queueNullChanged' and 'queueNullChanged_'.
 queueNull :: MonadDES m => Queue m sm so a -> Event m Bool
+{-# INLINABLE queueNull #-}
 queueNull q =
   Event $ \p ->
   do n <- invokeEvent p $ readRef (queueCountRef q)
@@ -199,32 +205,38 @@ queueNull q =
   
 -- | Signal when the 'queueNull' property value has changed.
 queueNullChanged :: MonadDES m => Queue m sm so a -> Signal m Bool
+{-# INLINE queueNullChanged #-}
 queueNullChanged q =
   mapSignalM (const $ queueNull q) (queueNullChanged_ q)
   
 -- | Signal when the 'queueNull' property value has changed.
 queueNullChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE queueNullChanged_ #-}
 queueNullChanged_ = queueCountChanged_
 
 -- | Return the current queue size.
 --
 -- See also 'queueCountStats', 'queueCountChanged' and 'queueCountChanged_'.
 queueCount :: MonadDES m => Queue m sm so a -> Event m Int
+{-# INLINABLE queueCount #-}
 queueCount q =
   Event $ \p -> invokeEvent p $ readRef (queueCountRef q)
 
 -- | Return the queue size statistics.
 queueCountStats :: MonadDES m => Queue m sm so a -> Event m (TimingStats Int)
+{-# INLINABLE queueCountStats #-}
 queueCountStats q =
   Event $ \p -> invokeEvent p $ readRef (queueCountStatsRef q)
   
 -- | Signal when the 'queueCount' property value has changed.
 queueCountChanged :: MonadDES m => Queue m sm so a -> Signal m Int
+{-# INLINE queueCountChanged #-}
 queueCountChanged q =
   mapSignalM (const $ queueCount q) (queueCountChanged_ q)
   
 -- | Signal when the 'queueCount' property value has changed.
 queueCountChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE queueCountChanged_ #-}
 queueCountChanged_ q =
   mapSignal (const ()) (enqueueStored q) <>
   mapSignal (const ()) (dequeueExtracted q)
@@ -233,16 +245,19 @@ queueCountChanged_ q =
 --
 -- See also 'enqueueStoreCountChanged' and 'enqueueStoreCountChanged_'.
 enqueueStoreCount :: MonadDES m => Queue m sm so a -> Event m Int
+{-# INLINABLE enqueueStoreCount #-}
 enqueueStoreCount q =
   Event $ \p -> invokeEvent p $ readRef (enqueueStoreCountRef q)
   
 -- | Signal when the 'enqueueStoreCount' property value has changed.
 enqueueStoreCountChanged :: MonadDES m => Queue m sm so a -> Signal m Int
+{-# INLINE enqueueStoreCountChanged #-}
 enqueueStoreCountChanged q =
   mapSignalM (const $ enqueueStoreCount q) (enqueueStoreCountChanged_ q)
   
 -- | Signal when the 'enqueueStoreCount' property value has changed.
 enqueueStoreCountChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE enqueueStoreCountChanged_ #-}
 enqueueStoreCountChanged_ q =
   mapSignal (const ()) (enqueueStored q)
       
@@ -252,16 +267,19 @@ enqueueStoreCountChanged_ q =
 --
 -- See also 'dequeueCountChanged' and 'dequeueCountChanged_'.
 dequeueCount :: MonadDES m => Queue m sm so a -> Event m Int
+{-# INLINABLE dequeueCount #-}
 dequeueCount q =
   Event $ \p -> invokeEvent p $ readRef (dequeueCountRef q)
       
 -- | Signal when the 'dequeueCount' property value has changed.
 dequeueCountChanged :: MonadDES m => Queue m sm so a -> Signal m Int
+{-# INLINE dequeueCountChanged #-}
 dequeueCountChanged q =
   mapSignalM (const $ dequeueCount q) (dequeueCountChanged_ q)
   
 -- | Signal when the 'dequeueCount' property value has changed.
 dequeueCountChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE dequeueCountChanged_ #-}
 dequeueCountChanged_ q =
   mapSignal (const ()) (dequeueRequested q)
       
@@ -269,22 +287,26 @@ dequeueCountChanged_ q =
 --
 -- See also 'dequeueExtractCountChanged' and 'dequeueExtractCountChanged_'.
 dequeueExtractCount :: MonadDES m => Queue m sm so a -> Event m Int
+{-# INLINABLE dequeueExtractCount #-}
 dequeueExtractCount q =
   Event $ \p -> invokeEvent p $ readRef (dequeueExtractCountRef q)
       
 -- | Signal when the 'dequeueExtractCount' property value has changed.
 dequeueExtractCountChanged :: MonadDES m => Queue m sm so a -> Signal m Int
+{-# INLINE dequeueExtractCountChanged #-}
 dequeueExtractCountChanged q =
   mapSignalM (const $ dequeueExtractCount q) (dequeueExtractCountChanged_ q)
   
 -- | Signal when the 'dequeueExtractCount' property value has changed.
 dequeueExtractCountChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE dequeueExtractCountChanged_ #-}
 dequeueExtractCountChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
 
 -- | Return the rate of the items that were stored: how many items
 -- per time.
 enqueueStoreRate :: MonadDES m => Queue m sm so a -> Event m Double
+{-# INLINABLE enqueueStoreRate #-}
 enqueueStoreRate q =
   Event $ \p ->
   do x <- invokeEvent p $ readRef (enqueueStoreCountRef q)
@@ -296,6 +318,7 @@ enqueueStoreRate q =
 -- per time. It does not include the failed attempts to dequeue immediately
 -- without suspension.
 dequeueRate :: MonadDES m => Queue m sm so a -> Event m Double
+{-# INLINABLE dequeueRate #-}
 dequeueRate q =
   Event $ \p ->
   do x <- invokeEvent p $ readRef (dequeueCountRef q)
@@ -306,6 +329,7 @@ dequeueRate q =
 -- | Return the rate of the output items that were dequeued: how many items
 -- per time.
 dequeueExtractRate :: MonadDES m => Queue m sm so a -> Event m Double
+{-# INLINABLE dequeueExtractRate #-}
 dequeueExtractRate q =
   Event $ \p ->
   do x <- invokeEvent p $ readRef (dequeueExtractCountRef q)
@@ -318,16 +342,19 @@ dequeueExtractRate q =
 --
 -- See also 'queueWaitTimeChanged' and 'queueWaitTimeChanged_'.
 queueWaitTime :: MonadDES m => Queue m sm so a -> Event m (SamplingStats Double)
+{-# INLINABLE queueWaitTime #-}
 queueWaitTime q =
   Event $ \p -> invokeEvent p $ readRef (queueWaitTimeRef q)
       
 -- | Signal when the 'queueWaitTime' property value has changed.
 queueWaitTimeChanged :: MonadDES m => Queue m sm so a -> Signal m (SamplingStats Double)
+{-# INLINE queueWaitTimeChanged #-}
 queueWaitTimeChanged q =
   mapSignalM (const $ queueWaitTime q) (queueWaitTimeChanged_ q)
   
 -- | Signal when the 'queueWaitTime' property value has changed.
 queueWaitTimeChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE queueWaitTimeChanged_ #-}
 queueWaitTimeChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
       
@@ -336,24 +363,30 @@ queueWaitTimeChanged_ q =
 --
 -- See also 'dequeueWaitTimeChanged' and 'dequeueWaitTimeChanged_'.
 dequeueWaitTime :: MonadDES m => Queue m sm so a -> Event m (SamplingStats Double)
+{-# INLINABLE dequeueWaitTime #-}
 dequeueWaitTime q =
   Event $ \p -> invokeEvent p $ readRef (dequeueWaitTimeRef q)
       
 -- | Signal when the 'dequeueWaitTime' property value has changed.
 dequeueWaitTimeChanged :: MonadDES m => Queue m sm so a -> Signal m (SamplingStats Double)
+{-# INLINE dequeueWaitTimeChanged #-}
 dequeueWaitTimeChanged q =
   mapSignalM (const $ dequeueWaitTime q) (dequeueWaitTimeChanged_ q)
   
 -- | Signal when the 'dequeueWaitTime' property value has changed.
 dequeueWaitTimeChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE dequeueWaitTimeChanged_ #-}
 dequeueWaitTimeChanged_ q =
   mapSignal (const ()) (dequeueExtracted q)
 
 -- | Return a long-term average queue rate calculated as
 -- the average queue size divided by the average wait time.
 --
+-- It should conform with Little's rule.
+--
 -- See also 'queueRateChanged' and 'queueRateChanged_'.
 queueRate :: MonadDES m => Queue m sm so a -> Event m Double
+{-# INLINABLE queueRate #-}
 queueRate q =
   Event $ \p ->
   do x <- invokeEvent p $ readRef (queueCountStatsRef q)
@@ -362,11 +395,13 @@ queueRate q =
 
 -- | Signal when the 'queueRate' property value has changed.
 queueRateChanged :: MonadDES m => Queue m sm so a -> Signal m Double
+{-# INLINE queueRateChanged #-}
 queueRateChanged q =
   mapSignalM (const $ queueRate q) (queueRateChanged_ q)
 
 -- | Signal when the 'queueRate' property value has changed.
 queueRateChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE queueRateChanged_ #-}
 queueRateChanged_ q =
   mapSignal (const ()) (enqueueStored q) <>
   mapSignal (const ()) (dequeueExtracted q)
@@ -379,6 +414,7 @@ dequeue :: (MonadDES m,
            -- ^ the queue
            -> Process m a
            -- ^ the dequeued value
+{-# INLINABLE dequeue #-}
 dequeue q =
   do t <- liftEvent $ dequeueRequest q
      requestResource (dequeueRes q)
@@ -394,6 +430,7 @@ dequeueWithOutputPriority :: (MonadDES m,
                              -- ^ the priority for output
                              -> Process m a
                              -- ^ the dequeued value
+{-# INLINABLE dequeueWithOutputPriority #-}
 dequeueWithOutputPriority q po =
   do t <- liftEvent $ dequeueRequest q
      requestResourceWithPriority (dequeueRes q) po
@@ -405,6 +442,7 @@ tryDequeue :: (MonadDES m, DequeueStrategy m sm)
               -- ^ the queue
               -> Event m (Maybe a)
               -- ^ the dequeued value of 'Nothing'
+{-# INLINABLE tryDequeue #-}
 tryDequeue q =
   do x <- tryRequestResourceWithinEvent (dequeueRes q)
      if x 
@@ -421,6 +459,7 @@ enqueue :: (MonadDES m,
            -> a
            -- ^ the item to enqueue
            -> Event m ()
+{-# INLINABLE enqueue #-}
 enqueue = enqueueStore
      
 -- | Enqueue with the storing priority the item.  
@@ -434,20 +473,24 @@ enqueueWithStoringPriority :: (MonadDES m,
                               -> a
                               -- ^ the item to enqueue
                               -> Event m ()
+{-# INLINABLE enqueueWithStoringPriority #-}
 enqueueWithStoringPriority = enqueueStoreWithPriority
 
 -- | Return a signal that notifies when the enqueued item
 -- is stored in the internal memory of the queue.
 enqueueStored :: MonadDES m => Queue m sm so a -> Signal m a
+{-# INLINE enqueueStored #-}
 enqueueStored q = publishSignal (enqueueStoredSource q)
 
 -- | Return a signal that notifies when the dequeuing operation was requested.
 dequeueRequested :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINE dequeueRequested #-}
 dequeueRequested q = publishSignal (dequeueRequestedSource q)
 
 -- | Return a signal that notifies when the item was extracted from the internal
 -- storage of the queue and prepared for immediate receiving by the dequeuing process.
 dequeueExtracted :: MonadDES m => Queue m sm so a -> Signal m a
+{-# INLINE dequeueExtracted #-}
 dequeueExtracted q = publishSignal (dequeueExtractedSource q)
 
 -- | Store the item.
@@ -459,6 +502,7 @@ enqueueStore :: (MonadDES m,
                 -> a
                 -- ^ the item to be stored
                 -> Event m ()
+{-# INLINE enqueueStore #-}
 enqueueStore q a =
   Event $ \p ->
   do let i = QueueItem { itemValue = a,
@@ -491,6 +535,7 @@ enqueueStoreWithPriority :: (MonadDES m,
                             -> a
                             -- ^ the item to be enqueued
                             -> Event m ()
+{-# INLINE enqueueStoreWithPriority #-}
 enqueueStoreWithPriority q pm a =
   Event $ \p ->
   do let i = QueueItem { itemValue = a,
@@ -518,6 +563,7 @@ dequeueRequest :: MonadDES m
                   -- ^ the queue
                   -> Event m Double
                   -- ^ the current time
+{-# INLINE dequeueRequest #-}
 dequeueRequest q =
   Event $ \p ->
   do invokeEvent p $
@@ -534,6 +580,7 @@ dequeueExtract :: (MonadDES m, DequeueStrategy m sm)
                   -- ^ the time of the dequeuing request
                   -> Event m a
                   -- ^ the dequeued value
+{-# INLINE dequeueExtract #-}
 dequeueExtract q t' =
   Event $ \p ->
   do i <- invokeEvent p $
@@ -565,6 +612,7 @@ dequeueStat :: MonadDES m
                -- ^ the item and its input time
                -> Event m ()
                -- ^ the action of updating the statistics
+{-# INLINE dequeueStat #-}
 dequeueStat q t' i =
   Event $ \p ->
   do let t1 = itemStoringTime i
@@ -583,6 +631,7 @@ dequeueStat q t' i =
 -- already depend on the simulation time and therefore they may change at any
 -- time point.
 queueChanged_ :: MonadDES m => Queue m sm so a -> Signal m ()
+{-# INLINABLE queueChanged_ #-}
 queueChanged_ q =
   mapSignal (const ()) (enqueueStored q) <>
   dequeueRequested q <>
@@ -591,6 +640,7 @@ queueChanged_ q =
 -- | Return the summary for the queue with desciption of its
 -- properties and activities using the specified indent.
 queueSummary :: (MonadDES m, Show sm, Show so) => Queue m sm so a -> Int -> Event m ShowS
+{-# INLINABLE queueSummary #-}
 queueSummary q indent =
   do let sm = enqueueStoringStrategy q
          so = dequeueStrategy q
