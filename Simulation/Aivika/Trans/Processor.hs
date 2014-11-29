@@ -84,7 +84,7 @@ instance C.Category (Processor m) where
   
 instance MonadDES m => Arrow (Processor m) where
 
-  {-# INLINE arr #-}
+  {-# INLINABLE arr #-}
   arr = Processor . mapStream
 
   {-# INLINABLE first #-}
