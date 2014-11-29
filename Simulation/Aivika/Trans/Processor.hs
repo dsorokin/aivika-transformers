@@ -69,8 +69,10 @@ newtype Processor m a b =
 
 instance C.Category (Processor m) where
 
+  {-# INLINE id #-}
   id  = Processor id
 
+  {-# INLINE (.) #-}
   Processor x . Processor y = Processor (x . y)
 
 -- The implementation is based on article
@@ -82,37 +84,44 @@ instance C.Category (Processor m) where
   
 instance MonadDES m => Arrow (Processor m) where
 
+  {-# INLINE arr #-}
   arr = Processor . mapStream
 
+  {-# INLINABLE first #-}
   first (Processor f) =
     Processor $ \xys ->
     Cons $
     do (xs, ys) <- liftSimulation $ unzipStream xys
        runStream $ zipStreamSeq (f xs) ys
 
+  {-# INLINABLE second #-}
   second (Processor f) =
     Processor $ \xys ->
     Cons $
     do (xs, ys) <- liftSimulation $ unzipStream xys
        runStream $ zipStreamSeq xs (f ys)
 
+  {-# INLINABLE (***) #-}
   Processor f *** Processor g =
     Processor $ \xys ->
     Cons $
     do (xs, ys) <- liftSimulation $ unzipStream xys
        runStream $ zipStreamSeq (f xs) (g ys)
 
+  {-# INLINABLE (&&&) #-}
   Processor f &&& Processor g =
     Processor $ \xs -> zipStreamSeq (f xs) (g xs)
 
 instance MonadDES m => ArrowChoice (Processor m) where
 
+  {-# INLINABLE left #-}
   left (Processor f) =
     Processor $ \xs ->
     Cons $
     do ys <- liftSimulation $ memoStream xs
        runStream $ replaceLeftStream ys (f $ leftStream ys)
 
+  {-# INLINABLE right #-}
   right (Processor f) =
     Processor $ \xs ->
     Cons $
@@ -121,10 +130,12 @@ instance MonadDES m => ArrowChoice (Processor m) where
 
 instance MonadDES m => ArrowZero (Processor m) where
 
+  {-# INLINE zeroArrow #-}
   zeroArrow = emptyProcessor
 
 instance MonadDES m => ArrowPlus (Processor m) where
 
+  {-# INLINABLE (<+>) #-}
   (Processor f) <+> (Processor g) =
     Processor $ \xs ->
     Cons $
@@ -133,15 +144,18 @@ instance MonadDES m => ArrowPlus (Processor m) where
 
 -- | A processor that never finishes its work producing an 'emptyStream'.
 emptyProcessor :: MonadDES m => Processor m a b
+{-# INLINABLE emptyProcessor #-}
 emptyProcessor = Processor $ const emptyStream
 
 -- | Create a simple processor by the specified handling function
 -- that runs the discontinuous process for each input value to get the output.
 arrProcessor :: MonadDES m => (a -> Process m b) -> Processor m a b
+{-# INLINABLE arrProcessor #-}
 arrProcessor = Processor . mapStreamM
 
 -- | Accumulator that outputs a value determined by the supplied function.
 accumProcessor :: MonadDES m => (acc -> a -> Process m (acc, b)) -> acc -> Processor m a b
+{-# INLINABLE accumProcessor #-}
 accumProcessor f acc =
   Processor $ \xs -> Cons $ loop xs acc where
     loop xs acc =
@@ -154,6 +168,7 @@ accumProcessor f acc =
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
 processorUsingId :: MonadDES m => ProcessId m -> Processor m a b -> Processor m a b
+{-# INLINABLE processorUsingId #-}
 processorUsingId pid (Processor f) =
   Processor $ Cons . processUsingId pid . runStream . f
 
@@ -174,6 +189,7 @@ processorQueuedParallel :: (MonadDES m,
                            -- ^ the processors to parallelize
                            -> Processor m a b
                            -- ^ the parallelized processor
+{-# INLINABLE processorQueuedParallel #-}
 processorQueuedParallel si so ps =
   Processor $ \xs ->
   Cons $
@@ -196,6 +212,7 @@ processorPrioritisingOutputParallel :: (MonadDES m,
                                        -- ^ the processors to parallelize
                                        -> Processor m a b
                                        -- ^ the parallelized processor
+{-# INLINABLE processorPrioritisingOutputParallel #-}
 processorPrioritisingOutputParallel si so ps =
   Processor $ \xs ->
   Cons $
@@ -219,6 +236,7 @@ processorPrioritisingInputParallel :: (MonadDES m,
                                       -- to parallelize
                                       -> Processor m a b
                                       -- ^ the parallelized processor
+{-# INLINABLE processorPrioritisingInputParallel #-}
 processorPrioritisingInputParallel si so ps =
   Processor $ \xs ->
   Cons $
@@ -242,6 +260,7 @@ processorPrioritisingInputOutputParallel :: (MonadDES m,
                                             -- to parallelize
                                             -> Processor m a b
                                             -- ^ the parallelized processor
+{-# INLINABLE processorPrioritisingInputOutputParallel #-}
 processorPrioritisingInputOutputParallel si so ps =
   Processor $ \xs ->
   Cons $
@@ -255,11 +274,13 @@ processorPrioritisingInputOutputParallel si so ps =
 -- a combined output stream. This version applies the 'FCFS' strategy both for input
 -- and output, which suits the most part of uses cases.
 processorParallel :: MonadDES m => [Processor m a b] -> Processor m a b
+{-# INLINABLE processorParallel #-}
 processorParallel = processorQueuedParallel FCFS FCFS
 
 -- | Launches the processors sequentially using the 'prefetchProcessor' between them
 -- to model an autonomous work of each of the processors specified.
 processorSeq :: MonadDES m => [Processor m a a] -> Processor m a a
+{-# INLINABLE processorSeq #-}
 processorSeq []  = emptyProcessor
 processorSeq [p] = p
 processorSeq (p : ps) = p >>> prefetchProcessor >>> processorSeq ps
@@ -274,6 +295,7 @@ bufferProcessor :: MonadDES m
                    -> Stream m b
                    -- ^ the resulting stream of data
                    -> Processor m a b
+{-# INLINABLE bufferProcessor #-}
 bufferProcessor consume output =
   Processor $ \xs ->
   Cons $
@@ -296,6 +318,7 @@ bufferProcessorLoop :: MonadDES m
                        -- ^ process in the loop and then return a value
                        -- of type @c@ to the input again (this is a loop body)
                        -> Processor m a b
+{-# INLINABLE bufferProcessorLoop #-}
 bufferProcessorLoop consume preoutput cond body =
   Processor $ \xs ->
   Cons $
@@ -336,6 +359,7 @@ queueProcessor :: MonadDES m =>
                   -- ^ dequeue an output item
                   -> Processor m a b
                   -- ^ the buffering processor
+{-# INLINABLE queueProcessor #-}
 queueProcessor enqueue dequeue =
   bufferProcessor
   (consumeStream enqueue)
@@ -362,6 +386,7 @@ queueProcessorLoopMerging :: MonadDES m
                              -- of type @d@ to the queue again (this is a loop body)
                              -> Processor m a b
                              -- ^ the buffering processor
+{-# INLINABLE queueProcessorLoopMerging #-}
 queueProcessorLoopMerging merge enqueue dequeue =
   bufferProcessorLoop
   (\bs cs ->
@@ -389,6 +414,7 @@ queueProcessorLoopSeq :: MonadDES m
                          -- of type @a@ to the queue again (this is a loop body)
                          -> Processor m a b
                          -- ^ the buffering processor
+{-# INLINABLE queueProcessorLoopSeq #-}
 queueProcessorLoopSeq =
   queueProcessorLoopMerging mergeStreams
 
@@ -411,6 +437,7 @@ queueProcessorLoopParallel :: MonadDES m
                               -- of type @a@ to the queue again (this is a loop body)
                               -> Processor m a b
                               -- ^ the buffering processor
+{-# INLINABLE queueProcessorLoopParallel #-}
 queueProcessorLoopParallel enqueue dequeue =
   bufferProcessorLoop
   (\bs cs ->
@@ -428,6 +455,7 @@ queueProcessorLoopParallel enqueue dequeue =
 -- data item in some temporary space for later use, which is very useful 
 -- for modeling a sequence of separate and independent work places.
 prefetchProcessor :: MonadDES m => Processor m a a
+{-# INLINABLE prefetchProcessor #-}
 prefetchProcessor = Processor prefetchStream
 
 -- | Convert the specified signal transform to a processor.
@@ -442,6 +470,7 @@ prefetchProcessor = Processor prefetchStream
 --
 -- Cancel the processor's process to unsubscribe from the signals provided.
 signalProcessor :: MonadDES m => (Signal m a -> Signal m b) -> Processor m a b
+{-# INLINABLE signalProcessor #-}
 signalProcessor f =
   Processor $ \xs ->
   Cons $
@@ -461,6 +490,7 @@ signalProcessor f =
 --
 -- Cancel the returned process to unsubscribe from the signal specified.
 processorSignaling :: MonadDES m => Processor m a b -> Signal m a -> Process m (Signal m b)
+{-# INLINABLE processorSignaling #-}
 processorSignaling (Processor f) sa =
   do xs <- signalStream sa
      let ys = f xs
@@ -469,10 +499,12 @@ processorSignaling (Processor f) sa =
 -- | A processor that adds the information about the time points at which 
 -- the original stream items were received by demand.
 arrivalProcessor :: MonadDES m => Processor m a (Arrival a)
+{-# INLINABLE arrivalProcessor #-}
 arrivalProcessor = Processor arrivalStream
 
 -- | A processor that delays the input stream by one step using the specified initial value.
 delayProcessor :: MonadDES m => a -> Processor m a a
+{-# INLINABLE delayProcessor #-}
 delayProcessor a0 = Processor $ delayStream a0
 
 -- | Show the debug messages with the current simulation time.
@@ -484,5 +516,6 @@ traceProcessor :: MonadDES m
                   -> Processor m a b
                   -- ^ a processor
                   -> Processor m a b
+{-# INLINABLE traceProcessor #-}
 traceProcessor request response (Processor f) =
   Processor $ traceStream request response . f 
