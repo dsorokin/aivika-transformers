@@ -27,6 +27,7 @@ import Simulation.Aivika.Trans.Queue.Infinite
 -- the specified timeout. If the task times out, then it is canceled and returned
 -- to the processor again; otherwise, the successful result is redirected to output.
 roundRobbinProcessor :: MonadDES m => Processor m (Process m Double, Process m a) a
+{-# INLINABLE roundRobbinProcessor #-}
 roundRobbinProcessor =
   Processor $
   runProcessor roundRobbinProcessorUsingIds . mapStreamM f where
@@ -39,6 +40,7 @@ roundRobbinProcessor =
 -- | Like 'roundRobbinProcessor' but allows specifying the process identifiers which
 -- must be unique for every new attemp to perform the task even if the task is the same.
 roundRobbinProcessorUsingIds :: MonadDES m => Processor m (Process m (Double, ProcessId m), Process m a) a
+{-# INLINABLE roundRobbinProcessorUsingIds #-}
 roundRobbinProcessorUsingIds =
   Processor $ \xs ->
   Cons $
