@@ -121,7 +121,7 @@ instance MonadDES m => Monoid (Stream m a) where
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
 streamUsingId :: MonadDES m => ProcessId m -> Stream m a -> Stream m a
-{-# INLINE streamUsingId #-}
+{-# INLINABLE streamUsingId #-}
 streamUsingId pid (Cons s) =
   Cons $ processUsingId pid s
 
@@ -473,7 +473,7 @@ mergePriorityStreams s x y = concatPriorityStreams s [x, y]
 
 -- | An empty stream that never returns data.
 emptyStream :: MonadDES m => Stream m a
-{-# INLINE emptyStream #-}
+{-# INLINABLE emptyStream #-}
 emptyStream = Cons neverProcess
 
 -- | Consume the stream. It returns a process that infinitely reads data
@@ -581,12 +581,12 @@ arrivalStream s = Cons $ loop s Nothing where
 
 -- | Delay the stream by one step using the specified initial value.
 delayStream :: MonadDES m => a -> Stream m a -> Stream m a
-{-# INLINE delayStream #-}
+{-# INLINABLE delayStream #-}
 delayStream a0 s = Cons $ return (a0, s)
 
 -- | Return a stream consisting of exactly one element and inifinite tail.
 singletonStream :: MonadDES m => a -> Stream m a
-{-# INLINE singletonStream #-}
+{-# INLINABLE singletonStream #-}
 singletonStream a = Cons $ return (a, emptyStream)
 
 -- | Show the debug messages with the current simulation time.

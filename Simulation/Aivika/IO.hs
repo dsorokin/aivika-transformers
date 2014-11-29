@@ -1,4 +1,6 @@
 
+{-# LANGUAGE FlexibleContexts #-}
+
 -- |
 -- Module     : Simulation.Aivika.IO
 -- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
@@ -35,3 +37,90 @@ import Simulation.Aivika.IO.SD
 import Simulation.Aivika.IO.Signal
 import Simulation.Aivika.IO.Ref.Base
 import Simulation.Aivika.IO.Var.Unboxed
+
+import Simulation.Aivika.Trans.Arrival
+import Simulation.Aivika.Trans.Parameter
+import Simulation.Aivika.Trans.Process
+import Simulation.Aivika.Trans.Processor
+import Simulation.Aivika.Trans.Processor.RoundRobbin
+import Simulation.Aivika.Trans.QueueStrategy
+import Simulation.Aivika.Trans.Signal
+import Simulation.Aivika.Trans.Simulation
+import Simulation.Aivika.Trans.Stream
+import Simulation.Aivika.Trans.Stream.Random
+
+{-# SPECIALISE streamUsingId :: ProcessId IO -> Stream IO a -> Stream IO a #-}
+{-# SPECIALISE memoStream :: Stream IO a -> Simulation IO (Stream IO a) #-}
+{-# SPECIALISE zipStreamSeq :: Stream IO a -> Stream IO b -> Stream IO (a, b) #-}
+{-# SPECIALISE zipStreamParallel :: Stream IO a -> Stream IO b -> Stream IO (a, b) #-}
+{-# SPECIALISE zip3StreamSeq :: Stream IO a -> Stream IO b -> Stream IO c -> Stream IO (a, b, c) #-}
+{-# SPECIALISE zip3StreamParallel :: Stream IO a -> Stream IO b -> Stream IO c -> Stream IO (a, b, c) #-}
+{-# SPECIALISE unzipStream :: Stream IO (a, b) -> Simulation IO (Stream IO a, Stream IO b) #-}
+{-# SPECIALISE streamSeq :: [Stream IO a] -> Stream IO [a] #-}
+{-# SPECIALISE streamParallel :: [Stream IO a] -> Stream IO [a] #-}
+{-# SPECIALISE repeatProcess :: Process IO a -> Stream IO a #-}
+{-# SPECIALISE mapStream :: (a -> b) -> Stream IO a -> Stream IO b #-}
+{-# SPECIALISE mapStreamM :: (a -> Process IO b) -> Stream IO a -> Stream IO b #-}
+{-# SPECIALISE apStream :: Stream IO (a -> b) -> Stream IO a -> Stream IO b #-}
+{-# SPECIALISE apStreamM :: Stream IO (a -> Process IO b) -> Stream IO a -> Stream IO b #-}
+{-# SPECIALISE filterStream :: (a -> Bool) -> Stream IO a -> Stream IO a #-}
+{-# SPECIALISE filterStreamM :: (a -> Process IO Bool) -> Stream IO a -> Stream IO a #-}
+{-# SPECIALISE leftStream :: Stream IO (Either a b) -> Stream IO a #-}
+{-# SPECIALISE rightStream :: Stream IO (Either a b) -> Stream IO b #-}
+{-# SPECIALISE replaceLeftStream :: Stream IO (Either a b) -> Stream IO c -> Stream IO (Either c b) #-}
+{-# SPECIALISE replaceRightStream :: Stream IO (Either a b) -> Stream IO c -> Stream IO (Either a c) #-}
+{-# SPECIALISE partitionEitherStream :: Stream IO (Either a b) -> Simulation IO (Stream IO a, Stream IO b) #-}
+{-# SPECIALISE splitStream :: Int -> Stream IO a -> Simulation IO [Stream IO a] #-}
+{-# SPECIALISE splitStreamQueueing :: EnqueueStrategy IO s => s -> Int -> Stream IO a -> Simulation IO [Stream IO a] #-}
+{-# SPECIALISE splitStreamPrioritising :: PriorityQueueStrategy IO s p => s -> [Stream IO p] -> Stream IO a -> Simulation IO [Stream IO a] #-}
+{-# SPECIALISE concatStreams :: [Stream IO a] -> Stream IO a #-}
+{-# SPECIALISE concatQueuedStreams :: EnqueueStrategy IO s => s -> [Stream IO a] -> Stream IO a #-}
+{-# SPECIALISE concatPriorityStreams :: PriorityQueueStrategy IO s p => s -> [Stream IO (p, a)] -> Stream IO a #-}
+{-# SPECIALISE mergeStreams :: Stream IO a -> Stream IO a -> Stream IO a #-}
+{-# SPECIALISE mergeQueuedStreams :: EnqueueStrategy IO s => s -> Stream IO a -> Stream IO a -> Stream IO a #-}
+{-# SPECIALISE mergePriorityStreams :: PriorityQueueStrategy IO s p => s -> Stream IO (p, a) -> Stream IO (p, a) -> Stream IO a #-}
+{-# SPECIALISE emptyStream :: Stream IO a #-}
+{-# SPECIALISE consumeStream :: (a -> Process IO ()) -> Stream IO a -> Process IO () #-}
+{-# SPECIALISE sinkStream :: Stream IO a -> Process IO () #-}
+{-# SPECIALISE prefetchStream :: Stream IO a -> Stream IO a #-}
+{-# SPECIALISE signalStream :: Signal IO a -> Process IO (Stream IO a) #-}
+{-# SPECIALISE streamSignal :: Stream IO a -> Process IO (Signal IO a) #-}
+{-# SPECIALISE arrivalStream :: Stream IO a -> Stream IO (Arrival a) #-}
+{-# SPECIALISE delayStream :: a -> Stream IO a -> Stream IO a #-}
+{-# SPECIALISE singletonStream :: a -> Stream IO a #-}
+{-# SPECIALISE traceStream :: Maybe String -> Maybe String -> Stream IO a -> Stream IO a #-}
+
+{-# SPECIALISE randomStream :: Parameter IO (Double, a) -> Stream IO (Arrival a) #-}
+{-# SPECIALISE randomUniformStream :: Double -> Double -> Stream IO (Arrival Double) #-}
+{-# SPECIALISE randomUniformIntStream :: Int -> Int -> Stream IO (Arrival Int) #-}
+{-# SPECIALISE randomNormalStream :: Double -> Double -> Stream IO (Arrival Double) #-}
+{-# SPECIALISE randomExponentialStream :: Double -> Stream IO (Arrival Double) #-}
+{-# SPECIALISE randomErlangStream :: Double -> Int -> Stream IO (Arrival Double) #-}
+{-# SPECIALISE randomPoissonStream :: Double -> Stream IO (Arrival Int) #-}
+{-# SPECIALISE randomBinomialStream :: Double -> Int -> Stream IO (Arrival Int) #-}
+
+{-# SPECIALISE emptyProcessor :: Processor IO a b #-}
+{-# SPECIALISE arrProcessor :: (a -> Process IO b) -> Processor IO a b #-}
+{-# SPECIALISE accumProcessor :: (acc -> a -> Process IO (acc, b)) -> acc -> Processor IO a b #-}
+{-# SPECIALISE processorUsingId :: ProcessId IO -> Processor IO a b -> Processor IO a b #-}
+{-# SPECIALISE processorQueuedParallel :: (EnqueueStrategy IO si, EnqueueStrategy IO so) => si -> so -> [Processor IO a b] -> Processor IO a b #-}
+{-# SPECIALISE processorPrioritisingOutputParallel :: (EnqueueStrategy IO si, PriorityQueueStrategy IO so po) => si -> so -> [Processor IO a (po, b)] -> Processor IO a b #-}
+{-# SPECIALISE processorPrioritisingInputParallel :: (PriorityQueueStrategy IO si pi, EnqueueStrategy IO so) => si -> so -> [(Stream IO pi, Processor IO a b)] -> Processor IO a b #-}
+{-# SPECIALISE processorPrioritisingInputOutputParallel :: (PriorityQueueStrategy IO si pi, PriorityQueueStrategy IO so po) => si -> so -> [(Stream IO pi, Processor IO a (po, b))] -> Processor IO a b #-}
+{-# SPECIALISE processorParallel :: [Processor IO a b] -> Processor IO a b #-}
+{-# SPECIALISE processorSeq :: [Processor IO a a] -> Processor IO a a #-}
+{-# SPECIALISE bufferProcessor :: (Stream IO a -> Process IO ()) -> Stream IO b -> Processor IO a b #-}
+{-# SPECIALISE bufferProcessorLoop :: (Stream IO a -> Stream IO c -> Process IO ()) -> Stream IO d -> Processor IO d (Either e b) -> Processor IO e c -> Processor IO a b #-}
+{-# SPECIALISE queueProcessor :: (a -> Process IO ()) -> Process IO b -> Processor IO a b #-}
+{-# SPECIALISE queueProcessorLoopMerging :: (Stream IO a -> Stream IO d -> Stream IO e) -> (e -> Process IO ()) -> Process IO c -> Processor IO c (Either f b) -> Processor IO f d -> Processor IO a b #-}
+{-# SPECIALISE queueProcessorLoopSeq :: (a -> Process IO ()) -> Process IO c -> Processor IO c (Either e b) -> Processor IO e a -> Processor IO a b #-}
+{-# SPECIALISE queueProcessorLoopParallel :: (a -> Process IO ()) -> Process IO c -> Processor IO c (Either e b) -> Processor IO e a -> Processor IO a b #-}
+{-# SPECIALISE prefetchProcessor :: Processor IO a a #-}
+{-# SPECIALISE signalProcessor :: (Signal IO a -> Signal IO b) -> Processor IO a b #-}
+{-# SPECIALISE processorSignaling :: Processor IO a b -> Signal IO a -> Process IO (Signal IO b) #-}
+{-# SPECIALISE arrivalProcessor :: Processor IO a (Arrival a) #-}
+{-# SPECIALISE delayProcessor :: a -> Processor IO a a #-}
+{-# SPECIALISE traceProcessor :: Maybe String -> Maybe String -> Processor IO a b -> Processor IO a b #-}
+
+{-# SPECIALISE roundRobbinProcessor :: Processor IO (Process IO Double, Process IO a) a #-}
+{-# SPECIALISE roundRobbinProcessorUsingIds :: Processor IO (Process IO (Double, ProcessId IO), Process IO a) a #-}

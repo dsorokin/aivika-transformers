@@ -46,7 +46,7 @@ randomStream :: MonadDES m
                 -- ^ compute a pair of the delay and event of type @a@
                 -> Stream m (Arrival a)
                 -- ^ a stream of delayed events
-{-# INLINE randomStream #-}
+{-# INLINABLE randomStream #-}
 randomStream delay = Cons $ loop Nothing where
   loop t0 =
     do t1 <- liftDynamics time
