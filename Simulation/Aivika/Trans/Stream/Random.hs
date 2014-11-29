@@ -46,6 +46,7 @@ randomStream :: MonadDES m
                 -- ^ compute a pair of the delay and event of type @a@
                 -> Stream m (Arrival a)
                 -- ^ a stream of delayed events
+{-# INLINABLE randomStream #-}
 randomStream delay = Cons $ loop Nothing where
   loop t0 =
     do t1 <- liftDynamics time
@@ -78,6 +79,7 @@ randomUniformStream :: MonadDES m
                        -- ^ the maximum delay
                        -> Stream m (Arrival Double)
                        -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomUniformStream #-}
 randomUniformStream min max =
   randomStream $
   randomUniform min max >>= \x ->
@@ -91,6 +93,7 @@ randomUniformIntStream :: MonadDES m
                           -- ^ the maximum delay
                           -> Stream m (Arrival Int)
                           -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomUniformIntStream #-}
 randomUniformIntStream min max =
   randomStream $
   randomUniformInt min max >>= \x ->
@@ -104,6 +107,7 @@ randomNormalStream :: MonadDES m
                       -- ^ the delay deviation
                       -> Stream m (Arrival Double)
                       -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomNormalStream #-}
 randomNormalStream mu nu =
   randomStream $
   randomNormal mu nu >>= \x ->
@@ -116,6 +120,7 @@ randomExponentialStream :: MonadDES m
                            -- ^ the mean delay (the reciprocal of the rate)
                            -> Stream m (Arrival Double)
                            -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomExponentialStream #-}
 randomExponentialStream mu =
   randomStream $
   randomExponential mu >>= \x ->
@@ -130,6 +135,7 @@ randomErlangStream :: MonadDES m
                       -- ^ the shape
                       -> Stream m (Arrival Double)
                       -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomErlangStream #-}
 randomErlangStream beta m =
   randomStream $
   randomErlang beta m >>= \x ->
@@ -142,6 +148,7 @@ randomPoissonStream :: MonadDES m
                        -- ^ the mean delay
                        -> Stream m (Arrival Int)
                        -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomPoissonStream #-}
 randomPoissonStream mu =
   randomStream $
   randomPoisson mu >>= \x ->
@@ -156,6 +163,7 @@ randomBinomialStream :: MonadDES m
                         -- ^ the number of trials
                         -> Stream m (Arrival Int)
                         -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomBinomialStream #-}
 randomBinomialStream prob trials =
   randomStream $
   randomBinomial prob trials >>= \x ->
