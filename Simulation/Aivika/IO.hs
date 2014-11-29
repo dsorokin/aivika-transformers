@@ -38,7 +38,11 @@ import Simulation.Aivika.IO.Signal
 import Simulation.Aivika.IO.Ref.Base
 import Simulation.Aivika.IO.Var.Unboxed
 
+import Control.Exception
+
 import Simulation.Aivika.Trans.Arrival
+import Simulation.Aivika.Trans.Cont
+import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Processor
@@ -48,6 +52,50 @@ import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Stream.Random
+
+{-# SPECIALISE holdProcess :: Double -> Process IO () #-}
+{-# SPECIALISE interruptProcess :: ProcessId IO -> Event IO () #-}
+{-# SPECIALISE processInterrupted :: ProcessId IO -> Event IO Bool #-}
+{-# SPECIALISE passivateProcess :: Process IO () #-}
+{-# SPECIALISE processPassive :: ProcessId IO -> Event IO Bool #-}
+{-# SPECIALISE reactivateProcess :: ProcessId IO -> Event IO () #-}
+{-# SPECIALISE runProcess :: Process IO () -> Event IO () #-}
+{-# SPECIALISE runProcessUsingId :: ProcessId IO -> Process IO () -> Event IO () #-}
+{-# SPECIALISE runProcessInStartTime :: Process IO () -> Simulation IO () #-}
+{-# SPECIALISE runProcessInStartTimeUsingId :: ProcessId IO -> Process IO () -> Simulation IO () #-}
+{-# SPECIALISE runProcessInStopTime :: Process IO () -> Simulation IO () #-}
+{-# SPECIALISE runProcessInStopTimeUsingId :: ProcessId IO -> Process IO () -> Simulation IO () #-}
+{-# SPECIALISE enqueueProcess :: Double -> Process IO () -> Event IO () #-}
+{-# SPECIALISE enqueueProcessUsingId :: Double -> ProcessId IO -> Process IO () -> Event IO () #-}
+{-# SPECIALISE processId :: Process IO (ProcessId IO) #-}
+{-# SPECIALISE newProcessId :: Simulation IO (ProcessId IO) #-}
+{-# SPECIALISE cancelProcessWithId :: ProcessId IO -> Event IO () #-}
+{-# SPECIALISE cancelProcess :: Process IO a #-}
+{-# SPECIALISE processCancelled :: ProcessId IO -> Event IO Bool #-}
+{-# SPECIALISE processCancelling :: ProcessId IO -> Signal IO () #-}
+{-# SPECIALISE whenCancellingProcess :: Event IO () -> Process IO () #-}
+{-# SPECIALISE catchProcess :: Exception e => Process IO a -> (e -> Process IO a) -> Process IO a #-}
+{-# SPECIALISE finallyProcess :: Process IO a -> Process IO b -> Process IO a #-}
+{-# SPECIALISE throwProcess :: Exception e => e -> Process IO a #-}
+{-# SPECIALISE processParallel :: [Process IO a] -> Process IO [a] #-}
+{-# SPECIALISE processParallelUsingIds :: [(ProcessId IO, Process IO a)] -> Process IO [a] #-}
+{-# SPECIALISE processParallel_ :: [Process IO a] -> Process IO () #-}
+{-# SPECIALISE processParallelUsingIds_ :: [(ProcessId IO, Process IO a)] -> Process IO () #-}
+{-# SPECIALISE processUsingId :: ProcessId IO -> Process IO a -> Process IO a #-}
+{-# SPECIALISE spawnProcess :: Process IO () -> Process IO () #-}
+{-# SPECIALISE spawnProcessUsingId :: ProcessId IO -> Process IO () -> Process IO () #-}
+{-# SPECIALISE spawnProcessWith :: ContCancellation -> Process IO () -> Process IO () #-}
+{-# SPECIALISE spawnProcessUsingIdWith :: ContCancellation -> ProcessId IO -> Process IO () -> Process IO () #-}
+{-# SPECIALISE processAwait :: Signal IO a -> Process IO a #-}
+{-# SPECIALISE memoProcess :: Process IO a -> Simulation IO (Process IO a) #-}
+{-# SPECIALISE zipProcessParallel :: Process IO a -> Process IO b -> Process IO (a, b) #-}
+{-# SPECIALISE zip3ProcessParallel :: Process IO a -> Process IO b -> Process IO c -> Process IO (a, b, c) #-}
+{-# SPECIALISE unzipProcess :: Process IO (a, b) -> Simulation IO (Process IO a, Process IO b) #-}
+{-# SPECIALISE timeoutProcess :: Double -> Process IO a -> Process IO (Maybe a) #-}
+{-# SPECIALISE timeoutProcessUsingId :: Double -> ProcessId IO -> Process IO a -> Process IO (Maybe a) #-}
+{-# SPECIALISE processYield :: Process IO () #-}
+{-# SPECIALISE neverProcess :: Process IO a #-}
+{-# SPECIALISE traceProcess :: String -> Process IO a -> Process IO a #-}
 
 {-# SPECIALISE streamUsingId :: ProcessId IO -> Stream IO a -> Stream IO a #-}
 {-# SPECIALISE memoStream :: Stream IO a -> Simulation IO (Stream IO a) #-}

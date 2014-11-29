@@ -332,7 +332,7 @@ processCancelled pid = contCancellationInitiated (processCancelSource pid)
 
 -- | Return a signal that notifies about cancelling the process with 
 -- the specified identifier.
-processCancelling :: ProcessId m -> Signal m ()
+processCancelling :: MonadDES m => ProcessId m -> Signal m ()
 {-# INLINABLE processCancelling #-}
 processCancelling pid = contCancellationInitiating (processCancelSource pid)
 
