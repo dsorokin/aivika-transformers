@@ -359,7 +359,7 @@ queueProcessor :: MonadDES m =>
                   -- ^ dequeue an output item
                   -> Processor m a b
                   -- ^ the buffering processor
-{-# INLINABLE queueProcessor #-}
+{-# INLINE queueProcessor #-}
 queueProcessor enqueue dequeue =
   bufferProcessor
   (consumeStream enqueue)
@@ -386,7 +386,7 @@ queueProcessorLoopMerging :: MonadDES m
                              -- of type @d@ to the queue again (this is a loop body)
                              -> Processor m a b
                              -- ^ the buffering processor
-{-# INLINABLE queueProcessorLoopMerging #-}
+{-# INLINE queueProcessorLoopMerging #-}
 queueProcessorLoopMerging merge enqueue dequeue =
   bufferProcessorLoop
   (\bs cs ->
@@ -414,7 +414,7 @@ queueProcessorLoopSeq :: MonadDES m
                          -- of type @a@ to the queue again (this is a loop body)
                          -> Processor m a b
                          -- ^ the buffering processor
-{-# INLINABLE queueProcessorLoopSeq #-}
+{-# INLINE queueProcessorLoopSeq #-}
 queueProcessorLoopSeq =
   queueProcessorLoopMerging mergeStreams
 
@@ -437,7 +437,7 @@ queueProcessorLoopParallel :: MonadDES m
                               -- of type @a@ to the queue again (this is a loop body)
                               -> Processor m a b
                               -- ^ the buffering processor
-{-# INLINABLE queueProcessorLoopParallel #-}
+{-# INLINE queueProcessorLoopParallel #-}
 queueProcessorLoopParallel enqueue dequeue =
   bufferProcessorLoop
   (\bs cs ->
