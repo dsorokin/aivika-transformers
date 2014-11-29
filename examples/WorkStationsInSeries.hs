@@ -19,6 +19,8 @@ import Control.Category (id, (.))
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.Queue
 
+import Simulation.Aivika.IO
+
 -- | The simulation specs.
 specs = Specs { spcStartTime = 0.0,
                 spcStopTime = 300.0,
@@ -52,7 +54,7 @@ workStationCount1 = 1
 workStationCount2 = 1
 
 -- create a work station (server) with the exponential processing time
-newWorkStationExponential :: MonadComp m => Double -> Simulation m (Server m () a a)
+newWorkStationExponential :: Double -> Simulation IO (Server IO () a a)
 newWorkStationExponential meanTime =
   newServer $ \a ->
   do holdProcess =<<
@@ -60,7 +62,7 @@ newWorkStationExponential meanTime =
         randomExponential meanTime)
      return a
 
-model :: MonadComp m => Simulation m (Results m)
+model :: Simulation IO (Results IO)
 model = do
   -- it will gather the statistics of the processing time
   arrivalTimer <- newArrivalTimer
@@ -125,7 +127,7 @@ model = do
      "arrivalTimer" "The arrival timer"
      arrivalTimer]
 
-modelSummary :: MonadComp m => Simulation m (Results m)
+modelSummary :: Simulation IO (Results IO)
 modelSummary =
   fmap resultSummary model
 
