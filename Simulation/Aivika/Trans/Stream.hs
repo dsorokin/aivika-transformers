@@ -482,10 +482,10 @@ emptyStream = Cons neverProcess
 -- from the input stream.
 consumeStream :: MonadDES m => (a -> Process m ()) -> Stream m a -> Process m ()
 {-# INLINABLE consumeStream #-}
-consumeStream f = p where
-  p (Cons s) = do (a, xs) <- s
-                  f a
-                  p xs
+consumeStream f (Cons s) =
+  do (a, xs) <- s
+     f a
+     consumeStream f xs
 
 -- | Sink the stream. It returns a process that infinitely reads data
 -- from the stream. The resulting computation can be a moving force
@@ -493,9 +493,9 @@ consumeStream f = p where
 -- processors.
 sinkStream :: MonadDES m => Stream m a -> Process m ()
 {-# INLINABLE sinkStream #-}
-sinkStream = p where
-  p (Cons s) = do (a, xs) <- s
-                  p xs
+sinkStream (Cons s) =
+  do (a, xs) <- s
+     sinkStream xs
   
 -- | Prefetch the input stream requesting for one more data item in advance 
 -- while the last received item is not yet fully processed in the chain of 
