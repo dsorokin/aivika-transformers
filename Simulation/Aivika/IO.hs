@@ -40,6 +40,8 @@ import Simulation.Aivika.IO.Var.Unboxed
 
 import Control.Exception
 
+import Simulation.Aivika.Statistics
+
 import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.Event
@@ -48,6 +50,7 @@ import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Processor.RoundRobbin
 import Simulation.Aivika.Trans.QueueStrategy
+import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Stream
@@ -172,3 +175,45 @@ import Simulation.Aivika.Trans.Stream.Random
 
 {-# SPECIALISE roundRobbinProcessor :: Processor IO (Process IO Double, Process IO a) a #-}
 {-# SPECIALISE roundRobbinProcessorUsingIds :: Processor IO (Process IO (Double, ProcessId IO), Process IO a) a #-}
+
+{-# SPECIALISE newServer :: (a -> Process IO b) -> Simulation IO (Server IO () a b) #-}
+{-# SPECIALISE newStateServer :: (s -> a -> Process IO (s, b)) -> s -> Simulation IO (Server IO s a b) #-}
+{-# SPECIALISE newInterruptibleServer :: Bool -> (a -> Process IO b) -> Simulation IO (Server IO () a b) #-}
+{-# SPECIALISE newInterruptibleStateServer :: Bool -> (s -> a -> Process IO (s, b)) -> s -> Simulation IO (Server IO s a b) #-}
+{-# SPECIALISE serverProcessor :: Server IO s a b -> Processor IO a b #-}
+{-# SPECIALISE serverState :: Server IO s a b -> Event IO s #-}
+{-# SPECIALISE serverStateChanged :: Server IO s a b -> Signal IO s #-}
+{-# SPECIALISE serverStateChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverTotalInputWaitTime :: Server IO s a b -> Event IO Double #-}
+{-# SPECIALISE serverTotalInputWaitTimeChanged :: Server IO s a b -> Signal IO Double #-}
+{-# SPECIALISE serverTotalInputWaitTimeChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverTotalProcessingTime :: Server IO s a b -> Event IO Double #-}
+{-# SPECIALISE serverTotalProcessingTimeChanged :: Server IO s a b -> Signal IO Double #-}
+{-# SPECIALISE serverTotalProcessingTimeChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverTotalOutputWaitTime :: Server IO s a b -> Event IO Double #-}
+{-# SPECIALISE serverTotalOutputWaitTimeChanged :: Server IO s a b -> Signal IO Double #-}
+{-# SPECIALISE serverTotalOutputWaitTimeChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverInputWaitTime :: Server IO s a b -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE serverInputWaitTimeChanged :: Server IO s a b -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE serverInputWaitTimeChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverProcessingTime :: Server IO s a b -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE serverProcessingTimeChanged :: Server IO s a b -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE serverProcessingTimeChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverOutputWaitTime :: Server IO s a b -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE serverOutputWaitTimeChanged :: Server IO s a b -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE serverOutputWaitTimeChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverInputWaitFactor :: Server IO s a b -> Event IO Double #-}
+{-# SPECIALISE serverInputWaitFactorChanged :: Server IO s a b -> Signal IO Double #-}
+{-# SPECIALISE serverInputWaitFactorChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverProcessingFactor :: Server IO s a b -> Event IO Double #-}
+{-# SPECIALISE serverProcessingFactorChanged :: Server IO s a b -> Signal IO Double #-}
+{-# SPECIALISE serverProcessingFactorChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverOutputWaitFactor :: Server IO s a b -> Event IO Double #-}
+{-# SPECIALISE serverOutputWaitFactorChanged :: Server IO s a b -> Signal IO Double #-}
+{-# SPECIALISE serverOutputWaitFactorChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverInputReceived :: Server IO s a b -> Signal IO a #-}
+{-# SPECIALISE serverTaskInterrupted :: Server IO s a b -> Signal IO (ServerInterruption a) #-}
+{-# SPECIALISE serverTaskProcessed :: Server IO s a b -> Signal IO (a, b) #-}
+{-# SPECIALISE serverOutputProvided :: Server IO s a b -> Signal IO (a, b) #-}
+{-# SPECIALISE serverChanged_ :: Server IO s a b -> Signal IO () #-}
+{-# SPECIALISE serverSummary :: Server IO s a b -> Int -> Event IO ShowS #-}

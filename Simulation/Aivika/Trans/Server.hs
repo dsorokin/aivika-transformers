@@ -125,7 +125,7 @@ newServer :: MonadDES m
              => (a -> Process m b)
              -- ^ provide an output by the specified input
              -> Simulation m (Server m () a b)
-{-# INLINE newServer #-}
+{-# INLINABLE newServer #-}
 newServer = newInterruptibleServer False
 
 -- | Create a new server that can provide output @b@ by input @a@
@@ -141,7 +141,7 @@ newStateServer :: MonadDES m
                   -> s
                   -- ^ the initial state
                   -> Simulation m (Server m s a b)
-{-# INLINE newStateServer #-}
+{-# INLINABLE newStateServer #-}
 newStateServer = newInterruptibleStateServer False
 
 -- | Create a new interruptible server that can provide output @b@ by input @a@.
@@ -284,13 +284,13 @@ serverState server =
   
 -- | Signal when the 'serverState' property value has changed.
 serverStateChanged :: MonadDES m => Server m s a b -> Signal m s
-{-# INLINE serverStateChanged #-}
+{-# INLINABLE serverStateChanged #-}
 serverStateChanged server =
   mapSignalM (const $ serverState server) (serverStateChanged_ server)
   
 -- | Signal when the 'serverState' property value has changed.
 serverStateChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverStateChanged_ #-}
+{-# INLINABLE serverStateChanged_ #-}
 serverStateChanged_ server =
   mapSignal (const ()) (serverTaskProcessed server)
 
@@ -307,13 +307,13 @@ serverTotalInputWaitTime server =
   
 -- | Signal when the 'serverTotalInputWaitTime' property value has changed.
 serverTotalInputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
-{-# INLINE serverTotalInputWaitTimeChanged #-}
+{-# INLINABLE serverTotalInputWaitTimeChanged #-}
 serverTotalInputWaitTimeChanged server =
   mapSignalM (const $ serverTotalInputWaitTime server) (serverTotalInputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverTotalInputWaitTime' property value has changed.
 serverTotalInputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverTotalInputWaitTimeChanged_ #-}
+{-# INLINABLE serverTotalInputWaitTimeChanged_ #-}
 serverTotalInputWaitTimeChanged_ server =
   mapSignal (const ()) (serverInputReceived server)
 
@@ -330,13 +330,13 @@ serverTotalProcessingTime server =
   
 -- | Signal when the 'serverTotalProcessingTime' property value has changed.
 serverTotalProcessingTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
-{-# INLINE serverTotalProcessingTimeChanged #-}
+{-# INLINABLE serverTotalProcessingTimeChanged #-}
 serverTotalProcessingTimeChanged server =
   mapSignalM (const $ serverTotalProcessingTime server) (serverTotalProcessingTimeChanged_ server)
   
 -- | Signal when the 'serverTotalProcessingTime' property value has changed.
 serverTotalProcessingTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverTotalProcessingTimeChanged_ #-}
+{-# INLINABLE serverTotalProcessingTimeChanged_ #-}
 serverTotalProcessingTimeChanged_ server =
   mapSignal (const ()) (serverTaskProcessed server)
 
@@ -354,13 +354,13 @@ serverTotalOutputWaitTime server =
   
 -- | Signal when the 'serverTotalOutputWaitTime' property value has changed.
 serverTotalOutputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
-{-# INLINE serverTotalOutputWaitTimeChanged #-}
+{-# INLINABLE serverTotalOutputWaitTimeChanged #-}
 serverTotalOutputWaitTimeChanged server =
   mapSignalM (const $ serverTotalOutputWaitTime server) (serverTotalOutputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverTotalOutputWaitTime' property value has changed.
 serverTotalOutputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverTotalOutputWaitTimeChanged_ #-}
+{-# INLINABLE serverTotalOutputWaitTimeChanged_ #-}
 serverTotalOutputWaitTimeChanged_ server =
   mapSignal (const ()) (serverOutputProvided server)
 
@@ -377,13 +377,13 @@ serverInputWaitTime server =
   
 -- | Signal when the 'serverInputWaitTime' property value has changed.
 serverInputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
-{-# INLINE serverInputWaitTimeChanged #-}
+{-# INLINABLE serverInputWaitTimeChanged #-}
 serverInputWaitTimeChanged server =
   mapSignalM (const $ serverInputWaitTime server) (serverInputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverInputWaitTime' property value has changed.
 serverInputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverInputWaitTimeChanged_ #-}
+{-# INLINABLE serverInputWaitTimeChanged_ #-}
 serverInputWaitTimeChanged_ server =
   mapSignal (const ()) (serverInputReceived server)
 
@@ -400,13 +400,13 @@ serverProcessingTime server =
   
 -- | Signal when the 'serverProcessingTime' property value has changed.
 serverProcessingTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
-{-# INLINE serverProcessingTimeChanged #-}
+{-# INLINABLE serverProcessingTimeChanged #-}
 serverProcessingTimeChanged server =
   mapSignalM (const $ serverProcessingTime server) (serverProcessingTimeChanged_ server)
   
 -- | Signal when the 'serverProcessingTime' property value has changed.
 serverProcessingTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverProcessingTimeChanged_ #-}
+{-# INLINABLE serverProcessingTimeChanged_ #-}
 serverProcessingTimeChanged_ server =
   mapSignal (const ()) (serverTaskProcessed server)
 
@@ -424,13 +424,13 @@ serverOutputWaitTime server =
   
 -- | Signal when the 'serverOutputWaitTime' property value has changed.
 serverOutputWaitTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
-{-# INLINE serverOutputWaitTimeChanged #-}
+{-# INLINABLE serverOutputWaitTimeChanged #-}
 serverOutputWaitTimeChanged server =
   mapSignalM (const $ serverOutputWaitTime server) (serverOutputWaitTimeChanged_ server)
   
 -- | Signal when the 'serverOutputWaitTime' property value has changed.
 serverOutputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverOutputWaitTimeChanged_ #-}
+{-# INLINABLE serverOutputWaitTimeChanged_ #-}
 serverOutputWaitTimeChanged_ server =
   mapSignal (const ()) (serverOutputProvided server)
 
@@ -458,13 +458,13 @@ serverInputWaitFactor server =
   
 -- | Signal when the 'serverInputWaitFactor' property value has changed.
 serverInputWaitFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
-{-# INLINE serverInputWaitFactorChanged #-}
+{-# INLINABLE serverInputWaitFactorChanged #-}
 serverInputWaitFactorChanged server =
   mapSignalM (const $ serverInputWaitFactor server) (serverInputWaitFactorChanged_ server)
   
 -- | Signal when the 'serverInputWaitFactor' property value has changed.
 serverInputWaitFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverInputWaitFactorChanged_ #-}
+{-# INLINABLE serverInputWaitFactorChanged_ #-}
 serverInputWaitFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
@@ -494,13 +494,13 @@ serverProcessingFactor server =
   
 -- | Signal when the 'serverProcessingFactor' property value has changed.
 serverProcessingFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
-{-# INLINE serverProcessingFactorChanged #-}
+{-# INLINABLE serverProcessingFactorChanged #-}
 serverProcessingFactorChanged server =
   mapSignalM (const $ serverProcessingFactor server) (serverProcessingFactorChanged_ server)
   
 -- | Signal when the 'serverProcessingFactor' property value has changed.
 serverProcessingFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverProcessingFactorChanged_ #-}
+{-# INLINABLE serverProcessingFactorChanged_ #-}
 serverProcessingFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
@@ -530,13 +530,13 @@ serverOutputWaitFactor server =
   
 -- | Signal when the 'serverOutputWaitFactor' property value has changed.
 serverOutputWaitFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
-{-# INLINE serverOutputWaitFactorChanged #-}
+{-# INLINABLE serverOutputWaitFactorChanged #-}
 serverOutputWaitFactorChanged server =
   mapSignalM (const $ serverOutputWaitFactor server) (serverOutputWaitFactorChanged_ server)
   
 -- | Signal when the 'serverOutputWaitFactor' property value has changed.
 serverOutputWaitFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
-{-# INLINE serverOutputWaitFactorChanged_ #-}
+{-# INLINABLE serverOutputWaitFactorChanged_ #-}
 serverOutputWaitFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
@@ -544,22 +544,22 @@ serverOutputWaitFactorChanged_ server =
 
 -- | Raised when the server receives a new input task.
 serverInputReceived :: MonadDES m => Server m s a b -> Signal m a
-{-# INLINE serverInputReceived #-}
+{-# INLINABLE serverInputReceived #-}
 serverInputReceived = publishSignal . serverInputReceivedSource
 
 -- | Raised when the task processing by the server was interrupted.
 serverTaskInterrupted :: MonadDES m => Server m s a b -> Signal m (ServerInterruption a)
-{-# INLINE serverTaskInterrupted #-}
+{-# INLINABLE serverTaskInterrupted #-}
 serverTaskInterrupted = publishSignal . serverTaskInterruptedSource
 
 -- | Raised when the server has just processed the task.
 serverTaskProcessed :: MonadDES m => Server m s a b -> Signal m (a, b)
-{-# INLINE serverTaskProcessed #-}
+{-# INLINABLE serverTaskProcessed #-}
 serverTaskProcessed = publishSignal . serverTaskProcessedSource
 
 -- | Raised when the server has just delivered the output.
 serverOutputProvided :: MonadDES m => Server m s a b -> Signal m (a, b)
-{-# INLINE serverOutputProvided #-}
+{-# INLINABLE serverOutputProvided #-}
 serverOutputProvided = publishSignal . serverOutputProvidedSource
 
 -- | Signal whenever any property of the server changes.
