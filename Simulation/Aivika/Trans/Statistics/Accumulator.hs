@@ -32,10 +32,12 @@ newtype TimingStatsAccumulator m a =
 
 -- | Return the accumulated statistics.
 timingStatsAccumulated :: MonadDES m => TimingStatsAccumulator m a -> Event m (TimingStats a)
+{-# INLINABLE timingStatsAccumulated #-}
 timingStatsAccumulated = readRef . timingStatsAccumulatedRef
 
 -- | Start gathering the timing statistics from the current simulation time. 
 newTimingStatsAccumulator :: (MonadDES m, TimingData a) => Signalable m a -> Event m (TimingStatsAccumulator m a)
+{-# INLINABLE newTimingStatsAccumulator #-}
 newTimingStatsAccumulator x =
   do t0 <- liftDynamics time
      a0 <- readSignalable x
