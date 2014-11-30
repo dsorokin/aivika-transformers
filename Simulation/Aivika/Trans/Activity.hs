@@ -111,6 +111,7 @@ newActivity :: MonadDES m
                => (a -> Process m b)
                -- ^ provide an output by the specified input
                -> Simulation m (Activity m () a b)
+{-# INLINABLE newActivity #-}
 newActivity = newInterruptibleActivity False
 
 -- | Create a new activity that can provide output @b@ by input @a@
@@ -126,6 +127,7 @@ newStateActivity :: MonadDES m
                     -> s
                     -- ^ the initial state
                     -> Simulation m (Activity m s a b)
+{-# INLINABLE newStateActivity #-}
 newStateActivity = newInterruptibleStateActivity False
 
 -- | Create a new interruptible activity that can provide output @b@ by input @a@.
@@ -135,6 +137,7 @@ newInterruptibleActivity :: MonadDES m
                             -> (a -> Process m b)
                             -- ^ provide an output by the specified input
                             -> Simulation m (Activity m () a b)
+{-# INLINABLE newInterruptibleActivity #-}
 newInterruptibleActivity interruptible provide =
   flip (newInterruptibleStateActivity interruptible) () $ \s a ->
   do b <- provide a
@@ -151,6 +154,7 @@ newInterruptibleStateActivity :: MonadDES m
                                  -> s
                                  -- ^ the initial state
                                  -> Simulation m (Activity m s a b)
+{-# INLINABLE newInterruptibleStateActivity #-}
 newInterruptibleStateActivity interruptible provide state =
   do r0 <- newRef state
      r1 <- newRef 0
@@ -186,6 +190,7 @@ newInterruptibleStateActivity interruptible provide state =
 -- finishes its current task and requests for the next one from the previous activity 
 -- in the chain. This is not always that thing you might need.
 activityNet :: MonadDES m => Activity m s a b -> Net m a b
+{-# INLINABLE activityNet #-}
 activityNet act = Net $ loop (activityInitState act) Nothing
   where
     loop s r a =
@@ -213,6 +218,7 @@ activityNet act = Net $ loop (activityInitState act) Nothing
 
 -- | Process the input with ability to handle a possible interruption.
 activityProcessInterrupting :: MonadDES m => Activity m s a b -> s -> a -> Process m (s, b)
+{-# INLINABLE activityProcessInterrupting #-}
 activityProcessInterrupting act s a =
   do pid <- processId
      t0  <- liftDynamics time
@@ -232,16 +238,19 @@ activityProcessInterrupting act s a =
 --
 -- See also 'activityStateChanged' and 'activityStateChanged_'.
 activityState :: MonadDES m => Activity m s a b -> Event m s
+{-# INLINABLE activityState #-}
 activityState act =
   Event $ \p -> invokeEvent p $ readRef (activityStateRef act)
   
 -- | Signal when the 'activityState' property value has changed.
 activityStateChanged :: MonadDES m => Activity m s a b -> Signal m s
+{-# INLINABLE activityStateChanged #-}
 activityStateChanged act =
   mapSignalM (const $ activityState act) (activityStateChanged_ act)
   
 -- | Signal when the 'activityState' property value has changed.
 activityStateChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityStateChanged_ #-}
 activityStateChanged_ act =
   mapSignal (const ()) (activityUtilised act)
 
@@ -252,16 +261,19 @@ activityStateChanged_ act =
 --
 -- See also 'activityTotalUtilisationTimeChanged' and 'activityTotalUtilisationTimeChanged_'.
 activityTotalUtilisationTime :: MonadDES m => Activity m s a b -> Event m Double
+{-# INLINABLE activityTotalUtilisationTime #-}
 activityTotalUtilisationTime act =
   Event $ \p -> invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
   
 -- | Signal when the 'activityTotalUtilisationTime' property value has changed.
 activityTotalUtilisationTimeChanged :: MonadDES m => Activity m s a b -> Signal m Double
+{-# INLINABLE activityTotalUtilisationTimeChanged #-}
 activityTotalUtilisationTimeChanged act =
   mapSignalM (const $ activityTotalUtilisationTime act) (activityTotalUtilisationTimeChanged_ act)
   
 -- | Signal when the 'activityTotalUtilisationTime' property value has changed.
 activityTotalUtilisationTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityTotalUtilisationTimeChanged_ #-}
 activityTotalUtilisationTimeChanged_ act =
   mapSignal (const ()) (activityUtilised act)
 
@@ -272,16 +284,19 @@ activityTotalUtilisationTimeChanged_ act =
 --
 -- See also 'activityTotalIdleTimeChanged' and 'activityTotalIdleTimeChanged_'.
 activityTotalIdleTime :: MonadDES m => Activity m s a b -> Event m Double
+{-# INLINABLE activityTotalIdleTime #-}
 activityTotalIdleTime act =
   Event $ \p -> invokeEvent p $ readRef (activityTotalIdleTimeRef act)
   
 -- | Signal when the 'activityTotalIdleTime' property value has changed.
 activityTotalIdleTimeChanged :: MonadDES m => Activity m s a b -> Signal m Double
+{-# INLINABLE activityTotalIdleTimeChanged #-}
 activityTotalIdleTimeChanged act =
   mapSignalM (const $ activityTotalIdleTime act) (activityTotalIdleTimeChanged_ act)
   
 -- | Signal when the 'activityTotalIdleTime' property value has changed.
 activityTotalIdleTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityTotalIdleTimeChanged_ #-}
 activityTotalIdleTimeChanged_ act =
   mapSignal (const ()) (activityUtilising act)
 
@@ -292,16 +307,19 @@ activityTotalIdleTimeChanged_ act =
 --
 -- See also 'activityUtilisationTimeChanged' and 'activityUtilisationTimeChanged_'.
 activityUtilisationTime :: MonadDES m => Activity m s a b -> Event m (SamplingStats Double)
+{-# INLINABLE activityUtilisationTime #-}
 activityUtilisationTime act =
   Event $ \p -> invokeEvent p $ readRef (activityUtilisationTimeRef act)
   
 -- | Signal when the 'activityUtilisationTime' property value has changed.
 activityUtilisationTimeChanged :: MonadDES m => Activity m s a b -> Signal m (SamplingStats Double)
+{-# INLINABLE activityUtilisationTimeChanged #-}
 activityUtilisationTimeChanged act =
   mapSignalM (const $ activityUtilisationTime act) (activityUtilisationTimeChanged_ act)
   
 -- | Signal when the 'activityUtilisationTime' property value has changed.
 activityUtilisationTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityUtilisationTimeChanged_ #-}
 activityUtilisationTimeChanged_ act =
   mapSignal (const ()) (activityUtilised act)
 
@@ -312,16 +330,19 @@ activityUtilisationTimeChanged_ act =
 --
 -- See also 'activityIdleTimeChanged' and 'activityIdleTimeChanged_'.
 activityIdleTime :: MonadDES m => Activity m s a b -> Event m (SamplingStats Double)
+{-# INLINABLE activityIdleTime #-}
 activityIdleTime act =
   Event $ \p -> invokeEvent p $ readRef (activityIdleTimeRef act)
   
 -- | Signal when the 'activityIdleTime' property value has changed.
 activityIdleTimeChanged :: MonadDES m => Activity m s a b -> Signal m (SamplingStats Double)
+{-# INLINABLE activityIdleTimeChanged #-}
 activityIdleTimeChanged act =
   mapSignalM (const $ activityIdleTime act) (activityIdleTimeChanged_ act)
   
 -- | Signal when the 'activityIdleTime' property value has changed.
 activityIdleTimeChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityIdleTimeChanged_ #-}
 activityIdleTimeChanged_ act =
   mapSignal (const ()) (activityUtilising act)
   
@@ -339,6 +360,7 @@ activityIdleTimeChanged_ act =
 --
 -- See also 'activityUtilisationFactorChanged' and 'activityUtilisationFactorChanged_'.
 activityUtilisationFactor :: MonadDES m => Activity m s a b -> Event m Double
+{-# INLINABLE activityUtilisationFactor #-}
 activityUtilisationFactor act =
   Event $ \p ->
   do x1 <- invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
@@ -347,11 +369,13 @@ activityUtilisationFactor act =
   
 -- | Signal when the 'activityUtilisationFactor' property value has changed.
 activityUtilisationFactorChanged :: MonadDES m => Activity m s a b -> Signal m Double
+{-# INLINABLE activityUtilisationFactorChanged #-}
 activityUtilisationFactorChanged act =
   mapSignalM (const $ activityUtilisationFactor act) (activityUtilisationFactorChanged_ act)
   
 -- | Signal when the 'activityUtilisationFactor' property value has changed.
 activityUtilisationFactorChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityUtilisationFactorChanged_ #-}
 activityUtilisationFactorChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
   mapSignal (const ()) (activityUtilised act)
@@ -370,6 +394,7 @@ activityUtilisationFactorChanged_ act =
 --
 -- See also 'activityIdleFactorChanged' and 'activityIdleFactorChanged_'.
 activityIdleFactor :: MonadDES m => Activity m s a b -> Event m Double
+{-# INLINABLE activityIdleFactor #-}
 activityIdleFactor act =
   Event $ \p ->
   do x1 <- invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
@@ -378,29 +403,35 @@ activityIdleFactor act =
   
 -- | Signal when the 'activityIdleFactor' property value has changed.
 activityIdleFactorChanged :: MonadDES m => Activity m s a b -> Signal m Double
+{-# INLINABLE activityIdleFactorChanged #-}
 activityIdleFactorChanged act =
   mapSignalM (const $ activityIdleFactor act) (activityIdleFactorChanged_ act)
   
 -- | Signal when the 'activityIdleFactor' property value has changed.
 activityIdleFactorChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityIdleFactorChanged_ #-}
 activityIdleFactorChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
   mapSignal (const ()) (activityUtilised act)
 
 -- | Raised when starting to utilise the activity after a new input task is received.
 activityUtilising :: Activity m s a b -> Signal m a
+{-# INLINABLE activityUtilising #-}
 activityUtilising = publishSignal . activityUtilisingSource
 
 -- | Raised when the activity has been utilised after the current task is processed.
 activityUtilised :: Activity m s a b -> Signal m (a, b)
+{-# INLINABLE activityUtilised #-}
 activityUtilised = publishSignal . activityUtilisedSource
 
 -- | Raised when the task utilisation by the activity was interrupted.
 activityInterrupted :: Activity m s a b -> Signal m (ActivityInterruption a)
+{-# INLINABLE activityInterrupted #-}
 activityInterrupted = publishSignal . activityInterruptedSource
 
 -- | Signal whenever any property of the activity changes.
 activityChanged_ :: MonadDES m => Activity m s a b -> Signal m ()
+{-# INLINABLE activityChanged_ #-}
 activityChanged_ act =
   mapSignal (const ()) (activityUtilising act) <>
   mapSignal (const ()) (activityUtilised act) <>
@@ -409,6 +440,7 @@ activityChanged_ act =
 -- | Return the summary for the activity with desciption of its
 -- properties using the specified indent.
 activitySummary :: MonadDES m => Activity m s a b -> Int -> Event m ShowS
+{-# INLINABLE activitySummary #-}
 activitySummary act indent =
   Event $ \p ->
   do tx1 <- invokeEvent p $ readRef (activityTotalUtilisationTimeRef act)
