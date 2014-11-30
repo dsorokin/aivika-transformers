@@ -56,6 +56,8 @@ import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Stream.Random
 
+import qualified Simulation.Aivika.Trans.Queue as Q
+
 {-# SPECIALISE holdProcess :: Double -> Process IO () #-}
 {-# SPECIALISE interruptProcess :: ProcessId IO -> Event IO () #-}
 {-# SPECIALISE processInterrupted :: ProcessId IO -> Event IO Bool #-}
@@ -224,3 +226,76 @@ import Simulation.Aivika.Trans.Stream.Random
 {-# SPECIALISE arrivalProcessingTimeChanged_ :: ArrivalTimer IO -> Signal IO () #-}
 {-# SPECIALISE arrivalTimerProcessor :: ArrivalTimer IO -> Processor IO (Arrival a) (Arrival a) #-}
 
+{-# SPECIALISE Q.newFCFSQueue :: Int -> Event IO (Q.FCFSQueue IO a) #-}
+{-# SPECIALISE Q.newLCFSQueue :: Int -> Event IO (Q.LCFSQueue IO a) #-}
+{-# SPECIALISE Q.newSIROQueue :: QueueStrategy IO SIRO => Int -> Event IO (Q.SIROQueue IO a) #-}
+{-# SPECIALISE Q.newPriorityQueue :: QueueStrategy IO StaticPriorities => Int -> Event IO (Q.PriorityQueue IO a)  #-}
+{-# SPECIALISE Q.newQueue :: (QueueStrategy IO si, QueueStrategy IO sm, QueueStrategy IO so) => si -> sm -> so -> Int -> Event IO (Q.Queue IO si sm so a) #-}
+{-# SPECIALISE Q.queueNull :: Q.Queue IO si sm so a -> Event IO Bool #-}
+{-# SPECIALISE Q.queueNullChanged :: Q.Queue IO si sm so a -> Signal IO Bool #-}
+{-# SPECIALISE Q.queueNullChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.queueFull :: Q.Queue IO si sm so a -> Event IO Bool #-}
+{-# SPECIALISE Q.queueFullChanged :: Q.Queue IO si sm so a -> Signal IO Bool #-}
+{-# SPECIALISE Q.queueFullChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.queueCount :: Q.Queue IO si sm so a -> Event IO Int #-}
+{-# SPECIALISE Q.queueCountStats :: Q.Queue IO si sm so a -> Event IO (TimingStats Int) #-}
+{-# SPECIALISE Q.queueCountChanged :: Q.Queue IO si sm so a -> Signal IO Int #-}
+{-# SPECIALISE Q.queueCountChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.enqueueCount :: Q.Queue IO si sm so a -> Event IO Int #-}
+{-# SPECIALISE Q.enqueueCountChanged :: Q.Queue IO si sm so a -> Signal IO Int #-}
+{-# SPECIALISE Q.enqueueCountChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.enqueueLostCount :: Q.Queue IO si sm so a -> Event IO Int #-}
+{-# SPECIALISE Q.enqueueLostCountChanged :: Q.Queue IO si sm so a -> Signal IO Int #-}
+{-# SPECIALISE Q.enqueueLostCountChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.enqueueStoreCount :: Q.Queue IO si sm so a -> Event IO Int #-}
+{-# SPECIALISE Q.enqueueStoreCountChanged :: Q.Queue IO si sm so a -> Signal IO Int #-}
+{-# SPECIALISE Q.enqueueStoreCountChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.dequeueCount :: Q.Queue IO si sm so a -> Event IO Int #-}
+{-# SPECIALISE Q.dequeueCountChanged :: Q.Queue IO si sm so a -> Signal IO Int #-}
+{-# SPECIALISE Q.dequeueCountChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.dequeueExtractCount :: Q.Queue IO si sm so a -> Event IO Int #-}
+{-# SPECIALISE Q.dequeueExtractCountChanged :: Q.Queue IO si sm so a -> Signal IO Int #-}
+{-# SPECIALISE Q.dequeueExtractCountChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.queueLoadFactor :: Q.Queue IO si sm so a -> Event IO Double #-}
+{-# SPECIALISE Q.queueLoadFactorChanged :: Q.Queue IO si sm so a -> Signal IO Double #-}
+{-# SPECIALISE Q.queueLoadFactorChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.enqueueRate :: Q.Queue IO si sm so a -> Event IO Double #-}
+{-# SPECIALISE Q.enqueueStoreRate :: Q.Queue IO si sm so a -> Event IO Double #-}
+{-# SPECIALISE Q.dequeueRate :: Q.Queue IO si sm so a -> Event IO Double #-}
+{-# SPECIALISE Q.dequeueExtractRate :: Q.Queue IO si sm so a -> Event IO Double #-}
+{-# SPECIALISE Q.queueWaitTime :: Q.Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.queueWaitTimeChanged :: Q.Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.queueWaitTimeChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.queueTotalWaitTime :: Q.Queue IO si sm so a -> Event IO (SamplingStats Double) #-} 
+{-# SPECIALISE Q.queueTotalWaitTimeChanged :: Q.Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.queueTotalWaitTimeChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}      
+{-# SPECIALISE Q.enqueueWaitTime :: Q.Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.enqueueWaitTimeChanged :: Q.Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.enqueueWaitTimeChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.dequeueWaitTime :: Q.Queue IO si sm so a -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.dequeueWaitTimeChanged :: Q.Queue IO si sm so a -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE Q.dequeueWaitTimeChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.queueRate :: Q.Queue IO si sm so a -> Event IO Double #-}
+{-# SPECIALISE Q.queueRateChanged :: Q.Queue IO si sm so a -> Signal IO Double #-}
+{-# SPECIALISE Q.queueRateChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.dequeue :: (DequeueStrategy IO si, DequeueStrategy IO sm, EnqueueStrategy IO so) => Q.Queue IO si sm so a -> Process IO a #-}
+{-# SPECIALISE Q.dequeueWithOutputPriority :: (DequeueStrategy IO si, DequeueStrategy IO sm, PriorityQueueStrategy IO so po) => Q.Queue IO si sm so a -> po -> Process IO a #-}
+{-# SPECIALISE Q.tryDequeue :: (DequeueStrategy IO si, DequeueStrategy IO sm) => Q.Queue IO si sm so a -> Event IO (Maybe a) #-}
+{-# SPECIALISE Q.enqueue :: (EnqueueStrategy IO si, EnqueueStrategy IO sm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> a -> Process IO () #-}
+{-# SPECIALISE Q.enqueueWithInputPriority :: (PriorityQueueStrategy IO si pi, EnqueueStrategy IO sm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> pi -> a -> Process IO () #-}
+{-# SPECIALISE Q.enqueueWithStoringPriority :: (EnqueueStrategy IO si, PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> pm -> a -> Process IO () #-}
+{-# SPECIALISE Q.enqueueWithInputStoringPriorities :: (PriorityQueueStrategy IO si pi, PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> pi -> pm -> a -> Process IO () #-}
+{-# SPECIALISE Q.tryEnqueue :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> a -> Event IO Bool #-}
+{-# SPECIALISE Q.tryEnqueueWithStoringPriority :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> pm -> a -> Event IO Bool #-}
+{-# SPECIALISE Q.enqueueOrLost :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> a -> Event IO Bool #-}
+{-# SPECIALISE Q.enqueueWithStoringPriorityOrLost :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> pm -> a -> Event IO Bool #-}
+{-# SPECIALISE Q.enqueueOrLost_ :: (EnqueueStrategy IO sm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> a -> Event IO () #-}
+{-# SPECIALISE Q.enqueueWithStoringPriorityOrLost_ :: (PriorityQueueStrategy IO sm pm, DequeueStrategy IO so) => Q.Queue IO si sm so a -> pm -> a -> Event IO () #-}
+{-# SPECIALISE Q.enqueueInitiated :: Q.Queue IO si sm so a -> Signal IO a #-}
+{-# SPECIALISE Q.enqueueStored :: Q.Queue IO si sm so a -> Signal IO a #-}
+{-# SPECIALISE Q.enqueueLost :: Q.Queue IO si sm so a -> Signal IO a #-}
+{-# SPECIALISE Q.dequeueRequested :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.dequeueExtracted :: Q.Queue IO si sm so a -> Signal IO a #-}
+{-# SPECIALISE Q.waitWhileFullQueue :: Q.Queue IO si sm so a -> Process IO () #-}
+{-# SPECIALISE Q.queueChanged_ :: Q.Queue IO si sm so a -> Signal IO () #-}
+{-# SPECIALISE Q.queueSummary :: (Show si, Show sm, Show so) => Q.Queue IO si sm so a -> Int -> Event IO ShowS #-}
