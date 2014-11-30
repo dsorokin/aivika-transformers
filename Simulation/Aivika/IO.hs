@@ -217,3 +217,10 @@ import Simulation.Aivika.Trans.Stream.Random
 {-# SPECIALISE serverOutputProvided :: Server IO s a b -> Signal IO (a, b) #-}
 {-# SPECIALISE serverChanged_ :: Server IO s a b -> Signal IO () #-}
 {-# SPECIALISE serverSummary :: Server IO s a b -> Int -> Event IO ShowS #-}
+
+{-# SPECIALISE newArrivalTimer :: Simulation IO (ArrivalTimer IO) #-}
+{-# SPECIALISE arrivalProcessingTime :: ArrivalTimer IO -> Event IO (SamplingStats Double) #-}
+{-# SPECIALISE arrivalProcessingTimeChanged :: ArrivalTimer IO -> Signal IO (SamplingStats Double) #-}
+{-# SPECIALISE arrivalProcessingTimeChanged_ :: ArrivalTimer IO -> Signal IO () #-}
+{-# SPECIALISE arrivalTimerProcessor :: ArrivalTimer IO -> Processor IO (Arrival a) (Arrival a) #-}
+

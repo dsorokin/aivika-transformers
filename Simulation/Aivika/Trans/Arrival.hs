@@ -44,7 +44,7 @@ data ArrivalTimer m =
 
 -- | Create a new timer that measures how long the arrived events are processed.
 newArrivalTimer :: MonadDES m => Simulation m (ArrivalTimer m)
-{-# INLINE newArrivalTimer #-}
+{-# INLINABLE newArrivalTimer #-}
 newArrivalTimer =
   do r <- newRef emptySamplingStats
      s <- newSignalSource
@@ -53,18 +53,18 @@ newArrivalTimer =
 
 -- | Return the statistics about that how long the arrived events were processed.
 arrivalProcessingTime :: MonadDES m => ArrivalTimer m -> Event m (SamplingStats Double)
-{-# INLINE arrivalProcessingTime #-}
+{-# INLINABLE arrivalProcessingTime #-}
 arrivalProcessingTime = readRef . arrivalProcessingTimeRef
 
 -- | Return a signal raised when the the processing time statistics changes.
 arrivalProcessingTimeChanged :: MonadDES m => ArrivalTimer m -> Signal m (SamplingStats Double)
-{-# INLINE arrivalProcessingTimeChanged #-}
+{-# INLINABLE arrivalProcessingTimeChanged #-}
 arrivalProcessingTimeChanged timer =
   mapSignalM (const $ arrivalProcessingTime timer) (arrivalProcessingTimeChanged_ timer)
 
 -- | Return a signal raised when the the processing time statistics changes.
 arrivalProcessingTimeChanged_ :: MonadDES m => ArrivalTimer m -> Signal m ()
-{-# INLINE arrivalProcessingTimeChanged_ #-}
+{-# INLINABLE arrivalProcessingTimeChanged_ #-}
 arrivalProcessingTimeChanged_ timer =
   publishSignal (arrivalProcessingTimeChangedSource timer)
 
