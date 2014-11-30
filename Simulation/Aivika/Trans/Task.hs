@@ -76,10 +76,12 @@ data TaskResult a = TaskCompleted a
 
 -- | Try to get the task result immediately without suspension.
 tryGetTaskResult :: MonadDES m => Task m a -> Event m (Maybe (TaskResult a))
+{-# INLINABLE tryGetTaskResult #-}
 tryGetTaskResult t = readRef (taskResultRef t)
 
 -- | Return the task result suspending the outer process if required.
 taskResult :: MonadDES m => Task m a -> Process m (TaskResult a)
+{-# INLINABLE taskResult #-}
 taskResult t =
   do x <- liftEvent $ readRef (taskResultRef t)
      case x of
@@ -88,16 +90,19 @@ taskResult t =
 
 -- | Cancel the task.
 cancelTask :: MonadDES m => Task m a -> Event m ()
+{-# INLINABLE cancelTask #-}
 cancelTask t =
   cancelProcessWithId (taskId t)
 
 -- | Test whether the task was cancelled.
 taskCancelled :: MonadDES m => Task m a -> Event m Bool
+{-# INLINABLE taskCancelled #-}
 taskCancelled t =
   processCancelled (taskId t)
 
 -- | Create a task by the specified process and its identifier.
 newTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Event m (Task m a, Process m ())
+{-# INLINABLE newTaskUsingId #-}
 newTaskUsingId pid p =
   do r <- liftSimulation $ newRef Nothing
      s <- liftSimulation newSignalSource
@@ -121,6 +126,7 @@ newTaskUsingId pid p =
 -- | Run the process with the specified identifier in background and
 -- return the corresponded task immediately.
 runTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Event m (Task m a)
+{-# INLINABLE runTaskUsingId #-}
 runTaskUsingId pid p =
   do (t, m) <- newTaskUsingId pid p
      runProcessUsingId pid m
@@ -128,6 +134,7 @@ runTaskUsingId pid p =
 
 -- | Run the process in background and return the corresponded task immediately.
 runTask :: MonadDES m => Process m a -> Event m (Task m a)
+{-# INLINABLE runTask #-}
 runTask p =
   do pid <- liftSimulation newProcessId
      runTaskUsingId pid p
@@ -135,6 +142,7 @@ runTask p =
 -- | Enqueue the process that will be started at the specified time with the given
 -- identifier from the event queue. It returns the corresponded task immediately.
 enqueueTaskUsingId :: MonadDES m => Double -> ProcessId m -> Process m a -> Event m (Task m a)
+{-# INLINABLE enqueueTaskUsingId #-}
 enqueueTaskUsingId time pid p =
   do (t, m) <- newTaskUsingId pid p
      enqueueProcessUsingId time pid m
@@ -143,6 +151,7 @@ enqueueTaskUsingId time pid p =
 -- | Enqueue the process that will be started at the specified time from the event queue.
 -- It returns the corresponded task immediately.
 enqueueTask :: MonadDES m => Double -> Process m a -> Event m (Task m a)
+{-# INLINABLE enqueueTask #-}
 enqueueTask time p =
   do pid <- liftSimulation newProcessId
      enqueueTaskUsingId time pid p
@@ -150,15 +159,18 @@ enqueueTask time p =
 -- | Run using the specified identifier a child process in background and return
 -- immediately the corresponded task.
 spawnTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Process m (Task m a)
+{-# INLINABLE spawnTaskUsingId #-}
 spawnTaskUsingId = spawnTaskUsingIdWith CancelTogether
 
 -- | Run a child process in background and return immediately the corresponded task.
 spawnTask :: MonadDES m => Process m a -> Process m (Task m a)
+{-# INLINABLE spawnTask #-}
 spawnTask = spawnTaskWith CancelTogether
 
 -- | Run using the specified identifier a child process in background and return
 -- immediately the corresponded task.
 spawnTaskUsingIdWith :: MonadDES m => ContCancellation -> ProcessId m -> Process m a -> Process m (Task m a)
+{-# INLINABLE spawnTaskUsingIdWith #-}
 spawnTaskUsingIdWith cancellation pid p =
   do (t, m) <- liftEvent $ newTaskUsingId pid p
      spawnProcessUsingIdWith cancellation pid m
@@ -166,6 +178,7 @@ spawnTaskUsingIdWith cancellation pid p =
 
 -- | Run a child process in background and return immediately the corresponded task.
 spawnTaskWith :: MonadDES m => ContCancellation -> Process m a -> Process m (Task m a)
+{-# INLINABLE spawnTaskWith #-}
 spawnTaskWith cancellation p =
   do pid <- liftSimulation newProcessId
      spawnTaskUsingIdWith cancellation pid p
@@ -173,6 +186,7 @@ spawnTaskWith cancellation p =
 -- | Return an outer process that behaves like the task itself except for one thing:
 -- if the outer process is cancelled then it is not enough to cancel the task. 
 taskProcess :: MonadDES m => Task m a -> Process m a
+{-# INLINABLE taskProcess #-}
 taskProcess t =
   do x <- taskResult t
      case x of
