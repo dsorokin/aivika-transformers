@@ -60,9 +60,13 @@ data AgentMode = CreationMode
                | ProcessingMode
                       
 instance MonadDES m => Eq (Agent m) where
+
+  {-# INLINE (==) #-}
   x == y = agentStateRef x == agentStateRef y
   
 instance MonadDES m => Eq (AgentState m) where
+
+  {-# INLINE (==) #-}
   x == y = stateVersionRef x == stateVersionRef y
 
 fullPath :: AgentState m -> [AgentState m] -> [AgentState m]
@@ -72,6 +76,7 @@ fullPath st acc =
     Just st' -> fullPath st' (st : acc)
 
 partitionPath :: MonadDES m => [AgentState m] -> [AgentState m] -> ([AgentState m], [AgentState m])
+{-# INLINABLE partitionPath #-}
 partitionPath path1 path2 =
   case (path1, path2) of
     (h1 : t1, [h2]) | h1 == h2 -> 
@@ -82,6 +87,7 @@ partitionPath path1 path2 =
       (reverse path1, path2)
 
 findPath :: MonadDES m => Maybe (AgentState m) -> AgentState m -> ([AgentState m], [AgentState m])
+{-# INLINABLE findPath #-}
 findPath Nothing target = ([], fullPath target [])
 findPath (Just source) target
   | stateAgent source /= stateAgent target =
@@ -93,6 +99,7 @@ findPath (Just source) target
     path2 = fullPath target []
 
 traversePath :: MonadDES m => Maybe (AgentState m) -> AgentState m -> Event m ()
+{-# INLINABLE traversePath #-}
 traversePath source target =
   let (path1, path2) = findPath source target
       agent = stateAgent target
@@ -122,6 +129,7 @@ traversePath source target =
 -- | Add to the state a timeout handler that will be actuated 
 -- in the specified time period if the state will remain active.
 addTimeout :: MonadDES m => AgentState m -> Double -> Event m () -> Event m ()
+{-# INLINABLE addTimeout #-}
 addTimeout st dt action =
   Event $ \p ->
   do v <- invokeEvent p $ readRef (stateVersionRef st)
@@ -136,6 +144,7 @@ addTimeout st dt action =
 -- in the specified time period and then repeated again many times,
 -- while the state remains active.
 addTimer :: MonadDES m => AgentState m -> Event m Double -> Event m () -> Event m ()
+{-# INLINABLE addTimer #-}
 addTimer st dt action =
   Event $ \p ->
   do v <- invokeEvent p $ readRef (stateVersionRef st)
@@ -151,6 +160,7 @@ addTimer st dt action =
 
 -- | Create a new state.
 newState :: MonadDES m => Agent m -> Simulation m (AgentState m)
+{-# INLINABLE newState #-}
 newState agent =
   do aref <- newRef $ return ()
      dref <- newRef $ return ()
@@ -165,6 +175,7 @@ newState agent =
 
 -- | Create a child state.
 newSubstate :: MonadDES m => AgentState m -> Simulation m (AgentState m)
+{-# INLINABLE newSubstate #-}
 newSubstate parent =
   do let agent = stateAgent parent
      aref <- newRef $ return ()
@@ -180,6 +191,7 @@ newSubstate parent =
 
 -- | Create an agent.
 newAgent :: MonadDES m => Simulation m (Agent m)
+{-# INLINABLE newAgent #-}
 newAgent =
   do modeRef  <- newRef CreationMode
      stateRef <- newRef Nothing
@@ -190,11 +202,13 @@ newAgent =
 
 -- | Return the selected active state.
 selectedState :: MonadDES m => Agent m -> Event m (Maybe (AgentState m))
+{-# INLINABLE selectedState #-}
 selectedState agent = readRef (agentStateRef agent)
                    
 -- | Select the state. The activation and selection are repeated while
 -- there is the transition state defined by 'setStateTransition'.
 selectState :: MonadDES m => AgentState m -> Event m ()
+{-# INLINABLE selectState #-}
 selectState st =
   Event $ \p ->
   do let agent = stateAgent st
@@ -213,11 +227,13 @@ selectState st =
 
 -- | Set the activation computation for the specified state.
 setStateActivation :: MonadDES m => AgentState m -> Event m () -> Event m ()
+{-# INLINABLE setStateActivation #-}
 setStateActivation st action =
   writeRef (stateActivateRef st) action
   
 -- | Set the deactivation computation for the specified state.
 setStateDeactivation :: MonadDES m => AgentState m -> Event m () -> Event m ()
+{-# INLINABLE setStateDeactivation #-}
 setStateDeactivation st action =
   writeRef (stateDeactivateRef st) action
   
@@ -226,21 +242,25 @@ setStateDeactivation st action =
 -- If the state was activated intermediately, when selecting
 -- another state, then this computation is not used.
 setStateTransition :: MonadDES m => AgentState m -> Event m (Maybe (AgentState m)) -> Event m ()
+{-# INLINABLE setStateTransition #-}
 setStateTransition st action =
   writeRef (stateTransitRef st) action
   
 -- | Trigger the signal when the agent state changes.
 triggerAgentStateChanged :: MonadDES m => Point m -> Agent m -> m ()
+{-# INLINABLE triggerAgentStateChanged #-}
 triggerAgentStateChanged p agent =
   do st <- invokeEvent p $ readRef (agentStateRef agent)
      invokeEvent p $ triggerSignal (agentStateChangedSource agent) st
 
 -- | Return a signal that notifies about every change of the selected state.
 selectedStateChanged :: Agent m -> Signal m (Maybe (AgentState m))
+{-# INLINABLE selectedStateChanged #-}
 selectedStateChanged agent =
   publishSignal (agentStateChangedSource agent)
 
 -- | Return a signal that notifies about every change of the selected state.
 selectedStateChanged_ :: MonadDES m => Agent m -> Signal m ()
+{-# INLINABLE selectedStateChanged_ #-}
 selectedStateChanged_ agent =
   mapSignal (const ()) $ selectedStateChanged agent
