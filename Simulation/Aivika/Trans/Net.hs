@@ -73,8 +73,10 @@ newtype Net m a b =
 
 instance MonadDES m => C.Category (Net m) where
 
+  {-# INLINABLE id #-}
   id = Net $ \a -> return (a, C.id)
 
+  {-# INLINABLE (.) #-}
   (.) = dot
     where 
       (Net g) `dot` (Net f) =
@@ -85,24 +87,29 @@ instance MonadDES m => C.Category (Net m) where
 
 instance MonadDES m => Arrow (Net m) where
 
+  {-# INLINABLE arr #-}
   arr f = Net $ \a -> return (f a, arr f)
 
+  {-# INLINABLE first #-}
   first (Net f) =
     Net $ \(b, d) ->
     do (c, p) <- f b
        return ((c, d), first p)
 
+  {-# INLINABLE second #-}
   second (Net f) =
     Net $ \(d, b) ->
     do (c, p) <- f b
        return ((d, c), second p)
 
+  {-# INLINABLE (***) #-}
   (Net f) *** (Net g) =
     Net $ \(b, b') ->
     do (c, p1) <- f b
        (c', p2) <- g b'
        return ((c, c'), p1 *** p2)
        
+  {-# INLINABLE (&&&) #-}
   (Net f) &&& (Net g) =
     Net $ \b ->
     do (c, p1) <- f b
@@ -111,6 +118,7 @@ instance MonadDES m => Arrow (Net m) where
 
 instance MonadDES m => ArrowChoice (Net m) where
 
+  {-# INLINABLE left #-}
   left x@(Net f) =
     Net $ \ebd ->
     case ebd of
@@ -120,6 +128,7 @@ instance MonadDES m => ArrowChoice (Net m) where
       Right d ->
         return (Right d, left x)
 
+  {-# INLINABLE right #-}
   right x@(Net f) =
     Net $ \edb ->
     case edb of
@@ -129,6 +138,7 @@ instance MonadDES m => ArrowChoice (Net m) where
       Left d ->
         return (Left d, right x)
 
+  {-# INLINABLE (+++) #-}
   x@(Net f) +++ y@(Net g) =
     Net $ \ebb' ->
     case ebb' of
@@ -139,6 +149,7 @@ instance MonadDES m => ArrowChoice (Net m) where
         do (c', p2) <- g b'
            return (Right c', x +++ p2)
 
+  {-# INLINABLE (|||) #-}
   x@(Net f) ||| y@(Net g) =
     Net $ \ebc ->
     case ebc of
@@ -151,11 +162,13 @@ instance MonadDES m => ArrowChoice (Net m) where
 
 -- | A net that never finishes its work.
 emptyNet :: MonadDES m => Net m a b
+{-# INLINABLE emptyNet #-}
 emptyNet = Net $ const neverProcess
 
 -- | Create a simple net by the specified handling function
 -- that runs the discontinuous process for each input value to get an output.
 arrNet :: MonadDES m => (a -> Process m b) -> Net m a b
+{-# INLINABLE arrNet #-}
 arrNet f =
   let x =
         Net $ \a ->
@@ -165,6 +178,7 @@ arrNet f =
 
 -- | Accumulator that outputs a value determined by the supplied function.
 accumNet :: MonadDES m => (acc -> a -> Process m (acc, b)) -> acc -> Net m a b
+{-# INLINABLE accumNet #-}
 accumNet f acc =
   Net $ \a ->
   do (acc', b) <- f acc a
@@ -175,11 +189,13 @@ accumNet f acc =
 -- can be passivated, interrupted, canceled and so on. See also the
 -- 'processUsingId' function for more details.
 netUsingId :: MonadDES m => ProcessId m -> Net m a b -> Net m a b
+{-# INLINABLE netUsingId #-}
 netUsingId pid (Net f) =
   Net $ processUsingId pid . f
 
 -- | Transform the net to an equivalent processor (a rather cheap transformation).
 netProcessor :: MonadDES m => Net m a b -> Processor m a b
+{-# INLINABLE netProcessor #-}
 netProcessor = Processor . loop
   where loop x as =
           Cons $
@@ -189,6 +205,7 @@ netProcessor = Processor . loop
 
 -- | Transform the processor to a similar net (a more costly transformation).
 processorNet :: MonadDES m => Processor m a b -> Net m a b
+{-# INLINABLE processorNet #-}
 processorNet x =
   Net $ \a ->
   do readingA <- liftSimulation $ newResourceWithMaxCount FCFS 0 (Just 1)
@@ -227,6 +244,7 @@ processorNet x =
 -- | A net that adds the information about the time points at which 
 -- the values were received.
 arrivalNet :: MonadDES m => Net m a (Arrival a)
+{-# INLINABLE arrivalNet #-}
 arrivalNet =
   let loop t0 =
         Net $ \a ->
@@ -242,12 +260,14 @@ arrivalNet =
 
 -- | Delay the input by one step using the specified initial value.
 delayNet :: MonadDES m => a -> Net m a a
+{-# INLINABLE delayNet #-}
 delayNet a0 =
   Net $ \a ->
   return (a0, delayNet a)
 
 -- | Iterate infinitely using the specified initial value.
 iterateNet :: MonadDES m => Net m a a -> a -> Process m ()
+{-# INLINABLE iterateNet #-}
 iterateNet (Net f) a =
   do (a', x) <- f a
      iterateNet x a'
@@ -255,6 +275,7 @@ iterateNet (Net f) a =
 -- | Iterate the net using the specified initial value
 -- until 'Nothing' is returned within the 'Net' computation.
 iterateNetMaybe :: MonadDES m => Net m a (Maybe a) -> a -> Process m ()
+{-# INLINABLE iterateNetMaybe #-}
 iterateNetMaybe (Net f) a =
   do (a', x) <- f a
      case a' of
@@ -264,6 +285,7 @@ iterateNetMaybe (Net f) a =
 -- | Iterate the net using the specified initial value
 -- until the 'Left' result is returned within the 'Net' computation.
 iterateNetEither :: MonadDES m => Net m a (Either b a) -> a -> Process m b
+{-# INLINABLE iterateNetEither #-}
 iterateNetEither (Net f) a =
   do (ba', x) <- f a
      case ba' of
@@ -279,6 +301,7 @@ traceNet :: MonadDES m
             -> Net m a b
             -- ^ a net
             -> Net m a b
+{-# INLINABLE traceNet #-}
 traceNet request response x = Net $ loop x where
   loop x a =
     do (b, x') <-
