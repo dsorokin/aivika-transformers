@@ -4,6 +4,7 @@ import Control.Monad.Trans
 import Control.Arrow
 
 import Simulation.Aivika.Trans
+import Simulation.Aivika.IO
 
 specs = Specs 0 10 1 RungeKutta4 SimpleGenerator
 

@@ -5,6 +5,7 @@ import Control.Exception
 
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.Queue
+import Simulation.Aivika.IO
 
 specs = Specs 0 1 0.1 RungeKutta4 SimpleGenerator
 

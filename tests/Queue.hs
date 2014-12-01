@@ -4,6 +4,7 @@ import Control.Monad.Trans
 
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.Queue
+import Simulation.Aivika.IO
 
 specs = Specs 0 1 0.1 RungeKutta4 SimpleGenerator
 
@@ -33,7 +34,7 @@ model =
                   do putStr "Preparing to enqueue: "
                      putStr $ show i
                      putStrLn "... "
-                enqueueWithStoringPriority q (100 - 1) i
+                enqueueWithStoringPriority q (100 - i) i
                 liftIO $
                   do putStr "Enqueued: "
                      putStrLn $ show i
