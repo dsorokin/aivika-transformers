@@ -22,6 +22,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans
+import Simulation.Aivika.IO
 
 ackRate = 1.0 / 1.0  -- reciprocal of the acknowledge mean time
 toPeriod = 0.5       -- timeout period
@@ -32,7 +33,7 @@ specs = Specs { spcStartTime = 0.0,
                 spcMethod = RungeKutta4,
                 spcGeneratorType = SimpleGenerator }
      
-model :: MonadComp m => Simulation m Double
+model :: Simulation IO Double
 model =
   do -- number of messages sent
      nMsgs <- newRef 0
