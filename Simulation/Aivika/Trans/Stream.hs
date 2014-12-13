@@ -105,6 +105,14 @@ instance MonadDES m => Applicative (Stream m) where
   {-# INLINE (<*>) #-}
   (<*>) = apStream
 
+instance MonadDES m => Alternative (Stream m) where
+
+  {-# INLINE empty #-}
+  empty = emptyStream
+
+  {-# INLINE (<|>) #-}
+  (<|>) = mergeStreams
+
 instance MonadDES m => Monoid (Stream m a) where
 
   {-# INLINE mempty #-}
