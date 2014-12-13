@@ -32,18 +32,18 @@ module Simulation.Aivika.Trans.Results
         ResultVectorWithSubscript(..),
 #endif
         -- * Definitions Focused on Using the Library
-        ResultExtract(..),
-        extractIntResults,
-        extractIntListResults,
-        extractIntStatsResults,
-        extractIntStatsEitherResults,
-        extractIntTimingStatsResults,
-        extractDoubleResults,
-        extractDoubleListResults,
-        extractDoubleStatsResults,
-        extractDoubleStatsEitherResults,
-        extractDoubleTimingStatsResults,
-        extractStringResults,
+        ResultValue(..),
+        resultsToIntValues,
+        resultsToIntListValues,
+        resultsToIntStatsValues,
+        resultsToIntStatsEitherValues,
+        resultsToIntTimingStatsValues,
+        resultsToDoubleValues,
+        resultsToDoubleListValues,
+        resultsToDoubleStatsValues,
+        resultsToDoubleStatsEitherValues,
+        resultsToDoubleTimingStatsValues,
+        resultsToStringValues,
         ResultPredefinedSignals(..),
         newResultPredefinedSignals,
         resultSignal,
@@ -53,16 +53,25 @@ module Simulation.Aivika.Trans.Results
         ResultSource(..),
         ResultItem(..),
         ResultItemable(..),
+        resultItemAsIntStatsEitherValue,
+        resultItemAsDoubleStatsEitherValue,
+        resultItemToIntValue,
+        resultItemToIntListValue,
+        resultItemToIntStatsValue,
         resultItemToIntStatsEitherValue,
+        resultItemToIntTimingStatsValue,
+        resultItemToDoubleValue,
+        resultItemToDoubleListValue,
+        resultItemToDoubleStatsValue,
         resultItemToDoubleStatsEitherValue,
+        resultItemToDoubleTimingStatsValue,
+        resultItemToStringValue,
         ResultObject(..),
         ResultProperty(..),
         ResultVector(..),
         memoResultVectorSignal,
         memoResultVectorSummary,
         ResultSeparator(..),
-        ResultValue(..),
-        voidResultValue,
         ResultContainer(..),
         resultContainerPropertySource,
         resultContainerConstProperty,
@@ -89,17 +98,6 @@ module Simulation.Aivika.Trans.Results
         resultSourceToStringValues,
         resultSourceMap,
         resultSourceList,
-        resultsToIntValues,
-        resultsToIntListValues,
-        resultsToIntStatsValues,
-        resultsToIntStatsEitherValues,
-        resultsToIntTimingStatsValues,
-        resultsToDoubleValues,
-        resultsToDoubleListValues,
-        resultsToDoubleStatsValues,
-        resultsToDoubleStatsEitherValues,
-        resultsToDoubleTimingStatsValues,
-        resultsToStringValues,
         composeResults,
         computeResultValue) where
 
@@ -191,58 +189,168 @@ class ResultItemable a where
   -- properties.
   resultItemSummary :: MonadDES m => a m -> ResultSource m
   
-  -- | Return integer numbers in time points.
-  resultItemToIntValue :: MonadDES m => a m -> ResultValue Int m
+  -- | Try to return integer numbers in time points.
+  resultItemAsIntValue :: MonadDES m => a m -> Maybe (ResultValue Int m)
 
-  -- | Return lists of integer numbers in time points. 
-  resultItemToIntListValue :: MonadDES m => a m -> ResultValue [Int] m
+  -- | Try to return lists of integer numbers in time points. 
+  resultItemAsIntListValue :: MonadDES m => a m -> Maybe (ResultValue [Int] m)
 
-  -- | Return statistics based on integer numbers.
-  resultItemToIntStatsValue :: MonadDES m => a m -> ResultValue (SamplingStats Int) m
+  -- | Try to return statistics based on integer numbers.
+  resultItemAsIntStatsValue :: MonadDES m => a m -> Maybe (ResultValue (SamplingStats Int) m)
 
-  -- | Return timing statistics based on integer numbers.
-  resultItemToIntTimingStatsValue :: MonadDES m => a m -> ResultValue (TimingStats Int) m
+  -- | Try to return timing statistics based on integer numbers.
+  resultItemAsIntTimingStatsValue :: MonadDES m => a m -> Maybe (ResultValue (TimingStats Int) m)
 
-  -- | Return double numbers in time points.
-  resultItemToDoubleValue :: MonadDES m => a m -> ResultValue Double m
+  -- | Try to return double numbers in time points.
+  resultItemAsDoubleValue :: MonadDES m => a m -> Maybe (ResultValue Double m)
   
-  -- | Return lists of double numbers in time points. 
-  resultItemToDoubleListValue :: MonadDES m => a m -> ResultValue [Double] m
+  -- | Try to return lists of double numbers in time points. 
+  resultItemAsDoubleListValue :: MonadDES m => a m -> Maybe (ResultValue [Double] m)
 
-  -- | Return statistics based on double numbers.
-  resultItemToDoubleStatsValue :: MonadDES m => a m -> ResultValue (SamplingStats Double) m
+  -- | Try to return statistics based on double numbers.
+  resultItemAsDoubleStatsValue :: MonadDES m => a m -> Maybe (ResultValue (SamplingStats Double) m)
 
-  -- | Return timing statistics based on integer numbers.
-  resultItemToDoubleTimingStatsValue :: MonadDES m => a m -> ResultValue (TimingStats Double) m
+  -- | Try to return timing statistics based on integer numbers.
+  resultItemAsDoubleTimingStatsValue :: MonadDES m => a m -> Maybe (ResultValue (TimingStats Double) m)
 
-  -- | Return string representations in time points.
-  resultItemToStringValue :: MonadDES m => a m -> ResultValue String m
+  -- | Try to return string representations in time points.
+  resultItemAsStringValue :: MonadDES m => a m -> Maybe (ResultValue String m)
+
+-- | Try to return a version optimised for fast aggregation of the statistics based on integer numbers.
+resultItemAsIntStatsEitherValue :: (MonadDES m, ResultItemable a) => a m -> Maybe (ResultValue (Either Int (SamplingStats Int)) m)
+resultItemAsIntStatsEitherValue x =
+  case x1 of
+    Just a1 -> Just $ mapResultValue Left a1
+    Nothing ->
+      case x2 of
+        Just a2 -> Just $ mapResultValue Right a2
+        Nothing -> Nothing
+  where
+    x1 = resultItemAsIntValue x
+    x2 = resultItemAsIntStatsValue x
+
+-- | Try to return a version optimised for fast aggregation of the statistics based on double floating point numbers.
+resultItemAsDoubleStatsEitherValue :: (MonadDES m, ResultItemable a) => a m -> Maybe (ResultValue (Either Double (SamplingStats Double)) m)
+resultItemAsDoubleStatsEitherValue x =
+  case x1 of
+    Just a1 -> Just $ mapResultValue Left a1
+    Nothing ->
+      case x2 of
+        Just a2 -> Just $ mapResultValue Right a2
+        Nothing -> Nothing
+  where
+    x1 = resultItemAsDoubleValue x
+    x2 = resultItemAsDoubleStatsValue x
+
+-- | Return integer numbers in time points.
+resultItemToIntValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue Int m
+resultItemToIntValue x =
+  case resultItemAsIntValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of integer numbers: resultItemToIntValue"
+
+-- | Return lists of integer numbers in time points. 
+resultItemToIntListValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue [Int] m
+resultItemToIntListValue x =
+  case resultItemAsIntListValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of lists of integer numbers: resultItemToIntListValue"
+
+-- | Return statistics based on integer numbers.
+resultItemToIntStatsValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (SamplingStats Int) m
+resultItemToIntStatsValue x =
+  case resultItemAsIntStatsValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of statistics based on integer numbers: resultItemToIntStatsValue"
 
 -- | Return a version optimised for fast aggregation of the statistics based on integer numbers.
 resultItemToIntStatsEitherValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (Either Int (SamplingStats Int)) m
 resultItemToIntStatsEitherValue x =
-  case resultValueData x1 of
-    Just a1 -> mapResultValue Left x1
+  case resultItemAsIntStatsEitherValue x of
+    Just a -> a
     Nothing ->
-      case resultValueData x2 of
-        Just a2 -> mapResultValue Right x2
-        Nothing -> voidResultValue x2
-  where
-    x1 = resultItemToIntValue x
-    x2 = resultItemToIntStatsValue x
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as an optimised source of statistics based on integer numbers: resultItemToIntStatsEitherValue"
+
+-- | Return timing statistics based on integer numbers.
+resultItemToIntTimingStatsValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (TimingStats Int) m
+resultItemToIntTimingStatsValue x =
+  case resultItemAsIntTimingStatsValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of timing statistics based on integer numbers: resultItemToIntTimingStatsValue"
+
+-- | Return double numbers in time points.
+resultItemToDoubleValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue Double m
+resultItemToDoubleValue x =
+  case resultItemAsDoubleValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of double-precision floating-point numbers: resultItemToDoubleValue"
+  
+-- | Return lists of double numbers in time points. 
+resultItemToDoubleListValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue [Double] m
+resultItemToDoubleListValue x =
+  case resultItemAsDoubleListValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of lists of double-precision floating-point numbers: resultItemToDoubleListValue"
+
+-- | Return statistics based on double numbers.
+resultItemToDoubleStatsValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (SamplingStats Double) m
+resultItemToDoubleStatsValue x =
+  case resultItemAsDoubleStatsValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of statistics based on double-precision floating-point numbers: resultItemToDoubleStatsValue"
 
 -- | Return a version optimised for fast aggregation of the statistics based on double floating point numbers.
 resultItemToDoubleStatsEitherValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (Either Double (SamplingStats Double)) m
 resultItemToDoubleStatsEitherValue x =
-  case resultValueData x1 of
-    Just a1 -> mapResultValue Left x1
+  case resultItemAsDoubleStatsEitherValue x of
+    Just a -> a
     Nothing ->
-      case resultValueData x2 of
-        Just a2 -> mapResultValue Right x2
-        Nothing -> voidResultValue x2
-  where
-    x1 = resultItemToDoubleValue x
-    x2 = resultItemToDoubleStatsValue x
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as an optimised source of statistics based on double-precision floating-point numbers: resultItemToDoubleStatsEitherValue"
+
+-- | Return timing statistics based on integer numbers.
+resultItemToDoubleTimingStatsValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue (TimingStats Double) m
+resultItemToDoubleTimingStatsValue x =
+  case resultItemAsDoubleTimingStatsValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of timing statistics based on double-precision floating-point numbers: resultItemToDoubleTimingStatsValue"
+
+-- | Return string representations in time points.
+resultItemToStringValue :: (MonadDES m, ResultItemable a) => a m -> ResultValue String m
+resultItemToStringValue x =
+  case resultItemAsStringValue x of
+    Just a -> a
+    Nothing ->
+      error $
+      "Cannot represent " ++ resultItemName x ++
+      " as a source of strings: resultItemToStringValue"
 
 -- | The simulation results represented by an object having properties.
 data ResultObject m =
@@ -323,11 +431,7 @@ data ResultValue e m =
               }
 
 mapResultValue :: MonadDES m => (a -> b) -> ResultValue a m -> ResultValue b m
-mapResultValue f x = x { resultValueData = fmap (fmap f) (resultValueData x) }
-
--- | Return a new value with the discarded simulation results.
-voidResultValue :: ResultValue a m -> ResultValue b m
-voidResultValue x = x { resultValueData = Nothing }
+mapResultValue f x = x { resultValueData = fmap f (resultValueData x) }
 
 -- | A container of the simulation results such as queue, server or array.
 data ResultContainer e m =
@@ -383,7 +487,7 @@ resultContainerConstProperty cont name i f =
     resultPropertyLabel = name,
     resultPropertyId = i,
     resultPropertySource =
-      resultContainerPropertySource cont name i (Just . return . f) (const EmptyResultSignal) }
+      resultContainerPropertySource cont name i (return . f) (const EmptyResultSignal) }
   
 -- | Create by the specified container a property that changes in the integration time points, or it is supposed to be such one.
 resultContainerIntegProperty :: (MonadDES m,
@@ -402,7 +506,7 @@ resultContainerIntegProperty cont name i f =
     resultPropertyLabel = name,
     resultPropertyId = i,
     resultPropertySource =
-      resultContainerPropertySource cont name i (Just . f) (const UnknownResultSignal) }
+      resultContainerPropertySource cont name i f (const UnknownResultSignal) }
   
 -- | Create a property by the specified container.
 resultContainerProperty :: (MonadDES m,
@@ -423,7 +527,7 @@ resultContainerProperty cont name i f g =
     resultPropertyLabel = name,
     resultPropertyId = i,
     resultPropertySource =
-      resultContainerPropertySource cont name i (Just . f) (ResultSignal . g) }
+      resultContainerPropertySource cont name i f (ResultSignal . g) }
 
 -- | Create by the specified container a mapped property which is recomputed each time again and again.
 resultContainerMapProperty :: (MonadDES m,
@@ -442,7 +546,7 @@ resultContainerMapProperty cont name i f =
     resultPropertyLabel = name,
     resultPropertyId = i,
     resultPropertySource =
-      resultContainerPropertySource cont name i (fmap $ fmap f) (const $ resultContainerSignal cont) }
+      resultContainerPropertySource cont name i (fmap f) (const $ resultContainerSignal cont) }
 
 -- | Convert the result value to a container with the specified object identifier. 
 resultValueToContainer :: ResultValue a m -> ResultContainer (ResultData a m) m
@@ -463,7 +567,7 @@ resultContainerToValue x =
     resultValueSignal = resultContainerSignal x }
 
 -- | Represents the very simulation results.
-type ResultData e m = Maybe (Event m e)
+type ResultData e m = Event m e
 
 -- | Whether an object containing the results emits a signal notifying about change of data.
 data ResultSignal m = EmptyResultSignal
@@ -507,17 +611,17 @@ instance ResultItemable (ResultValue Int) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = id
-  resultItemToIntListValue = mapResultValue return
-  resultItemToIntStatsValue = mapResultValue returnSamplingStats
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = Just
+  resultItemAsIntListValue = Just . mapResultValue return
+  resultItemAsIntStatsValue = Just . mapResultValue returnSamplingStats
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = mapResultValue fromIntegral
-  resultItemToDoubleListValue = mapResultValue (return . fromIntegral)
-  resultItemToDoubleStatsValue = mapResultValue (returnSamplingStats . fromIntegral)
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = Just . mapResultValue fromIntegral
+  resultItemAsDoubleListValue = Just . mapResultValue (return . fromIntegral)
+  resultItemAsDoubleStatsValue = Just . mapResultValue (returnSamplingStats . fromIntegral)
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -528,17 +632,17 @@ instance ResultItemable (ResultValue Double) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
   
-  resultItemToDoubleValue = id
-  resultItemToDoubleListValue = mapResultValue return
-  resultItemToDoubleStatsValue = mapResultValue returnSamplingStats
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = Just
+  resultItemAsDoubleListValue = Just . mapResultValue return
+  resultItemAsDoubleStatsValue = Just . mapResultValue returnSamplingStats
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -549,17 +653,17 @@ instance ResultItemable (ResultValue [Int]) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = id
-  resultItemToIntStatsValue = mapResultValue listSamplingStats
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = Just
+  resultItemAsIntStatsValue = Just . mapResultValue listSamplingStats
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = mapResultValue (map fromIntegral)
-  resultItemToDoubleStatsValue = mapResultValue (fromIntSamplingStats . listSamplingStats)
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = Just . mapResultValue (map fromIntegral)
+  resultItemAsDoubleStatsValue = Just . mapResultValue (fromIntSamplingStats . listSamplingStats)
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -570,17 +674,17 @@ instance ResultItemable (ResultValue [Double]) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
   
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = id
-  resultItemToDoubleStatsValue = mapResultValue listSamplingStats
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = Just
+  resultItemAsDoubleStatsValue = Just . mapResultValue listSamplingStats
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -591,17 +695,17 @@ instance ResultItemable (ResultValue (SamplingStats Int)) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = id
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = Just
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = mapResultValue fromIntSamplingStats
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = Just . mapResultValue fromIntSamplingStats
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = samplingStatsResultSource
   resultItemSummary = samplingStatsResultSummary
@@ -612,17 +716,17 @@ instance ResultItemable (ResultValue (SamplingStats Double)) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
   
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = id
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = Just
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = samplingStatsResultSource
   resultItemSummary = samplingStatsResultSummary
@@ -633,17 +737,17 @@ instance ResultItemable (ResultValue (TimingStats Int)) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = id
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = Just
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = mapResultValue fromIntTimingStats
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = Just . mapResultValue fromIntTimingStats
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = timingStatsResultSource
   resultItemSummary = timingStatsResultSummary
@@ -654,17 +758,17 @@ instance ResultItemable (ResultValue  (TimingStats Double)) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = id
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = Just
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
   
   resultItemExpansion = timingStatsResultSource
   resultItemSummary = timingStatsResultSummary
@@ -675,17 +779,17 @@ instance ResultItemable (ResultValue Bool) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -696,17 +800,17 @@ instance ResultItemable (ResultValue String) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = id
+  resultItemAsStringValue = Just
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -717,17 +821,17 @@ instance ResultItemable (ResultValue ()) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -738,17 +842,17 @@ instance ResultItemable (ResultValue FCFS) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -759,17 +863,17 @@ instance ResultItemable (ResultValue LCFS) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -780,17 +884,17 @@ instance ResultItemable (ResultValue SIRO) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -801,17 +905,17 @@ instance ResultItemable (ResultValue StaticPriorities) where
   resultItemId = resultValueId
   resultItemSignal = resultValueSignal
   
-  resultItemToIntValue = voidResultValue
-  resultItemToIntListValue = voidResultValue
-  resultItemToIntStatsValue = voidResultValue
-  resultItemToIntTimingStatsValue = voidResultValue
+  resultItemAsIntValue = const Nothing
+  resultItemAsIntListValue = const Nothing
+  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntTimingStatsValue = const Nothing
 
-  resultItemToDoubleValue = voidResultValue
-  resultItemToDoubleListValue = voidResultValue
-  resultItemToDoubleStatsValue = voidResultValue
-  resultItemToDoubleTimingStatsValue = voidResultValue
+  resultItemAsDoubleValue = const Nothing
+  resultItemAsDoubleListValue = const Nothing
+  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleTimingStatsValue = const Nothing
 
-  resultItemToStringValue = mapResultValue show
+  resultItemAsStringValue = Just . mapResultValue show
 
   resultItemExpansion = ResultItemSource . ResultItem
   resultItemSummary = ResultItemSource . ResultItem
@@ -1157,190 +1261,6 @@ pureResultSignal rs (ResultSignal s) =
 pureResultSignal rs (ResultSignalMix s) =
   void (resultSignalInIntegTimes rs) <> s
 
--- | Defines a final result extract: its name, values and other data.
-data ResultExtract e m =
-  ResultExtract { resultExtractName   :: ResultName,
-                  -- ^ The result name.
-                  resultExtractId     :: ResultId,
-                  -- ^ The result identifier.
-                  resultExtractData   :: Event m e,
-                  -- ^ The result values.
-                  resultExtractSignal :: ResultSignal m
-                  -- ^ Whether the result emits a signal.
-                }
-
--- | Extract the results as integer values, or raise a conversion error.
-extractIntResults :: MonadDES m => Results m -> [ResultExtract Int m]
-extractIntResults rs = flip map (resultsToIntValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of integer values: extractIntResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as lists of integer values, or raise a conversion error.
-extractIntListResults :: MonadDES m => Results m -> [ResultExtract [Int] m]
-extractIntListResults rs = flip map (resultsToIntListValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of lists of integer values: extractIntListResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as statistics based on integer values,
--- or raise a conversion error.
-extractIntStatsResults :: MonadDES m => Results m -> [ResultExtract (SamplingStats Int) m]
-extractIntStatsResults rs = flip map (resultsToIntStatsValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of statistics based on integer values: extractIntStatsResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as statistics based on integer values and optimised
--- for fast aggregation, or raise a conversion error.
-extractIntStatsEitherResults :: MonadDES m => Results m -> [ResultExtract (Either Int (SamplingStats Int)) m]
-extractIntStatsEitherResults rs = flip map (resultsToIntStatsEitherValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of statistics based on integer values: extractIntStatsEitherResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as timing statistics based on integer values,
--- or raise a conversion error.
-extractIntTimingStatsResults :: MonadDES m => Results m -> [ResultExtract (TimingStats Int) m]
-extractIntTimingStatsResults rs = flip map (resultsToIntTimingStatsValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of timing statistics based on integer values: extractIntTimingStatsResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as double floating point values, or raise a conversion error.
-extractDoubleResults :: MonadDES m => Results m -> [ResultExtract Double m]
-extractDoubleResults rs = flip map (resultsToDoubleValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of double floating point values: extractDoubleResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as lists of double floating point values,
--- or raise a conversion error.
-extractDoubleListResults :: MonadDES m => Results m -> [ResultExtract [Double] m]
-extractDoubleListResults rs = flip map (resultsToDoubleListValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of lists of double floating point values: extractDoubleListResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as statistics based on double floating point values,
--- or raise a conversion error.
-extractDoubleStatsResults :: MonadDES m => Results m -> [ResultExtract (SamplingStats Double) m]
-extractDoubleStatsResults rs = flip map (resultsToDoubleStatsValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of statistics based on double floating point values: extractDoubleStatsResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as statistics based on double floating point values
--- and optimised for fast aggregation, or raise a conversion error.
-extractDoubleStatsEitherResults :: MonadDES m => Results m -> [ResultExtract (Either Double (SamplingStats Double)) m]
-extractDoubleStatsEitherResults rs = flip map (resultsToDoubleStatsEitherValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of statistics based on double floating point values: extractDoubleStatsEitherResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as timing statistics based on double floating point values,
--- or raise a conversion error.
-extractDoubleTimingStatsResults :: MonadDES m => Results m -> [ResultExtract (TimingStats Double) m]
-extractDoubleTimingStatsResults rs = flip map (resultsToDoubleTimingStatsValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of timing statistics based on double floating point values: extractDoubleTimingStatsResults"
-    Just a ->
-      ResultExtract n i a s
-
--- | Extract the results as string values, or raise a conversion error.
-extractStringResults :: MonadDES m => Results m -> [ResultExtract String m]
-extractStringResults rs = flip map (resultsToStringValues rs) $ \x ->
-  let n = resultValueName x
-      i = resultValueId x
-      a = resultValueData x
-      s = resultValueSignal x
-  in case a of
-    Nothing ->
-      error $
-      "Cannot represent variable " ++ n ++
-      " as a source of string values: extractStringResults"
-    Just a ->
-      ResultExtract n i a s
-
 -- | Represents a computation that can return the simulation data.
 class MonadDES m => ResultComputing t m where
 
@@ -1368,42 +1288,42 @@ computeResultValue name i m =
 
 instance MonadDES m => ResultComputing Parameter m where
 
-  computeResultData = Just . liftParameter
+  computeResultData = liftParameter
   computeResultSignal = const UnknownResultSignal
 
 instance MonadDES m => ResultComputing Simulation m where
 
-  computeResultData = Just . liftSimulation
+  computeResultData = liftSimulation
   computeResultSignal = const UnknownResultSignal
 
 instance MonadDES m => ResultComputing Dynamics m where
 
-  computeResultData = Just . liftDynamics
+  computeResultData = liftDynamics
   computeResultSignal = const UnknownResultSignal
 
 instance MonadDES m => ResultComputing Event m where
 
-  computeResultData = Just . id
+  computeResultData = id
   computeResultSignal = const UnknownResultSignal
 
 instance MonadDES m => ResultComputing Ref m where
 
-  computeResultData = Just . readRef
+  computeResultData = readRef
   computeResultSignal = ResultSignal . refChanged_
 
 instance MonadDES m => ResultComputing B.Ref m where
 
-  computeResultData = Just . B.readRef
+  computeResultData = B.readRef
   computeResultSignal = const UnknownResultSignal
 
 instance MonadVar m => ResultComputing Var m where
 
-  computeResultData = Just . readVar
+  computeResultData = readVar
   computeResultSignal = ResultSignal . varChanged_
 
 instance MonadDES m => ResultComputing Signalable m where
 
-  computeResultData = Just . readSignalable
+  computeResultData = readSignalable
   computeResultSignal = ResultSignal . signalableChanged_
       
 -- | Return a source by the specified statistics.
