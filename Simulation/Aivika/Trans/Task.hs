@@ -34,7 +34,10 @@ module Simulation.Aivika.Trans.Task
         spawnTaskUsingIdWith,
         -- * Enqueueing Task
         enqueueTask,
-        enqueueTaskUsingId) where
+        enqueueTaskUsingId,
+        -- * Parallel Tasks
+        taskParallelResult,
+        taskParallelProcess) where
 
 import Data.Monoid
 
@@ -183,13 +186,61 @@ spawnTaskWith cancellation p =
   do pid <- liftSimulation newProcessId
      spawnTaskUsingIdWith cancellation pid p
 
--- | Return an outer process that behaves like the task itself except for one thing:
--- if the outer process is cancelled then it is not enough to cancel the task. 
+-- | Return an outer process that behaves like the task itself, for example,
+-- when the task is cancelled if the outer process is cancelled. 
 taskProcess :: MonadDES m => Task m a -> Process m a
 {-# INLINABLE taskProcess #-}
 taskProcess t =
-  do x <- taskResult t
+  do x <- finallyProcess
+          (taskResult t)
+          (do pid <- processId
+              liftEvent $
+                do cancelled <- processCancelled pid
+                   when cancelled $
+                     cancelTask t)
      case x of
        TaskCompleted a -> return a
        TaskError e -> throwProcess e
        TaskCancelled -> cancelProcess
+
+-- | Return the result of two parallel tasks.
+taskParallelResult :: MonadDES m => Task m a -> Task m a -> Process m (TaskResult a, Task m a)
+{-# INLINABLE taskParallelResult #-}
+taskParallelResult t1 t2 =
+  do x1 <- liftEvent $ readRef (taskResultRef t1)
+     case x1 of
+       Just x1 -> return (x1, t2)
+       Nothing ->
+         do x2 <- liftEvent $ readRef (taskResultRef t2)
+            case x2 of
+              Just x2 -> return (x2, t1)
+              Nothing ->
+                do let s1 = fmap Left $ taskResultReceived t1
+                       s2 = fmap Right $ taskResultReceived t2
+                   x <- processAwait $ s1 <> s2
+                   case x of
+                     Left x1  -> return (x1, t2)
+                     Right x2 -> return (x2, t1) 
+
+-- | Return an outer process for two parallel tasks returning the result of
+-- the first finished task and the rest task in pair. 
+taskParallelProcess :: MonadDES m => Task m a -> Task m a -> Process m (a, Task m a)
+{-# INLINABLE taskParallelProcess #-}
+taskParallelProcess t1 t2 =
+  do (x, t) <-
+       finallyProcess
+       (taskParallelResult t1 t2)
+       (do pid <- processId
+           liftEvent $
+             do cancelled <- processCancelled pid
+                when cancelled $
+                  do cancelTask t1
+                     cancelTask t2)
+     case x of
+       TaskCompleted a -> return (a, t)
+       TaskError e ->
+         do liftEvent $ cancelTask t
+            throwProcess e
+       TaskCancelled ->
+         do liftEvent $ cancelTask t
+            cancelProcess
