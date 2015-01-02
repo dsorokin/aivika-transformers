@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Simulation
--- Copyright  : Copyright (c) 2009-2014, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2015, David Sorokin <david.sorokin@gmail.com>
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
