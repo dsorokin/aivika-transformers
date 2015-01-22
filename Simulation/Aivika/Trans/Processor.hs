@@ -41,6 +41,10 @@ module Simulation.Aivika.Trans.Processor
         processorPrioritisingInputOutputParallel,
         -- * Arrival Processor
         arrivalProcessor,
+        -- * Utilities
+        joinProcessor,
+        -- * Failover
+        failoverProcessor,
         -- * Integrating with Signals
         signalProcessor,
         processorSignaling,
@@ -506,6 +510,21 @@ arrivalProcessor = Processor arrivalStream
 delayProcessor :: MonadDES m => a -> Processor m a a
 {-# INLINABLE delayProcessor #-}
 delayProcessor a0 = Processor $ delayStream a0
+
+-- | Removes one level of the computation, projecting its bound processor into the outer level.
+joinProcessor :: MonadDES m => Process m (Processor m a b) -> Processor m a b
+{-# INLINABLE joinProcessor #-}
+joinProcessor m =
+  Processor $ \xs ->
+  Cons $
+  do Processor f <- m
+     runStream $ f xs
+
+-- | Takes the next processor from the list after the current processor is failed because of cancelling the underlying process.
+failoverProcessor :: MonadDES m => [Processor m a b] -> Processor m a b
+{-# INLINABLE failoverProcessor #-}
+failoverProcessor ps =
+  Processor $ \xs -> failoverStream [runProcessor p xs | p <- ps]
 
 -- | Show the debug messages with the current simulation time.
 traceProcessor :: MonadDES m
