@@ -132,7 +132,9 @@ holdProcess dt =
   Process $ \pid ->
   Cont $ \c ->
   Event $ \p ->
-  do let x = processInterruptCont pid
+  do when (dt < 0) $
+       error "Time period dt < 0: holdProcess"
+     let x = processInterruptCont pid
      invokeEvent p $ writeRef x $ Just c
      invokeEvent p $ writeRef (processInterruptRef pid) False
      v <- invokeEvent p $ readRef (processInterruptVersion pid)
