@@ -520,7 +520,7 @@ joinProcessor m =
   do Processor f <- m
      runStream $ f xs
 
--- | Takes the next processor from the list after the current processor is failed because of cancelling the underlying process.
+-- | Takes the next processor from the list after the current processor fails because of cancelling the underlying process.
 failoverProcessor :: MonadDES m => [Processor m a b] -> Processor m a b
 {-# INLINABLE failoverProcessor #-}
 failoverProcessor ps =

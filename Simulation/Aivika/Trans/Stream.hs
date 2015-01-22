@@ -605,7 +605,7 @@ joinStream :: MonadDES m => Process m (Stream m a) -> Stream m a
 {-# INLINABLE joinStream #-}
 joinStream m = Cons $ m >>= runStream
 
--- | Takes the next stream from the list after the current stream is failed because of cancelling the underlying process.
+-- | Takes the next stream from the list after the current stream fails because of cancelling the underlying process.
 failoverStream :: MonadDES m => [Stream m a] -> Stream m a
 {-# INLINABLE failoverStream #-}
 failoverStream ps = Cons z where
