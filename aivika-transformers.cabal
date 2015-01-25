@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         3.1
+version:         3.2
 synopsis:        Transformers for the Aivika simulation library
 description:
     The package adds the monad and other computation transformers to 
