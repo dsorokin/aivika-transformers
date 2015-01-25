@@ -52,6 +52,12 @@ module Simulation.Aivika.Trans.Stream
         apStreamM,
         filterStream,
         filterStreamM,
+        takeStream,
+        takeStreamWhile,
+        takeStreamWhileM,
+        dropStream,
+        dropStreamWhile,
+        dropStreamWhileM,
         singletonStream,
         joinStream,
         -- * Failover
@@ -648,6 +654,68 @@ failoverStream ps = Cons z where
                             runProcess $ loop ps
          liftEvent $ runProcess $ loop ps
          runStream $ repeatProcess reader
+
+-- | Return the prefix of the stream of the specified length.
+takeStream :: MonadDES m => Int -> Stream m a -> Stream m a
+{-# INLINABLE takeStream #-}
+takeStream n s
+  | n <= 0    = emptyStream
+  | otherwise =
+    Cons $
+    do (a, xs) <- runStream s
+       return (a, takeStream (n - 1) xs)
+
+-- | Return the longest prefix of the stream of elements that satisfy the predicate.
+takeStreamWhile :: MonadDES m => (a -> Bool) -> Stream m a -> Stream m a
+{-# INLINABLE takeStreamWhile #-}
+takeStreamWhile p s =
+  Cons $
+  do (a, xs) <- runStream s
+     if p a
+       then return (a, takeStreamWhile p xs)
+       else neverProcess
+
+-- | Return the longest prefix of the stream of elements that satisfy the computation.
+takeStreamWhileM :: MonadDES m => (a -> Process m Bool) -> Stream m a -> Stream m a
+{-# INLINABLE takeStreamWhileM #-}
+takeStreamWhileM p s =
+  Cons $
+  do (a, xs) <- runStream s
+     f <- p a
+     if f
+       then return (a, takeStreamWhileM p xs)
+       else neverProcess
+
+-- | Return the suffix of the stream after the specified first elements.
+dropStream :: MonadDES m => Int -> Stream m a -> Stream m a
+{-# INLINABLE dropStream #-}
+dropStream n s
+  | n <= 0    = s
+  | otherwise =
+    Cons $
+    do (a, xs) <- runStream s
+       runStream $ dropStream (n - 1) xs
+
+-- | Return the suffix of the stream of elements remaining after 'takeStreamWhile'.
+dropStreamWhile :: MonadDES m => (a -> Bool) -> Stream m a -> Stream m a
+{-# INLINABLE dropStreamWhile #-}
+dropStreamWhile p s =
+  Cons $
+  do (a, xs) <- runStream s
+     if p a
+       then runStream $ dropStreamWhile p xs
+       else return (a, xs)
+
+-- | Return the suffix of the stream of elements remaining after 'takeStreamWhileM'.
+dropStreamWhileM :: MonadDES m => (a -> Process m Bool) -> Stream m a -> Stream m a
+{-# INLINABLE dropStreamWhileM #-}
+dropStreamWhileM p s =
+  Cons $
+  do (a, xs) <- runStream s
+     f <- p a
+     if f
+       then runStream $ dropStreamWhileM p xs
+       else return (a, xs)
 
 -- | Show the debug messages with the current simulation time.
 traceStream :: MonadDES m
