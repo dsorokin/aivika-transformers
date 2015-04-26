@@ -430,8 +430,13 @@ data ResultValue e m =
                 -- ^ Whether the value emits a signal when changing simulation data.
               }
 
+-- | Map the result value according the specfied function.
 mapResultValue :: MonadDES m => (a -> b) -> ResultValue a m -> ResultValue b m
 mapResultValue f x = x { resultValueData = fmap f (resultValueData x) }
+
+-- | Transform the result value.
+apResultValue :: MonadDES m => ResultData (a -> b) m -> ResultValue a m -> ResultValue b m
+apResultValue f x = x { resultValueData = ap f (resultValueData x) }
 
 -- | A container of the simulation results such as queue, server or array.
 data ResultContainer e m =
