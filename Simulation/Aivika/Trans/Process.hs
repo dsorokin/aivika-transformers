@@ -58,6 +58,9 @@ module Simulation.Aivika.Trans.Process
         whenCancellingProcess,
         -- * Awaiting Signal
         processAwait,
+        -- * Preemption
+        processPreemptionBeginning,
+        processPreemptionEnding,
         -- * Yield of Process
         processYield,
         -- * Process Timeout

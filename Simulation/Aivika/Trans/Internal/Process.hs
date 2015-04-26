@@ -58,6 +58,11 @@ module Simulation.Aivika.Trans.Internal.Process
         whenCancellingProcess,
         -- * Awaiting Signal
         processAwait,
+        -- * Preemption
+        processPreemptionBegin,
+        processPreemptionEnd,
+        processPreemptionBeginning,
+        processPreemptionEnding,
         -- * Yield of Process
         processYield,
         -- * Process Timeout
@@ -105,9 +110,10 @@ import Simulation.Aivika.Trans.Signal
 data ProcessId m = 
   ProcessId { processStarted :: Ref m Bool,
               processReactCont     :: Ref m (Maybe (ContParams m ())), 
-              processCancelSource  :: ContCancellationSource m,
+              processContId  :: ContId m,
               processInterruptRef  :: Ref m Bool, 
-              processInterruptCont :: Ref m (Maybe (ContParams m ())), 
+              processInterruptCont :: Ref m (Maybe (ContParams m ())),
+              processInterruptTime :: Ref m Double,
               processInterruptVersion :: Ref m Int }
 
 -- | Specifies a discontinuous process that can suspend at any time
@@ -135,11 +141,13 @@ holdProcess dt =
   do when (dt < 0) $
        error "Time period dt < 0: holdProcess"
      let x = processInterruptCont pid
+         t = pointTime p + dt
      invokeEvent p $ writeRef x $ Just c
      invokeEvent p $ writeRef (processInterruptRef pid) False
+     invokeEvent p $ writeRef (processInterruptTime pid) t
      v <- invokeEvent p $ readRef (processInterruptVersion pid)
      invokeEvent p $
-       enqueueEvent (pointTime p + dt) $
+       enqueueEvent t $
        Event $ \p ->
        do v' <- invokeEvent p $ readRef (processInterruptVersion pid)
           when (v == v') $ 
@@ -168,6 +176,38 @@ processInterrupted :: MonadDES m => ProcessId m -> Event m Bool
 processInterrupted pid =
   Event $ \p ->
   invokeEvent p $ readRef (processInterruptRef pid)
+
+-- | Define a reaction when the process with the specified identifier is preempted.
+processPreempted :: MonadDES m => ProcessId m -> Event m ()
+{-# INLINABLE processPreempted #-}
+processPreempted pid =
+  Event $ \p ->
+  do let x = processInterruptCont pid
+     a <- invokeEvent p $ readRef x
+     case a of
+       Just c ->
+         do invokeEvent p $ writeRef x Nothing
+            invokeEvent p $ writeRef (processInterruptRef pid) True
+            invokeEvent p $ modifyRef (processInterruptVersion pid) $ (+) 1
+            t <- invokeEvent p $ readRef (processInterruptTime pid)
+            let dt = t - pointTime p
+                c' = substituteCont c $ \a ->
+                  Event $ \p ->
+                  invokeEvent p $
+                  invokeCont c $
+                  invokeProcess pid $
+                  holdProcess dt
+            invokeEvent p $
+              reenterCont c' ()
+       Nothing ->
+         do let x = processReactCont pid
+            a <- invokeEvent p $ readRef x
+            case a of
+              Nothing ->
+                return ()
+              Just c ->
+                do let c' = substituteCont c $ reenterCont c
+                   invokeEvent p $ writeRef x $ Just c'
 
 -- | Passivate the process.
 passivateProcess :: MonadDES m => Process m ()
@@ -216,11 +256,20 @@ processIdPrepare pid =
             "Another process with the specified identifier " ++
             "has been started already: processIdPrepare"
        else invokeEvent p $ writeRef (processStarted pid) True
-     let signal = processCancelling pid
+     let signal = contSignal $ processContId pid
      invokeEvent p $
-       handleSignal_ signal $ \_ ->
-       do interruptProcess pid
-          reactivateProcess pid
+       handleSignal_ signal $ \e ->
+       Event $ \p ->
+       case e of
+         ContCancellationInitiating ->
+           do z <- invokeEvent p $ contCancellationActivated $ processContId pid
+              when z $
+                do invokeEvent p $ interruptProcess pid
+                   invokeEvent p $ reactivateProcess pid
+         ContPreemptionBeginning ->
+           invokeEvent p $ processPreempted pid
+         ContPreemptionEnding ->
+           return ()
 
 -- | Run immediately the process. A new 'ProcessId' identifier will be
 -- assigned to the process.
@@ -243,7 +292,7 @@ runProcessUsingId :: MonadDES m => ProcessId m -> Process m () -> Event m ()
 {-# INLINABLE runProcessUsingId #-}
 runProcessUsingId pid p =
   do processIdPrepare pid
-     runCont m cont econt ccont (processCancelSource pid) False
+     runCont m cont econt ccont (processContId pid) False
        where cont  = return
              econt = throwEvent
              ccont = return
@@ -302,21 +351,23 @@ newProcessId =
   Simulation $ \r ->
   do x <- invokeSimulation r $ newRef Nothing
      y <- invokeSimulation r $ newRef False
-     c <- invokeSimulation r newContCancellationSource
+     c <- invokeSimulation r $ newContId
      i <- invokeSimulation r $ newRef False
      z <- invokeSimulation r $ newRef Nothing
+     t <- invokeSimulation r $ newRef 0
      v <- invokeSimulation r $ newRef 0
      return ProcessId { processStarted = y,
                         processReactCont     = x, 
-                        processCancelSource  = c, 
+                        processContId  = c, 
                         processInterruptRef  = i,
-                        processInterruptCont = z, 
+                        processInterruptCont = z,
+                        processInterruptTime = t,
                         processInterruptVersion = v }
 
 -- | Cancel a process with the specified identifier, interrupting it if needed.
 cancelProcessWithId :: MonadDES m => ProcessId m -> Event m ()
 {-# INLINABLE cancelProcessWithId #-}
-cancelProcessWithId pid = contCancellationInitiate (processCancelSource pid)
+cancelProcessWithId pid = contCancellationInitiate (processContId pid)
 
 -- | The process cancels itself.
 cancelProcess :: MonadDES m => Process m a
@@ -330,13 +381,13 @@ cancelProcess =
 -- | Test whether the process with the specified identifier was cancelled.
 processCancelled :: MonadDES m => ProcessId m -> Event m Bool
 {-# INLINABLE processCancelled #-}
-processCancelled pid = contCancellationInitiated (processCancelSource pid)
+processCancelled pid = contCancellationInitiated (processContId pid)
 
 -- | Return a signal that notifies about cancelling the process with 
 -- the specified identifier.
 processCancelling :: MonadDES m => ProcessId m -> Signal m ()
 {-# INLINABLE processCancelling #-}
-processCancelling pid = contCancellationInitiating (processCancelSource pid)
+processCancelling pid = contCancellationInitiating (processContId pid)
 
 -- | Register a handler that will be invoked in case of cancelling the current process.
 whenCancellingProcess :: MonadDES m => Event m () -> Process m ()
@@ -345,6 +396,22 @@ whenCancellingProcess h =
   Process $ \pid ->
   liftEvent $
   handleSignal_ (processCancelling pid) $ \() -> h
+
+-- | Preempt a process with the specified identifier.
+processPreemptionBegin :: MonadDES m => ProcessId m -> Event m ()
+processPreemptionBegin pid = contPreemptionBegin (processContId pid)
+
+-- | Proceed with the process with the specified identifier after it was preempted with help of 'preemptProcessBegin'.
+processPreemptionEnd :: MonadDES m => ProcessId m -> Event m ()
+processPreemptionEnd pid = contPreemptionEnd (processContId pid)
+
+-- | Return a signal when the process is preempted.
+processPreemptionBeginning :: MonadDES m => ProcessId m -> Signal m ()
+processPreemptionBeginning pid = contPreemptionBeginning (processContId pid)
+
+-- | Return a signal when the process is proceeded after it was preempted earlier.
+processPreemptionEnding :: MonadDES m => ProcessId m -> Signal m ()
+processPreemptionEnding pid = contPreemptionEnding (processContId pid)
 
 instance MonadDES m => Eq (ProcessId m) where
 
@@ -463,7 +530,7 @@ processParallelUsingIds xs =
   do liftEvent $ processParallelPrepare xs
      contParallel $
        flip map xs $ \(pid, m) ->
-       (invokeProcess pid m, processCancelSource pid)
+       (invokeProcess pid m, processContId pid)
 
 -- | Like 'processParallel' but ignores the result.
 processParallel_ :: MonadDES m => [Process m a] -> Process m ()
@@ -479,7 +546,7 @@ processParallelUsingIds_ xs =
   do liftEvent $ processParallelPrepare xs
      contParallel_ $
        flip map xs $ \(pid, m) ->
-       (invokeProcess pid m, processCancelSource pid)
+       (invokeProcess pid m, processContId pid)
 
 -- | Create the new process identifiers.
 processParallelCreateIds :: MonadDES m => [Process m a] -> Simulation m [(ProcessId m, Process m a)]
@@ -508,7 +575,7 @@ processUsingId :: MonadDES m => ProcessId m -> Process m a -> Process m a
 processUsingId pid x =
   Process $ \pid' ->
   do liftEvent $ processIdPrepare pid
-     rerunCont (invokeProcess pid x) (processCancelSource pid)
+     rerunCont (invokeProcess pid x) (processContId pid)
 
 -- | Spawn the child process. In case of cancelling one of the processes,
 -- other process will be cancelled too.
@@ -537,7 +604,7 @@ spawnProcessUsingIdWith :: MonadDES m => ContCancellation -> ProcessId m -> Proc
 spawnProcessUsingIdWith cancellation pid x =
   Process $ \pid' ->
   do liftEvent $ processIdPrepare pid
-     spawnCont cancellation (invokeProcess pid x) (processCancelSource pid)
+     spawnCont cancellation (invokeProcess pid x) (processContId pid)
 
 -- | Await the signal.
 processAwait :: MonadDES m => Signal m a -> Process m a

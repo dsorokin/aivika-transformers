@@ -44,7 +44,9 @@ module Simulation.Aivika.Trans.Resource
         releaseResource,
         releaseResourceWithinEvent,
         usingResource,
-        usingResourceWithPriority) where
+        usingResourceWithPriority,
+        -- * Altering Resource
+        incResourceCount) where
 
 import Control.Monad
 import Control.Monad.Trans
@@ -79,7 +81,7 @@ data Resource m s =
              -- ^ Return the maximum count of the resource, where 'Nothing'
              -- means that the resource has no upper bound.
              resourceCountRef :: Ref m Int, 
-             resourceWaitList :: StrategyQueue m s (Event m (Maybe (ContParams m ()))) }
+             resourceWaitList :: StrategyQueue m s (FrozenCont m ()) }
 
 -- | Create a new FCFS resource with the specified initial count which value becomes
 -- the upper bound as well.
@@ -234,7 +236,11 @@ requestResource r =
   Event $ \p ->
   do a <- invokeEvent p $ readRef (resourceCountRef r)
      if a == 0 
-       then do c <- invokeEvent p $ contFreeze c
+       then do c <- invokeEvent p $
+                    freezeContReentering c () $
+                    invokeCont c $
+                    invokeProcess pid $
+                    requestResource r
                invokeEvent p $
                  strategyEnqueue (resourceWaitList r) c
        else do let a' = a - 1
@@ -257,7 +263,11 @@ requestResourceWithPriority r priority =
   Event $ \p ->
   do a <- invokeEvent p $ readRef (resourceCountRef r)
      if a == 0 
-       then do c <- invokeEvent p $ contFreeze c
+       then do c <- invokeEvent p $
+                    freezeContReentering c () $
+                    invokeCont c $
+                    invokeProcess pid $
+                    requestResourceWithPriority r priority
                invokeEvent p $
                  strategyEnqueueWithPriority (resourceWaitList r) priority c
        else do let a' = a - 1
@@ -302,7 +312,7 @@ releaseResourceWithinEvent r =
        then a' `seq` invokeEvent p $ writeRef (resourceCountRef r) a'
        else do c <- invokeEvent p $
                     strategyDequeue (resourceWaitList r)
-               c <- invokeEvent p c
+               c <- invokeEvent p $ unfreezeCont c
                case c of
                  Nothing ->
                    invokeEvent p $ releaseResourceWithinEvent r
@@ -356,3 +366,20 @@ usingResourceWithPriority :: (MonadDES m, PriorityQueueStrategy m s p)
 usingResourceWithPriority r priority m =
   do requestResourceWithPriority r priority
      finallyProcess m $ releaseResource r
+
+-- | Increase the count of available resource by the specified number,
+-- invoking the awaiting processes as needed.
+incResourceCount :: (MonadDES m, DequeueStrategy m s)
+                    => Resource m s
+                    -- ^ the resource
+                    -> Int
+                    -- ^ the increment for the resource count
+                    -> Event m ()
+{-# INLINABLE incResourceCount #-}
+incResourceCount r n
+  | n < 0     = error "The increment cannot be negative: incResourceCount"
+  | n == 0    = return ()
+  | otherwise =
+    do releaseResourceWithinEvent r
+       incResourceCount r (n - 1)
+
