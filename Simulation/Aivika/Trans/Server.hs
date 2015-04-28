@@ -11,11 +11,10 @@
 module Simulation.Aivika.Trans.Server
        (-- * Server
         Server,
-        ServerInterruption(..),
         newServer,
         newStateServer,
-        newInterruptibleServer,
-        newInterruptibleStateServer,
+        newPreemptibleServer,
+        newPreemptibleStateServer,
         -- * Processing
         serverProcessor,
         -- * Server Properties and Activities
@@ -24,12 +23,15 @@ module Simulation.Aivika.Trans.Server
         serverTotalInputWaitTime,
         serverTotalProcessingTime,
         serverTotalOutputWaitTime,
+        serverTotalPreemptionTime,
         serverInputWaitTime,
         serverProcessingTime,
         serverOutputWaitTime,
+        serverPreemptionTime,
         serverInputWaitFactor,
         serverProcessingFactor,
         serverOutputWaitFactor,
+        serverPreemptionFactor,
         -- * Summary
         serverSummary,
         -- * Derived Signals for Properties
@@ -41,21 +43,28 @@ module Simulation.Aivika.Trans.Server
         serverTotalProcessingTimeChanged_,
         serverTotalOutputWaitTimeChanged,
         serverTotalOutputWaitTimeChanged_,
+        serverTotalPreemptionTimeChanged,
+        serverTotalPreemptionTimeChanged_,
         serverInputWaitTimeChanged,
         serverInputWaitTimeChanged_,
         serverProcessingTimeChanged,
         serverProcessingTimeChanged_,
         serverOutputWaitTimeChanged,
         serverOutputWaitTimeChanged_,
+        serverPreemptionTimeChanged,
+        serverPreemptionTimeChanged_,
         serverInputWaitFactorChanged,
         serverInputWaitFactorChanged_,
         serverProcessingFactorChanged,
         serverProcessingFactorChanged_,
         serverOutputWaitFactorChanged,
         serverOutputWaitFactorChanged_,
+        serverPreemptionFactorChanged,
+        serverPreemptionFactorChanged_,
         -- * Basic Signals
         serverInputReceived,
-        serverTaskInterrupted,
+        serverTaskPreempting,
+        serverTaskReentering,
         serverTaskProcessed,
         serverOutputProvided,
         -- * Overall Signal
@@ -81,8 +90,6 @@ import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Statistics
 
-import Simulation.Aivika.Server (ServerInterruption(..))
-
 -- | It models a server that takes @a@ and provides @b@ having state @s@ within underlying computation @m@.
 data Server m s a b =
   Server { serverInitState :: s,
@@ -91,24 +98,30 @@ data Server m s a b =
            -- ^ The current state of the server.
            serverProcess :: s -> a -> Process m (s, b),
            -- ^ Provide @b@ by specified @a@.
-           serverProcessInterruptible :: Bool,
-           -- ^ Whether the process is interruptible.
+           serverProcessPreemptible :: Bool,
+           -- ^ Whether the process can be preempted.
            serverTotalInputWaitTimeRef :: Ref m Double,
            -- ^ The counted total time spent in awating the input.
            serverTotalProcessingTimeRef :: Ref m Double,
            -- ^ The counted total time spent to process the input and prepare the output.
            serverTotalOutputWaitTimeRef :: Ref m Double,
            -- ^ The counted total time spent for delivering the output.
+           serverTotalPreemptionTimeRef :: Ref m Double,
+           -- ^ The counted total time spent being preempted and waiting for the proceeding. 
            serverInputWaitTimeRef :: Ref m (SamplingStats Double),
            -- ^ The statistics for the time spent in awaiting the input.
            serverProcessingTimeRef :: Ref m (SamplingStats Double),
            -- ^ The statistics for the time spent to process the input and prepare the output.
            serverOutputWaitTimeRef :: Ref m (SamplingStats Double),
            -- ^ The statistics for the time spent for delivering the output.
+           serverPreemptionTimeRef :: Ref m (SamplingStats Double),
+           -- ^ The statistics for the time spent being preempted.
            serverInputReceivedSource :: SignalSource m a,
            -- ^ A signal raised when the server recieves a new input to process.
-           serverTaskInterruptedSource :: SignalSource m (ServerInterruption a),
-           -- ^ A signal raised when the task was interrupted.
+           serverTaskPreemptingSource :: SignalSource m a,
+           -- ^ A signal raised when the task was preempted.
+           serverTaskReenteringSource :: SignalSource m a,
+           -- ^ A signal raised when the task was proceeded after it had been preempted earlier.
            serverTaskProcessedSource :: SignalSource m (a, b),
            -- ^ A signal raised when the input is processed and
            -- the output is prepared for deliverying.
@@ -118,21 +131,21 @@ data Server m s a b =
 
 -- | Create a new server that can provide output @b@ by input @a@.
 --
--- By default, it is assumed that the server cannot be interrupted,
--- because the handling of possible task interruption is rather costly
+-- By default, it is assumed that the server process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
 -- operation.
 newServer :: MonadDES m
              => (a -> Process m b)
              -- ^ provide an output by the specified input
              -> Simulation m (Server m () a b)
 {-# INLINABLE newServer #-}
-newServer = newInterruptibleServer False
+newServer = newPreemptibleServer False
 
 -- | Create a new server that can provide output @b@ by input @a@
 -- starting from state @s@.
 --
--- By default, it is assumed that the server cannot be interrupted,
--- because the handling of possible task interruption is rather costly
+-- By default, it is assumed that the server process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
 -- operation.
 newStateServer :: MonadDES m
                   => (s -> a -> Process m (s, b))
@@ -142,59 +155,65 @@ newStateServer :: MonadDES m
                   -- ^ the initial state
                   -> Simulation m (Server m s a b)
 {-# INLINABLE newStateServer #-}
-newStateServer = newInterruptibleStateServer False
+newStateServer = newPreemptibleStateServer False
 
--- | Create a new interruptible server that can provide output @b@ by input @a@.
-newInterruptibleServer :: MonadDES m
-                          => Bool
-                          -- ^ whether the server can be interrupted
-                          -> (a -> Process m b)
-                          -- ^ provide an output by the specified input
-                          -> Simulation m (Server m () a b)
-{-# INLINABLE newInterruptibleServer #-}
-newInterruptibleServer interruptible provide =
-  flip (newInterruptibleStateServer interruptible) () $ \s a ->
+-- | Create a new preemptible server that can provide output @b@ by input @a@.
+newPreemptibleServer :: MonadDES m
+                        => Bool
+                        -- ^ whether the server process can be preempted
+                        -> (a -> Process m b)
+                        -- ^ provide an output by the specified input
+                        -> Simulation m (Server m () a b)
+{-# INLINABLE newPreemptibleServer #-}
+newPreemptibleServer preemptible provide =
+  flip (newPreemptibleStateServer preemptible) () $ \s a ->
   do b <- provide a
      return (s, b)
 
--- | Create a new interruptible server that can provide output @b@ by input @a@
+-- | Create a new preemptible server that can provide output @b@ by input @a@
 -- starting from state @s@.
-newInterruptibleStateServer :: MonadDES m
-                               => Bool
-                               -- ^ whether the server can be interrupted
-                               -> (s -> a -> Process m (s, b))
-                               -- ^ provide a new state and output by the specified 
-                               -- old state and input
-                               -> s
-                               -- ^ the initial state
-                               -> Simulation m (Server m s a b)
-{-# INLINABLE newInterruptibleStateServer #-}
-newInterruptibleStateServer interruptible provide state =
+newPreemptibleStateServer :: MonadDES m
+                             => Bool
+                             -- ^ whether the server process can be preempted
+                             -> (s -> a -> Process m (s, b))
+                             -- ^ provide a new state and output by the specified 
+                             -- old state and input
+                             -> s
+                             -- ^ the initial state
+                             -> Simulation m (Server m s a b)
+{-# INLINABLE newPreemptibleStateServer #-}
+newPreemptibleStateServer preemptible provide state =
   do r0 <- newRef state
      r1 <- newRef 0
      r2 <- newRef 0
      r3 <- newRef 0
-     r4 <- newRef emptySamplingStats
+     r4 <- newRef 0
      r5 <- newRef emptySamplingStats
      r6 <- newRef emptySamplingStats
+     r7 <- newRef emptySamplingStats
+     r8 <- newRef emptySamplingStats
      s1 <- newSignalSource
      s2 <- newSignalSource
      s3 <- newSignalSource
      s4 <- newSignalSource
+     s5 <- newSignalSource
      let server = Server { serverInitState = state,
                            serverStateRef = r0,
                            serverProcess = provide,
-                           serverProcessInterruptible = interruptible,
+                           serverProcessPreemptible = preemptible,
                            serverTotalInputWaitTimeRef = r1,
                            serverTotalProcessingTimeRef = r2,
                            serverTotalOutputWaitTimeRef = r3,
-                           serverInputWaitTimeRef = r4,
-                           serverProcessingTimeRef = r5,
-                           serverOutputWaitTimeRef = r6,
+                           serverTotalPreemptionTimeRef = r4,
+                           serverInputWaitTimeRef = r5,
+                           serverProcessingTimeRef = r6,
+                           serverOutputWaitTimeRef = r7,
+                           serverPreemptionTimeRef = r8,
                            serverInputReceivedSource = s1,
-                           serverTaskInterruptedSource = s2,
-                           serverTaskProcessedSource = s3,
-                           serverOutputProvidedSource = s4 }
+                           serverTaskPreemptingSource = s2,
+                           serverTaskReenteringSource = s3,
+                           serverTaskProcessedSource = s4,
+                           serverOutputProvidedSource = s5 }
      return server
 
 -- | Return a processor for the specified server.
@@ -243,36 +262,52 @@ serverProcessor server =
                 addSamplingStats (t1 - t0)
               triggerSignal (serverInputReceivedSource server) a
          -- provide the service
-         (s', b) <-
-           if serverProcessInterruptible server
-           then serverProcessInterrupting server s a
-           else serverProcess server s a
+         (s', b, dt) <-
+           if serverProcessPreemptible server
+           then serverProcessPreempting server s a
+           else do (s', b) <- serverProcess server s a
+                   return (s', b, 0)
          t2 <- liftDynamics time
          liftEvent $
            do writeRef (serverStateRef server) $! s'
-              modifyRef (serverTotalProcessingTimeRef server) (+ (t2 - t1))
+              modifyRef (serverTotalProcessingTimeRef server) (+ (t2 - t1 - dt))
               modifyRef (serverProcessingTimeRef server) $
-                addSamplingStats (t2 - t1)
+                addSamplingStats (t2 - t1 - dt)
               triggerSignal (serverTaskProcessedSource server) (a, b)
          return (b, loop s' (Just (t2, a, b)) xs')
 
--- | Process the input with ability to handle a possible interruption.
-serverProcessInterrupting :: MonadDES m => Server m s a b -> s -> a -> Process m (s, b)
-{-# INLINABLE serverProcessInterrupting #-}
-serverProcessInterrupting server s a =
+-- | Process the input with ability to handle a possible preemption.
+serverProcessPreempting :: MonadDES m => Server m s a b -> s -> a -> Process m (s, b, Double)
+{-# INLINABLE serverProcessPreempting #-}
+serverProcessPreempting server s a =
   do pid <- processId
      t1  <- liftDynamics time
-     finallyProcess
-       (serverProcess server s a)
-       (liftEvent $
-        do cancelled <- processCancelled pid
-           when cancelled $
-             do t2 <- liftDynamics time
-                modifyRef (serverTotalProcessingTimeRef server) (+ (t2 - t1))
-                modifyRef (serverProcessingTimeRef server) $
-                  addSamplingStats (t2 - t1)
-                let x = ServerInterruption a t1 t2
-                triggerSignal (serverTaskInterruptedSource server) x)
+     rs  <- liftSimulation $ newRef 0
+     r1  <- liftSimulation $ newRef t1
+     h1  <- liftEvent $
+            handleSignal (processPreemptionBeginning pid) $ \() ->
+            do t1 <- liftDynamics time
+               writeRef r1 t1
+               triggerSignal (serverTaskPreemptingSource server) a
+     h2  <- liftEvent $
+            handleSignal (processPreemptionEnding pid) $ \() ->
+            do t1 <- readRef r1
+               t2 <- liftDynamics time
+               let dt = t2 - t1
+               modifyRef rs (+ dt)
+               modifyRef (serverTotalPreemptionTimeRef server) (+ dt)
+               modifyRef (serverPreemptionTimeRef server) $
+                 addSamplingStats dt
+               triggerSignal (serverTaskReenteringSource server) a 
+     let m1 =
+           do (s', b) <- serverProcess server s a
+              dt <- liftEvent $ readRef rs
+              return (s', b, dt)
+         m2 =
+           liftEvent $
+           do disposeEvent h1
+              disposeEvent h2
+     finallyProcess m1 m2
 
 -- | Return the current state of the server.
 --
@@ -364,6 +399,30 @@ serverTotalOutputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverTotalOutputWaitTimeChanged_ server =
   mapSignal (const ()) (serverOutputProvided server)
 
+-- | Return the counted total time spent by the server while it was preempted
+-- waiting for the further proceeding.
+--
+-- The value returned changes discretely and it is usually delayed relative
+-- to the current simulation time.
+--
+-- See also 'serverTotalPreemptionTimeChanged' and 'serverTotalPreemptionTimeChanged_'.
+serverTotalPreemptionTime :: MonadDES m => Server m s a b -> Event m Double
+{-# INLINABLE serverTotalPreemptionTime #-}
+serverTotalPreemptionTime server =
+  Event $ \p -> invokeEvent p $ readRef (serverTotalPreemptionTimeRef server)
+  
+-- | Signal when the 'serverTotalPreemptionTime' property value has changed.
+serverTotalPreemptionTimeChanged :: MonadDES m => Server m s a b -> Signal m Double
+{-# INLINABLE serverTotalPreemptionTimeChanged #-}
+serverTotalPreemptionTimeChanged server =
+  mapSignalM (const $ serverTotalPreemptionTime server) (serverTotalPreemptionTimeChanged_ server)
+  
+-- | Signal when the 'serverTotalPreemptionTime' property value has changed.
+serverTotalPreemptionTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
+{-# INLINABLE serverTotalPreemptionTimeChanged_ #-}
+serverTotalPreemptionTimeChanged_ server =
+  mapSignal (const ()) (serverTaskReentering server)
+
 -- | Return the statistics of the time when the server was locked while awaiting the input.
 --
 -- The value returned changes discretely and it is usually delayed relative
@@ -434,13 +493,37 @@ serverOutputWaitTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverOutputWaitTimeChanged_ server =
   mapSignal (const ()) (serverOutputProvided server)
 
+-- | Return the statistics of the time spent by the server while it was preempted
+-- waiting for the further proceeding.
+--
+-- The value returned changes discretely and it is usually delayed relative
+-- to the current simulation time.
+--
+-- See also 'serverPreemptionTimeChanged' and 'serverPreemptionTimeChanged_'.
+serverPreemptionTime :: MonadDES m => Server m s a b -> Event m (SamplingStats Double)
+{-# INLINABLE serverPreemptionTime #-}
+serverPreemptionTime server =
+  Event $ \p -> invokeEvent p $ readRef (serverPreemptionTimeRef server)
+  
+-- | Signal when the 'serverPreemptionTime' property value has changed.
+serverPreemptionTimeChanged :: MonadDES m => Server m s a b -> Signal m (SamplingStats Double)
+{-# INLINABLE serverPreemptionTimeChanged #-}
+serverPreemptionTimeChanged server =
+  mapSignalM (const $ serverPreemptionTime server) (serverPreemptionTimeChanged_ server)
+  
+-- | Signal when the 'serverPreemptionTime' property value has changed.
+serverPreemptionTimeChanged_ :: MonadDES m => Server m s a b -> Signal m ()
+{-# INLINABLE serverPreemptionTimeChanged_ #-}
+serverPreemptionTimeChanged_ server =
+  mapSignal (const ()) (serverTaskReentering server)
+
 -- | It returns the factor changing from 0 to 1, which estimates how often
 -- the server was awaiting for the next input task.
 --
 -- This factor is calculated as
 --
 -- @
---   totalInputWaitTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime)
+--   totalInputWaitTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime + totalPreemptionTime)
 -- @
 --
 -- As before in this module, the value returned changes discretely and
@@ -454,7 +537,8 @@ serverInputWaitFactor server =
   do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
      x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
      x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
-     return (x1 / (x1 + x2 + x3))
+     x4 <- invokeEvent p $ readRef (serverTotalPreemptionTimeRef server)
+     return (x1 / (x1 + x2 + x3 + x4))
   
 -- | Signal when the 'serverInputWaitFactor' property value has changed.
 serverInputWaitFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
@@ -468,7 +552,8 @@ serverInputWaitFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverInputWaitFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
-  mapSignal (const ()) (serverOutputProvided server)
+  mapSignal (const ()) (serverOutputProvided server) <>
+  mapSignal (const ()) (serverTaskReentering server)
 
 -- | It returns the factor changing from 0 to 1, which estimates how often
 -- the server was busy with direct processing its tasks.
@@ -476,7 +561,7 @@ serverInputWaitFactorChanged_ server =
 -- This factor is calculated as
 --
 -- @
---   totalProcessingTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime)
+--   totalProcessingTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime + totalPreemptionTime)
 -- @
 --
 -- As before in this module, the value returned changes discretely and
@@ -490,7 +575,8 @@ serverProcessingFactor server =
   do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
      x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
      x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
-     return (x2 / (x1 + x2 + x3))
+     x4 <- invokeEvent p $ readRef (serverTotalPreemptionTimeRef server)
+     return (x2 / (x1 + x2 + x3 + x4))
   
 -- | Signal when the 'serverProcessingFactor' property value has changed.
 serverProcessingFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
@@ -504,7 +590,8 @@ serverProcessingFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverProcessingFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
-  mapSignal (const ()) (serverOutputProvided server)
+  mapSignal (const ()) (serverOutputProvided server) <>
+  mapSignal (const ()) (serverTaskReentering server)
 
 -- | It returns the factor changing from 0 to 1, which estimates how often
 -- the server was locked trying to deliver the output after the task is finished.
@@ -512,7 +599,7 @@ serverProcessingFactorChanged_ server =
 -- This factor is calculated as
 --
 -- @
---   totalOutputWaitTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime)
+--   totalOutputWaitTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime + totalPreemptionTime)
 -- @
 --
 -- As before in this module, the value returned changes discretely and
@@ -526,7 +613,8 @@ serverOutputWaitFactor server =
   do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
      x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
      x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
-     return (x3 / (x1 + x2 + x3))
+     x4 <- invokeEvent p $ readRef (serverTotalPreemptionTimeRef server)
+     return (x3 / (x1 + x2 + x3 + x4))
   
 -- | Signal when the 'serverOutputWaitFactor' property value has changed.
 serverOutputWaitFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
@@ -540,17 +628,61 @@ serverOutputWaitFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 serverOutputWaitFactorChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
-  mapSignal (const ()) (serverOutputProvided server)
+  mapSignal (const ()) (serverOutputProvided server) <>
+  mapSignal (const ()) (serverTaskReentering server)
+  
+-- | It returns the factor changing from 0 to 1, which estimates how often
+-- the server was preempted waiting for the further proceeding.
+--
+-- This factor is calculated as
+--
+-- @
+--   totalPreemptionTime \/ (totalInputWaitTime + totalProcessingTime + totalOutputWaitTime + totalPreemptionTime)
+-- @
+--
+-- As before in this module, the value returned changes discretely and
+-- it is usually delayed relative to the current simulation time.
+--
+-- See also 'serverPreemptionFactorChanged' and 'serverPreemptionFactorChanged_'.
+serverPreemptionFactor :: MonadDES m => Server m s a b -> Event m Double
+{-# INLINABLE serverPreemptionFactor #-}
+serverPreemptionFactor server =
+  Event $ \p ->
+  do x1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
+     x2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
+     x3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
+     x4 <- invokeEvent p $ readRef (serverTotalPreemptionTimeRef server)
+     return (x4 / (x1 + x2 + x3 + x4))
+  
+-- | Signal when the 'serverPreemptionFactor' property value has changed.
+serverPreemptionFactorChanged :: MonadDES m => Server m s a b -> Signal m Double
+{-# INLINABLE serverPreemptionFactorChanged #-}
+serverPreemptionFactorChanged server =
+  mapSignalM (const $ serverPreemptionFactor server) (serverPreemptionFactorChanged_ server)
+  
+-- | Signal when the 'serverPreemptionFactor' property value has changed.
+serverPreemptionFactorChanged_ :: MonadDES m => Server m s a b -> Signal m ()
+{-# INLINABLE serverPreemptionFactorChanged_ #-}
+serverPreemptionFactorChanged_ server =
+  mapSignal (const ()) (serverInputReceived server) <>
+  mapSignal (const ()) (serverTaskProcessed server) <>
+  mapSignal (const ()) (serverOutputProvided server) <>
+  mapSignal (const ()) (serverTaskReentering server)
 
 -- | Raised when the server receives a new input task.
 serverInputReceived :: MonadDES m => Server m s a b -> Signal m a
 {-# INLINABLE serverInputReceived #-}
 serverInputReceived = publishSignal . serverInputReceivedSource
 
--- | Raised when the task processing by the server was interrupted.
-serverTaskInterrupted :: MonadDES m => Server m s a b -> Signal m (ServerInterruption a)
-{-# INLINABLE serverTaskInterrupted #-}
-serverTaskInterrupted = publishSignal . serverTaskInterruptedSource
+-- | Raised when the task processing by the server was preempted.
+serverTaskPreempting :: MonadDES m => Server m s a b -> Signal m a
+{-# INLINABLE serverTaskPreempting #-}
+serverTaskPreempting = publishSignal . serverTaskPreemptingSource
+
+-- | Raised when the task processing by the server was proceeded after it has been preempeted earlier.
+serverTaskReentering :: MonadDES m => Server m s a b -> Signal m a
+{-# INLINABLE serverTaskReentering #-}
+serverTaskReentering = publishSignal . serverTaskReenteringSource
 
 -- | Raised when the server has just processed the task.
 serverTaskProcessed :: MonadDES m => Server m s a b -> Signal m (a, b)
@@ -567,9 +699,9 @@ serverChanged_ :: MonadDES m => Server m s a b -> Signal m ()
 {-# INLINABLE serverChanged_ #-}
 serverChanged_ server =
   mapSignal (const ()) (serverInputReceived server) <>
-  mapSignal (const ()) (serverTaskInterrupted server) <>
   mapSignal (const ()) (serverTaskProcessed server) <>
-  mapSignal (const ()) (serverOutputProvided server)
+  mapSignal (const ()) (serverOutputProvided server) <>
+  mapSignal (const ()) (serverTaskReentering server)
 
 -- | Return the summary for the server with desciption of its
 -- properties and activities using the specified indent.
@@ -580,12 +712,15 @@ serverSummary server indent =
   do tx1 <- invokeEvent p $ readRef (serverTotalInputWaitTimeRef server)
      tx2 <- invokeEvent p $ readRef (serverTotalProcessingTimeRef server)
      tx3 <- invokeEvent p $ readRef (serverTotalOutputWaitTimeRef server)
-     let xf1 = tx1 / (tx1 + tx2 + tx3)
-         xf2 = tx2 / (tx1 + tx2 + tx3)
-         xf3 = tx3 / (tx1 + tx2 + tx3)
+     tx4 <- invokeEvent p $ readRef (serverTotalPreemptionTimeRef server)
+     let xf1 = tx1 / (tx1 + tx2 + tx3 + tx4)
+         xf2 = tx2 / (tx1 + tx2 + tx3 + tx4)
+         xf3 = tx3 / (tx1 + tx2 + tx3 + tx4)
+         xf4 = tx4 / (tx1 + tx2 + tx3 + tx4)
      xs1 <- invokeEvent p $ readRef (serverInputWaitTimeRef server)
      xs2 <- invokeEvent p $ readRef (serverProcessingTimeRef server)
      xs3 <- invokeEvent p $ readRef (serverOutputWaitTimeRef server)
+     xs4 <- invokeEvent p $ readRef (serverPreemptionTimeRef server)
      let tab = replicate indent ' '
      return $
        showString tab .
@@ -598,6 +733,9 @@ serverSummary server indent =
        showString "total output wait time (locked while delivering the output) = " . shows tx3 .
        showString "\n\n" .
        showString tab .
+       showString "total preemption time = " . shows tx4 .
+       showString "\n" .
+       showString tab .
        showString "input wait factor (from 0 to 1) = " . shows xf1 .
        showString "\n" .
        showString tab .
@@ -605,6 +743,9 @@ serverSummary server indent =
        showString "\n" .
        showString tab .
        showString "output wait factor (from 0 to 1) = " . shows xf3 .
+       showString "\n\n" .
+       showString tab .
+       showString "output preemption factor (from 0 to 1) = " . shows xf4 .
        showString "\n\n" .
        showString tab .
        showString "input wait time (locked while awaiting the input):\n\n" .
@@ -616,4 +757,8 @@ serverSummary server indent =
        showString "\n\n" .
        showString tab .
        showString "output wait time (locked while delivering the output):\n\n" .
-       samplingStatsSummary xs3 (2 + indent)
+       samplingStatsSummary xs3 (2 + indent) .
+       showString "\n\n" .
+       showString tab .
+       showString "preemption time (waiting for the proceeding after preemption):\n\n" .
+       samplingStatsSummary xs4 (2 + indent)
