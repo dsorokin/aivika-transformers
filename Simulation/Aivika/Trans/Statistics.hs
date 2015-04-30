@@ -28,6 +28,7 @@ module Simulation.Aivika.Trans.Statistics
         timingStatsSummary,
         returnTimingStats,
         fromIntTimingStats,
+        normTimingStats,
         -- * Simple Counter
         SamplingCounter(..),
         emptySamplingCounter,

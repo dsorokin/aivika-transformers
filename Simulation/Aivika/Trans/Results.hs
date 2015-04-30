@@ -574,6 +574,12 @@ resultContainerToValue x =
 -- | Represents the very simulation results.
 type ResultData e m = Event m e
 
+-- | Convert the timing statistics data to its normalised sampling-based representation.
+normTimingStatsData :: (TimingData a, Monad m) => ResultData (TimingStats a -> SamplingStats a) m
+normTimingStatsData =
+  do n <- liftDynamics integIteration
+     return $ normTimingStats (fromIntegral n)
+
 -- | Whether an object containing the results emits a signal notifying about change of data.
 data ResultSignal m = EmptyResultSignal
                       -- ^ There is no signal at all.
@@ -744,12 +750,12 @@ instance ResultItemable (ResultValue (TimingStats Int)) where
   
   resultItemAsIntValue = const Nothing
   resultItemAsIntListValue = const Nothing
-  resultItemAsIntStatsValue = const Nothing
+  resultItemAsIntStatsValue = Just . apResultValue normTimingStatsData
   resultItemAsIntTimingStatsValue = Just
 
   resultItemAsDoubleValue = const Nothing
   resultItemAsDoubleListValue = const Nothing
-  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleStatsValue = Just . mapResultValue fromIntSamplingStats . apResultValue normTimingStatsData
   resultItemAsDoubleTimingStatsValue = Just . mapResultValue fromIntTimingStats
 
   resultItemAsStringValue = Just . mapResultValue show
@@ -770,7 +776,7 @@ instance ResultItemable (ResultValue  (TimingStats Double)) where
 
   resultItemAsDoubleValue = const Nothing
   resultItemAsDoubleListValue = const Nothing
-  resultItemAsDoubleStatsValue = const Nothing
+  resultItemAsDoubleStatsValue = Just . apResultValue normTimingStatsData
   resultItemAsDoubleTimingStatsValue = Just
 
   resultItemAsStringValue = Just . mapResultValue show
