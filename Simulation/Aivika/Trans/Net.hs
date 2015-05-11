@@ -34,6 +34,7 @@ module Simulation.Aivika.Trans.Net
         emptyNet,
         arrNet,
         accumNet,
+        withinNet,
         -- * Specifying Identifier
         netUsingId,
         -- * Arrival Net
@@ -183,6 +184,13 @@ accumNet f acc =
   Net $ \a ->
   do (acc', b) <- f acc a
      return (b, accumNet f acc') 
+
+-- | Involve the computation with side effect when processing the input.
+withinNet :: MonadDES m => Process m () -> Net m a a
+{-# INLINABLE withinNet #-}
+withinNet m =
+  Net $ \a ->
+  do { m; return (a, withinNet m) }
 
 -- | Create a net that will use the specified process identifier.
 -- It can be useful to refer to the underlying 'Process' computation which
