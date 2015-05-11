@@ -75,6 +75,7 @@ import Simulation.Aivika.Trans.Parameter.Random
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Process.Random
 import Simulation.Aivika.Trans.Processor
+import Simulation.Aivika.Trans.Processor.Random
 import Simulation.Aivika.Trans.Processor.RoundRobbin
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Ref
