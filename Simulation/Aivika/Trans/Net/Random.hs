@@ -2,7 +2,7 @@
 -- |
 -- Module     : Simulation.Aivika.Trans.Net.Random
 -- Copyright  : Copyright (c) 2009-2015, David Sorokin <david.sorokin@gmail.com>
--- License    : BSD3
+-- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
 -- Tested with: GHC 7.8.3
