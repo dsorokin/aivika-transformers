@@ -34,14 +34,14 @@ module Simulation.Aivika.Trans.Statistics
         emptySamplingCounter,
         incSamplingCounter,
         decSamplingCounter,
-        resetSamplingCounter,
+        setSamplingCounter,
         returnSamplingCounter,
         -- * Timing Counter
         TimingCounter(..),
         emptyTimingCounter,
         incTimingCounter,
         decTimingCounter,
-        resetTimingCounter,
+        setTimingCounter,
         returnTimingCounter) where
 
 import Simulation.Aivika.Statistics
