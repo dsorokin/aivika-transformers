@@ -67,6 +67,7 @@ library
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
                      Simulation.Aivika.Trans.Process
+                     Simulation.Aivika.Trans.Process.Random
                      Simulation.Aivika.Trans.Processor
                      Simulation.Aivika.Trans.Processor.RoundRobbin
                      Simulation.Aivika.Trans.Queue
