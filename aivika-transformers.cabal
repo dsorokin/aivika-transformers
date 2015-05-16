@@ -85,6 +85,7 @@ library
                      Simulation.Aivika.Trans.Results.IO
                      Simulation.Aivika.Trans.SD
                      Simulation.Aivika.Trans.Server
+                     Simulation.Aivika.Trans.Server.Random
                      Simulation.Aivika.Trans.Signal
                      Simulation.Aivika.Trans.Simulation
                      Simulation.Aivika.Trans.Specs

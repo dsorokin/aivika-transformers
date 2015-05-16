@@ -42,6 +42,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Results.IO,
         module Simulation.Aivika.Trans.SD,
         module Simulation.Aivika.Trans.Server,
+        module Simulation.Aivika.Trans.Server.Random,
         module Simulation.Aivika.Trans.Signal,
         module Simulation.Aivika.Trans.Simulation,
         module Simulation.Aivika.Trans.Specs,
@@ -88,6 +89,7 @@ import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.Results.IO
 import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.Server
+import Simulation.Aivika.Trans.Server.Random
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Specs
