@@ -13,6 +13,7 @@
 module Simulation.Aivika.Trans
        (-- * Modules
         module Simulation.Aivika.Trans.Activity,
+        module Simulation.Aivika.Trans.Activity.Random,
         module Simulation.Aivika.Trans.Agent,
         module Simulation.Aivika.Trans.Arrival,
         module Simulation.Aivika.Trans.Circuit,
@@ -56,6 +57,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Var.Unboxed) where
 
 import Simulation.Aivika.Trans.Activity
+import Simulation.Aivika.Trans.Activity.Random
 import Simulation.Aivika.Trans.Agent
 import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Circuit
