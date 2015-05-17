@@ -7,7 +7,7 @@
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.8.3
+-- Tested with: GHC 7.10.1
 --
 -- The module defines the 'Dynamics' monad transformer representing a time varying polymorphic function. 
 --

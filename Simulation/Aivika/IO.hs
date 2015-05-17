@@ -5,7 +5,7 @@
 -- License    : GPL-3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.8.3
+-- Tested with: GHC 7.10.1
 --
 -- This module re-exports the most part of the library functionality related
 -- to 'IO'-based computation.
