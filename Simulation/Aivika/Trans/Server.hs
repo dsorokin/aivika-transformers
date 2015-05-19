@@ -674,12 +674,12 @@ serverInputReceived :: MonadDES m => Server m s a b -> Signal m a
 {-# INLINABLE serverInputReceived #-}
 serverInputReceived = publishSignal . serverInputReceivedSource
 
--- | Raised when the task processing by the server was preempted.
+-- | Raised when the task processing was preempted.
 serverTaskPreemptionBeginning :: MonadDES m => Server m s a b -> Signal m a
 {-# INLINABLE serverTaskPreemptionBeginning #-}
 serverTaskPreemptionBeginning = publishSignal . serverTaskPreemptionBeginningSource
 
--- | Raised when the task processing by the server was proceeded after it has been preempeted earlier.
+-- | Raised when the task processing was proceeded after it had been preempeted earlier.
 serverTaskPreemptionEnding :: MonadDES m => Server m s a b -> Signal m a
 {-# INLINABLE serverTaskPreemptionEnding #-}
 serverTaskPreemptionEnding = publishSignal . serverTaskPreemptionEndingSource

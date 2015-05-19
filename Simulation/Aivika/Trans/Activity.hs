@@ -547,12 +547,12 @@ activityUtilised :: Activity m s a b -> Signal m (a, b)
 {-# INLINABLE activityUtilised #-}
 activityUtilised = publishSignal . activityUtilisedSource
 
--- | Raised when the task utilisation by the activity was preempted.
+-- | Raised when the activity utilisation was preempted.
 activityPreemptionBeginning :: Activity m s a b -> Signal m a
 {-# INLINABLE activityPreemptionBeginning #-}
 activityPreemptionBeginning = publishSignal . activityPreemptionBeginningSource
 
--- | Raised when the task utilisation by the activity was proceeded after it had been preempted earlier.
+-- | Raised when the activity utilisation was proceeded after it had been preempted earlier.
 activityPreemptionEnding :: Activity m s a b -> Signal m a
 {-# INLINABLE activityPreemptionEnding #-}
 activityPreemptionEnding = publishSignal . activityPreemptionEndingSource
