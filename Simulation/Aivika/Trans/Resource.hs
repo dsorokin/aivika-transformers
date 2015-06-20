@@ -383,3 +383,18 @@ incResourceCount r n
     do releaseResourceWithinEvent r
        incResourceCount r (n - 1)
 
+-- | Decrease the count of available resource by the specified number,
+-- waiting for the processes capturing the resource as needed.
+decResourceCount :: (MonadDES m, EnqueueStrategy m s)
+                    => Resource m s
+                    -- ^ the resource
+                    -> Int
+                    -- ^ the decrement for the resource count
+                    -> Process m ()
+{-# INLINABLE decResourceCount #-}
+decResourceCount r n
+  | n < 0     = error "The decrement cannot be negative: decResourceCount"
+  | n == 0    = return ()
+  | otherwise =
+    do requestResource r
+       decResourceCount r (n - 1)
