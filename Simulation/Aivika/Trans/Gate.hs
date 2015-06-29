@@ -11,9 +11,9 @@
 --
 module Simulation.Aivika.Trans.Gate
        (Gate,
-        createGate,
-        createGateOpened,
-        createGateClosed,
+        newGate,
+        newGateOpened,
+        newGateClosed,
         openGate,
         closeGate,
         gateOpened,
@@ -35,21 +35,21 @@ import Simulation.Aivika.Trans.Ref
 data Gate m = Gate { gateRef :: Ref m Bool }
 
 -- | Create a new gate, specifying whether the gate is initially open.
-createGate :: MonadDES m => Bool -> Simulation m (Gate m)
-{-# INLINE createGate #-}
-createGate opened =
+newGate :: MonadDES m => Bool -> Simulation m (Gate m)
+{-# INLINE newGate #-}
+newGate opened =
   do r <- newRef opened
      return Gate { gateRef = r }
 
 -- | Create a new initially open gate.
-createGateOpened :: MonadDES m => Simulation m (Gate m)
-{-# INLINE createGateOpened #-}
-createGateOpened = createGate True
+newGateOpened :: MonadDES m => Simulation m (Gate m)
+{-# INLINE newGateOpened #-}
+newGateOpened = newGate True
 
 -- | Create a new initially close gate.
-createGateClosed :: MonadDES m => Simulation m (Gate m)
-{-# INLINE createGateClosed #-}
-createGateClosed = createGate False
+newGateClosed :: MonadDES m => Simulation m (Gate m)
+{-# INLINE newGateClosed #-}
+newGateClosed = newGate False
 
 -- | Open the gate if it was closed.
 openGate :: MonadDES m => Gate m -> Event m ()
