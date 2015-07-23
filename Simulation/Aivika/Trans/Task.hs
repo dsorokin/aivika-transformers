@@ -127,7 +127,7 @@ newTaskUsingId pid p =
      return (t, m)
 
 -- | Run the process with the specified identifier in background and
--- return the corresponded task immediately.
+-- return the corresponding task immediately.
 runTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Event m (Task m a)
 {-# INLINABLE runTaskUsingId #-}
 runTaskUsingId pid p =
@@ -135,7 +135,7 @@ runTaskUsingId pid p =
      runProcessUsingId pid m
      return t
 
--- | Run the process in background and return the corresponded task immediately.
+-- | Run the process in background and return the corresponding task immediately.
 runTask :: MonadDES m => Process m a -> Event m (Task m a)
 {-# INLINABLE runTask #-}
 runTask p =
@@ -143,7 +143,7 @@ runTask p =
      runTaskUsingId pid p
 
 -- | Enqueue the process that will be started at the specified time with the given
--- identifier from the event queue. It returns the corresponded task immediately.
+-- identifier from the event queue. It returns the corresponding task immediately.
 enqueueTaskUsingId :: MonadDES m => Double -> ProcessId m -> Process m a -> Event m (Task m a)
 {-# INLINABLE enqueueTaskUsingId #-}
 enqueueTaskUsingId time pid p =
@@ -152,7 +152,7 @@ enqueueTaskUsingId time pid p =
      return t
 
 -- | Enqueue the process that will be started at the specified time from the event queue.
--- It returns the corresponded task immediately.
+-- It returns the corresponding task immediately.
 enqueueTask :: MonadDES m => Double -> Process m a -> Event m (Task m a)
 {-# INLINABLE enqueueTask #-}
 enqueueTask time p =
@@ -160,18 +160,18 @@ enqueueTask time p =
      enqueueTaskUsingId time pid p
 
 -- | Run using the specified identifier a child process in background and return
--- immediately the corresponded task.
+-- immediately the corresponding task.
 spawnTaskUsingId :: MonadDES m => ProcessId m -> Process m a -> Process m (Task m a)
 {-# INLINABLE spawnTaskUsingId #-}
 spawnTaskUsingId = spawnTaskUsingIdWith CancelTogether
 
--- | Run a child process in background and return immediately the corresponded task.
+-- | Run a child process in background and return immediately the corresponding task.
 spawnTask :: MonadDES m => Process m a -> Process m (Task m a)
 {-# INLINABLE spawnTask #-}
 spawnTask = spawnTaskWith CancelTogether
 
 -- | Run using the specified identifier a child process in background and return
--- immediately the corresponded task.
+-- immediately the corresponding task.
 spawnTaskUsingIdWith :: MonadDES m => ContCancellation -> ProcessId m -> Process m a -> Process m (Task m a)
 {-# INLINABLE spawnTaskUsingIdWith #-}
 spawnTaskUsingIdWith cancellation pid p =
@@ -179,7 +179,7 @@ spawnTaskUsingIdWith cancellation pid p =
      spawnProcessUsingIdWith cancellation pid m
      return t
 
--- | Run a child process in background and return immediately the corresponded task.
+-- | Run a child process in background and return immediately the corresponding task.
 spawnTaskWith :: MonadDES m => ContCancellation -> Process m a -> Process m (Task m a)
 {-# INLINABLE spawnTaskWith #-}
 spawnTaskWith cancellation p =
