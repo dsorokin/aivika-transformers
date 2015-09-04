@@ -36,6 +36,9 @@ module Simulation.Aivika.Trans.Signal
         merge5Signals,
         -- * Signal Arriving
         arrivalSignal,
+        -- * Delaying Signal
+        delaySignal,
+        delaySignalM,
         -- * Creating Signal in Time Points
         newSignalInTimes,
         newSignalInIntegTimes,
@@ -387,6 +390,41 @@ arrivalSignal m =
                                      case t0 of
                                        Nothing -> Nothing
                                        Just t0 -> Just (t - t0) } }
+
+-- | Delay the signal events for the specified time interval.
+delaySignal :: MonadDES m => Double -> Signal m a -> Signal m a
+{-# INLINABLE delaySignal #-}
+delaySignal delta m =
+  Signal { handleSignal = \h ->
+            do r <- liftSimulation $ newRef False
+               h <- handleSignal m $ \a ->
+                 Event $ \p ->
+                 invokeEvent p $
+                 enqueueEvent (pointTime p + delta) $ 
+                 do x <- readRef r
+                    unless x $ h a
+               return $ DisposableEvent $
+                 disposeEvent h >>
+                 writeRef r True
+         }
+
+-- | Delay the signal events for time intervals recalculated for each event.
+delaySignalM :: MonadDES m => Event m Double -> Signal m a -> Signal m a
+{-# INLINABLE delaySignalM #-}
+delaySignalM delta m =
+  Signal { handleSignal = \h ->
+            do r <- liftSimulation $ newRef False
+               h <- handleSignal m $ \a ->
+                 Event $ \p ->
+                 do delta' <- invokeEvent p delta
+                    invokeEvent p $
+                      enqueueEvent (pointTime p + delta') $ 
+                      do x <- readRef r
+                         unless x $ h a
+               return $ DisposableEvent $
+                 disposeEvent h >>
+                 writeRef r True
+         }
 
 -- | Show the debug message with the current simulation time.
 traceSignal :: MonadDES m => String -> Signal m a -> Signal m a 
