@@ -391,7 +391,7 @@ arrivalSignal m =
                                        Nothing -> Nothing
                                        Just t0 -> Just (t - t0) } }
 
--- | Delay the signal events for the specified time interval.
+-- | Delay the signal values for the specified time interval.
 delaySignal :: MonadDES m => Double -> Signal m a -> Signal m a
 {-# INLINABLE delaySignal #-}
 delaySignal delta m =
@@ -408,7 +408,7 @@ delaySignal delta m =
                  writeRef r True
          }
 
--- | Delay the signal events for time intervals recalculated for each event.
+-- | Delay the signal values for time intervals recalculated for each value.
 delaySignalM :: MonadDES m => Event m Double -> Signal m a -> Signal m a
 {-# INLINABLE delaySignalM #-}
 delaySignalM delta m =
