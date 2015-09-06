@@ -15,6 +15,7 @@ module Simulation.Aivika.Trans.Simulation
         SimulationLift(..),
         runSimulation,
         runSimulations,
+        runSimulationByIndex,
         -- * Error Handling
         catchSimulation,
         finallySimulation,
