@@ -16,6 +16,7 @@ module Simulation.Aivika.IO.Resource.Preemption (Resource) where
 import Control.Monad
 import Control.Monad.Trans
 
+import Data.Maybe
 import Data.IORef
 
 import Simulation.Aivika.Trans.Ref.Base
@@ -128,7 +129,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
     Process $ \pid ->
     Cont $ \c ->
     Event $ \p ->
-    do f <- liftIO $ PQ.removeBy (resourceActingQueue r) (\item -> actingItemId item == pid)
+    do f <- liftIO $ fmap isJust $ PQ.queueDeleteBy (resourceActingQueue r) (\item -> actingItemId item == pid)
        if f
          then do invokeEvent p $ releaseResource' r
                  invokeEvent p $ resumeCont c ()
