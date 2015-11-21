@@ -27,7 +27,6 @@ module Simulation.Aivika.Trans.Stream
         splitStreamPrioritising,
         splitStreamFiltering,
         splitStreamFilteringQueueing,
-        splitStreamFilteringPrioritising,
         -- * Specifying Identifier
         streamUsingId,
         -- * Prefetching and Delaying Stream
@@ -422,40 +421,6 @@ splitStreamFilteringQueueing s preds x =
                 Just a  -> return a
                 Nothing -> reader pred
      return $ map (repeatProcess . reader) preds
-
--- | Split the input stream into a list of output streams
--- using the specified priorities after filtering.
---
--- The priority is updated only after successful applying the filter.
-splitStreamFilteringPrioritising :: (MonadDES m, PriorityQueueStrategy m s p)
-                                    => s
-                                    -- ^ the strategy applied for enqueuing the output requests
-                                    -> [(a -> Event m Bool, Stream m p)]
-                                    -- ^ the filters and streams of priorities
-                                    -> Stream m a
-                                    -- ^ the input stream
-                                    -> Simulation m [Stream m a]
-                                    -- ^ the splitted output streams
-{-# INLINABLE splitStreamFilteringPrioritising #-}
-splitStreamFilteringPrioritising s fs x =
-  do ref <- liftSimulation $ newRef x
-     res <- newResource s 1
-     let stream pred (Cons p) = Cons z where
-           z = do (p', ps) <- p
-                  a <- usingResourceWithPriority res p' $
-                       do p <- liftEvent $ readRef ref
-                          (a, xs) <- runStream p
-                          liftEvent $
-                            do f <- pred a
-                               if f
-                                 then do writeRef ref xs
-                                         return $ Just a
-                                 else do writeRef ref $ Cons (return (a, xs))
-                                         return Nothing
-                  case a of
-                    Just a  -> return (a, stream pred ps)
-                    Nothing -> runStream $ stream pred (Cons $ return (p', ps))
-     return $ map (\(pred, ps) -> stream pred ps) fs
 
 -- | Concatenate the input streams applying the 'FCFS' strategy and
 -- producing one output stream.
