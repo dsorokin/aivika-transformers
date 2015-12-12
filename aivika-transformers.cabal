@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         4.0.3
+version:         4.3.1
 synopsis:        Transformers for the Aivika simulation library
 description:
     The package adds the monad and other computation transformers to 
@@ -134,7 +134,7 @@ library
                      array >= 0.3.0.0,
                      containers >= 0.4.0.0,
                      random >= 1.0.0.3,
-                     aivika >= 4.0.2
+                     aivika >= 4.3.1
 
     if !flag(haste-inst)
        build-depends:   vector >= 0.10.0.1
