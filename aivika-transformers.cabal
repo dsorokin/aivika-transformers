@@ -5,14 +5,10 @@ description:
     The package adds the monad and other computation transformers to 
     the Aivika [1] library. This is a generalization of the simulation library.
     .
-    While the parent library Aivika is licensed under BSD3, this package Aivika Transformers
-    has already a dual license. The package can be licensed either under GPL3 or a commercial
-    license. Please contact <mailto:david.sorokin@gmail.com> for detail.
-    .
     \[1] <http://hackage.haskell.org/package/aivika>
     .
 category:        Simulation
-license:         GPL-3
+license:         BSD3
 license-file:    LICENSE
 copyright:       (c) 2009-2015. David Sorokin <david.sorokin@gmail.com>
 author:          David Sorokin
@@ -37,11 +33,6 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/TimeOut.hs
                      examples/TimeOutInt.hs
                      examples/TimeOutWait.hs
-
-flag haste-inst
-    
-    description: The package is built using haste-inst
-    default:     False
 
 library
 
@@ -134,10 +125,8 @@ library
                      array >= 0.3.0.0,
                      containers >= 0.4.0.0,
                      random >= 1.0.0.3,
+                     vector >= 0.10.0.1,
                      aivika >= 4.3.1
-
-    if !flag(haste-inst)
-       build-depends:   vector >= 0.10.0.1
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,

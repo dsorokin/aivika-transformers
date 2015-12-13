@@ -1,7 +1,7 @@
 -- |
 -- Module     : Simulation.Aivika.Trans.Parameter
 -- Copyright  : Copyright (c) 2009-2015, David Sorokin <david.sorokin@gmail.com>
--- License    : GPL-3
+-- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
 -- Tested with: GHC 7.10.1

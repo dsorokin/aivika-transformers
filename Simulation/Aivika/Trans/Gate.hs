@@ -78,7 +78,7 @@ gateClosed gate =
 -- | Await the gate to be opened if required. If the gate is already open
 -- then the computation returns immediately.
 awaitGateOpened :: MonadDES m => Gate m -> Process m ()
-{-# INLINE awaitGateOpened #-}
+{-# INLINABLE awaitGateOpened #-}
 awaitGateOpened gate =
   do f <- liftEvent $ readRef (gateRef gate)
      unless f $
@@ -88,7 +88,7 @@ awaitGateOpened gate =
 -- | Await the gate to be closed if required. If the gate is already closed
 -- then the computation returns immediately.
 awaitGateClosed :: MonadDES m => Gate m -> Process m ()
-{-# INLINE awaitGateClosed #-}
+{-# INLINABLE awaitGateClosed #-}
 awaitGateClosed gate =
   do f <- liftEvent $ readRef (gateRef gate)
      when f $
