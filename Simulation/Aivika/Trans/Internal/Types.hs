@@ -9,7 +9,9 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.1
 --
--- It defines the implementation details of some types.
+-- It defines the implementation details of some types. You should never
+-- use it in ordinary simulation models. The module is destined for those
+-- who will extend the library.
 --
 module Simulation.Aivika.Trans.Internal.Types
        (Specs(..),
@@ -35,7 +37,7 @@ data Specs m = Specs { spcStartTime :: Double,    -- ^ the start time
                        spcDT :: Double,           -- ^ the integration time step
                        spcMethod :: Method,       -- ^ the integration method
                        spcGeneratorType :: GeneratorType m
-                       -- ^ the type of the random number generator
+                       -- ^ the type of random number generator
                      }
 
 -- | It defines the integration method.
@@ -47,7 +49,7 @@ data Method = Euler          -- ^ Euler's method
 -- | It indentifies the simulation run.
 data Run m = Run { runSpecs :: Specs m,            -- ^ the simulation specs
                    runIndex :: Int,       -- ^ the current simulation run index
-                   runCount :: Int,       -- ^ the total number of runs in this experiment
+                   runCount :: Int,       -- ^ the total number of runs within the experiment
                    runEventQueue :: EventQueue m,  -- ^ the event queue
                    runGenerator :: Generator m     -- ^ the random number generator
                  }
