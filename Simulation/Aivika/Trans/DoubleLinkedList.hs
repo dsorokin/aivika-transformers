@@ -24,7 +24,6 @@ module Simulation.Aivika.Trans.DoubleLinkedList
 import Control.Monad
 
 import Simulation.Aivika.Trans.Ref.Base
-import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Event
 
@@ -41,7 +40,7 @@ data DoubleLinkedList m a =
                      listSize :: Ref m Int }
 
 -- | Test whether the list is empty.
-listNull :: MonadDES m => DoubleLinkedList m a -> Event m Bool
+listNull :: MonadRef m => DoubleLinkedList m a -> Event m Bool
 {-# INLINABLE listNull #-}
 listNull x =
   do head <- readRef (listHead x) 
@@ -50,12 +49,12 @@ listNull x =
        Just _  -> return False
     
 -- | Return the number of elements in the list.
-listCount :: MonadDES m => DoubleLinkedList m a -> Event m Int
+listCount :: MonadRef m => DoubleLinkedList m a -> Event m Int
 {-# INLINABLE listCount #-}
 listCount x = readRef (listSize x)
 
 -- | Create a new list.
-newList :: MonadDES m => Simulation m (DoubleLinkedList m a)
+newList :: MonadRef m => Simulation m (DoubleLinkedList m a)
 {-# INLINABLE newList #-}
 newList =
   do head <- newRef Nothing 
@@ -66,7 +65,7 @@ newList =
                                listSize = size }
 
 -- | Insert a new element in the beginning.
-listInsertFirst :: MonadDES m => DoubleLinkedList m a -> a -> Event m ()
+listInsertFirst :: MonadRef m => DoubleLinkedList m a -> a -> Event m ()
 {-# INLINABLE listInsertFirst #-}
 listInsertFirst x v =
   do size <- readRef (listSize x)
@@ -91,7 +90,7 @@ listInsertFirst x v =
             writeRef (listHead x) item
 
 -- | Add a new element to the end.
-listAddLast :: MonadDES m => DoubleLinkedList m a -> a -> Event m ()
+listAddLast :: MonadRef m => DoubleLinkedList m a -> a -> Event m ()
 {-# INLINABLE listAddLast #-}
 listAddLast x v =
   do size <- readRef (listSize x)
@@ -116,7 +115,7 @@ listAddLast x v =
             writeRef (listTail x) item
 
 -- | Remove the first element.
-listRemoveFirst :: MonadDES m => DoubleLinkedList m a -> Event m ()
+listRemoveFirst :: MonadRef m => DoubleLinkedList m a -> Event m ()
 {-# INLINABLE listRemoveFirst #-}
 listRemoveFirst x =
   do head <- readRef (listHead x) 
@@ -136,7 +135,7 @@ listRemoveFirst x =
                    writeRef (listHead x) head'
 
 -- | Remove the last element.
-listRemoveLast :: MonadDES m => DoubleLinkedList m a -> Event m ()
+listRemoveLast :: MonadRef m => DoubleLinkedList m a -> Event m ()
 {-# INLINABLE listRemoveLast #-}
 listRemoveLast x =
   do tail <- readRef (listTail x) 
@@ -156,7 +155,7 @@ listRemoveLast x =
                    writeRef (listTail x) tail'
 
 -- | Return the first element.
-listFirst :: MonadDES m => DoubleLinkedList m a -> Event m a
+listFirst :: MonadRef m => DoubleLinkedList m a -> Event m a
 {-# INLINABLE listFirst #-}
 listFirst x =
   do head <- readRef (listHead x)
@@ -167,7 +166,7 @@ listFirst x =
          return $ itemVal h
 
 -- | Return the last element.
-listLast :: MonadDES m => DoubleLinkedList m a -> Event m a
+listLast :: MonadRef m => DoubleLinkedList m a -> Event m a
 {-# INLINABLE listLast #-}
 listLast x =
   do tail <- readRef (listTail x)
