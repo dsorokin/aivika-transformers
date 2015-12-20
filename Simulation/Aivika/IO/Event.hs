@@ -11,7 +11,7 @@
 --
 -- The module defines a template-based event queue.
 --
-module Simulation.Aivika.IO.Event (EventQueue) where
+module Simulation.Aivika.IO.Event () where
 
 import Control.Monad
 import Control.Monad.Trans

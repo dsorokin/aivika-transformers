@@ -11,7 +11,7 @@
 --
 -- Below is defined a random number generator.
 --
-module Simulation.Aivika.IO.Generator (Generator) where
+module Simulation.Aivika.IO.Generator () where
 
 import Control.Monad
 import Control.Monad.Trans

@@ -11,7 +11,7 @@
 --
 -- This module defines the preemptible resource.
 --
-module Simulation.Aivika.IO.Resource.Preemption (Resource) where
+module Simulation.Aivika.IO.Resource.Preemption () where
 
 import Control.Monad
 import Control.Monad.Trans
