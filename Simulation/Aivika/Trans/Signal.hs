@@ -19,6 +19,7 @@ module Simulation.Aivika.Trans.Signal
         handleSignal_,
         SignalSource,
         newSignalSource,
+        newSignalSource0,
         publishSignal,
         triggerSignal,
         -- * Useful Combinators
@@ -114,6 +115,25 @@ newSignalSource :: MonadDES m => Simulation m (SignalSource m a)
 {-# INLINABLE newSignalSource #-}
 newSignalSource =
   do list <- newRef []
+     let queue  = SignalHandlerQueue { queueList = list }
+         signal = Signal { handleSignal = handle }
+         source = SignalSource { publishSignal = signal, 
+                                 triggerSignal = trigger }
+         handle h =
+           Event $ \p ->
+           do x <- invokeEvent p $ enqueueSignalHandler queue h
+              return $
+                DisposableEvent $
+                dequeueSignalHandler queue x
+         trigger a =
+           triggerSignalHandlers queue a
+     return source
+     
+-- | Create a new signal source within more low level computation than 'Simulation'.
+newSignalSource0 :: (MonadDES m, MonadRef0 m) => m (SignalSource m a)
+{-# INLINABLE newSignalSource0 #-}
+newSignalSource0 =
+  do list <- newRef0 []
      let queue  = SignalHandlerQueue { queueList = list }
          signal = Signal { handleSignal = handle }
          source = SignalSource { publishSignal = signal, 

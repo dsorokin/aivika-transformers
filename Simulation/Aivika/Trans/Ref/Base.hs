@@ -13,7 +13,8 @@
 -- that depends on the event queue but that doesn't supply with the signal notification.
 --
 module Simulation.Aivika.Trans.Ref.Base
-       (MonadRef(..)) where
+       (MonadRef(..),
+        MonadRef0(..)) where
 
 import Data.IORef
 
@@ -49,3 +50,9 @@ instance MonadRef m => Eq (Ref m a) where
 
   {-# INLINE (==) #-}
   (==) = equalRef
+
+-- | A kind of reference that can be created within more low level computation than 'Simulation'.
+class MonadRef m => MonadRef0 m where
+
+  -- | Create a new reference within more low level computation than 'Simulation'.
+  newRef0 :: a -> m (Ref m a)

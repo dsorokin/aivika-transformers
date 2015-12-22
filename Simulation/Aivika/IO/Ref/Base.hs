@@ -52,3 +52,14 @@ instance (MonadIO m, MonadTemplate m) => MonadRef m where
 
   {-# INLINE equalRef #-}
   equalRef (Ref r1) (Ref r2) = (r1 == r2)
+
+-- | The 'MonadIO' based monad is an instance of 'MonadRef0'.
+instance (MonadIO m, MonadTemplate m) => MonadRef0 m where
+
+  {-# SPECIALISE instance MonadRef0 IO #-}
+
+  {-# INLINE newRef0 #-}
+  newRef0 a =
+    do x <- liftIO $ newIORef a
+       return Ref { refValue = x }
+     

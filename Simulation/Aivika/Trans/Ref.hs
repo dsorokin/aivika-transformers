@@ -14,6 +14,7 @@ module Simulation.Aivika.Trans.Ref
         refChanged,
         refChanged_,
         newRef,
+        newRef0,
         readRef,
         writeRef,
         modifyRef) where
@@ -43,6 +44,15 @@ newRef a =
   Simulation $ \r ->
   do x <- invokeSimulation r $ B.newRef a
      s <- invokeSimulation r newSignalSource
+     return Ref { refValue = x, 
+                  refChangedSource = s }
+
+-- | Create a new reference within more low level computation than 'Simulation'.
+newRef0 :: (MonadDES m, B.MonadRef0 m) => a -> m (Ref m a)
+{-# INLINABLE newRef0 #-}
+newRef0 a =
+  do x <- B.newRef0 a
+     s <- newSignalSource0
      return Ref { refValue = x, 
                   refChangedSource = s }
      
