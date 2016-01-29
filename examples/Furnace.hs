@@ -6,12 +6,14 @@
 -- [2] Труб И.И., Объектно-ориентированное моделирование на C++: Учебный курс. - СПб.: Питер, 2006
 
 import Data.Maybe
-import System.Random
 import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.Queue.Infinite
+import Simulation.Aivika.IO
+
+type DES = IO
 
 -- | The simulation specs.
 specs = Specs { spcStartTime = 0.0,
@@ -22,44 +24,44 @@ specs = Specs { spcStartTime = 0.0,
                 spcGeneratorType = SimpleGenerator }
         
 -- | Return a random initial temperature of the item.     
-randomTemp :: MonadComp m => Parameter m Double
+randomTemp :: Parameter IO Double
 randomTemp = randomUniform 400 600
 
 -- | Represents the furnace.
-data Furnace m = 
-  Furnace { furnacePits :: [Pit m],
+data Furnace = 
+  Furnace { furnacePits :: [Pit],
             -- ^ The pits for ingots.
-            furnacePitCount :: Ref m Int,
+            furnacePitCount :: Ref DES Int,
             -- ^ The count of active pits with ingots.
-            furnaceQueue :: FCFSQueue m (Ingot m),
+            furnaceQueue :: FCFSQueue DES Ingot,
             -- ^ The furnace queue.
-            furnaceUnloadedSource :: SignalSource m (),
+            furnaceUnloadedSource :: SignalSource DES (),
             -- ^ Notifies when the ingots have been
             -- unloaded from the furnace.
-            furnaceHeatingTime :: Ref m (SamplingStats Double),
+            furnaceHeatingTime :: Ref DES (SamplingStats Double),
             -- ^ The heating time for the ready ingots.
-            furnaceTemp :: Ref m Double,
+            furnaceTemp :: Ref DES Double,
             -- ^ The furnace temperature.
-            furnaceReadyCount :: Ref m Int,
+            furnaceReadyCount :: Ref DES Int,
             -- ^ The count of ready ingots.
-            furnaceReadyTemps :: Ref m [Double]
+            furnaceReadyTemps :: Ref DES [Double]
             -- ^ The temperatures of all ready ingots.
             }
 
 -- | Notifies when the ingots have been unloaded from the furnace.
-furnaceUnloaded :: Furnace m -> Signal m ()
+furnaceUnloaded :: Furnace -> Signal DES ()
 furnaceUnloaded = publishSignal . furnaceUnloadedSource
 
 -- | A pit in the furnace to place the ingots.
-data Pit m = 
-  Pit { pitIngot :: Ref m (Maybe (Ingot m)),
+data Pit = 
+  Pit { pitIngot :: Ref DES (Maybe Ingot),
         -- ^ The ingot in the pit.
-        pitTemp :: Ref m Double
+        pitTemp :: Ref DES Double
         -- ^ The ingot temperature in the pit.
         }
 
-data Ingot m = 
-  Ingot { ingotFurnace :: Furnace m,
+data Ingot = 
+  Ingot { ingotFurnace :: Furnace,
           -- ^ The furnace.
           ingotReceiveTime :: Double,
           -- ^ The time at which the ingot was received.
@@ -74,7 +76,7 @@ data Ingot m =
           }
 
 -- | Create a furnace.
-newFurnace :: MonadComp m => Simulation m (Furnace m)
+newFurnace :: Simulation DES Furnace
 newFurnace =
   do pits <- sequence [newPit | i <- [1..10]]
      pitCount <- newRef 0
@@ -94,7 +96,7 @@ newFurnace =
                       furnaceReadyTemps = readyTemps }
 
 -- | Create a new pit.
-newPit :: MonadComp m => Simulation m (Pit m)
+newPit :: Simulation DES Pit
 newPit =
   do ingot <- newRef Nothing
      h' <- newRef 0.0
@@ -102,7 +104,7 @@ newPit =
                   pitTemp  = h' }
 
 -- | Create a new ingot.
-newIngot :: MonadComp m => Furnace m -> Event m (Ingot m)
+newIngot :: Furnace -> Event DES Ingot
 newIngot furnace =
   do t  <- liftDynamics time
      xi <- liftParameter $ randomNormal 0.05 0.01
@@ -116,7 +118,7 @@ newIngot furnace =
                     ingotCoeff = c }
 
 -- | Heat the ingot up in the pit if there is such an ingot.
-heatPitUp :: MonadComp m => Pit m -> Event m ()
+heatPitUp :: Pit -> Event DES ()
 heatPitUp pit =
   do ingot <- readRef (pitIngot pit)
      case ingot of
@@ -133,14 +135,14 @@ heatPitUp pit =
            h' + dt' * (h - h') * ingotCoeff ingot
 
 -- | Check whether there are ready ingots in the pits.
-ingotsReady :: MonadComp m => Furnace m -> Event m Bool
+ingotsReady :: Furnace -> Event DES Bool
 ingotsReady furnace =
   fmap (not . null) $ 
   filterM (fmap (>= 2200.0) . readRef . pitTemp) $ 
   furnacePits furnace
 
 -- | Try to unload the ready ingot from the specified pit.
-tryUnloadPit :: MonadComp m => Furnace m -> Pit m -> Event m ()
+tryUnloadPit :: Furnace -> Pit -> Event DES ()
 tryUnloadPit furnace pit =
   do h' <- readRef (pitTemp pit)
      when (h' >= 2000.0) $
@@ -148,7 +150,7 @@ tryUnloadPit furnace pit =
           unloadIngot furnace ingot pit
 
 -- | Try to load an awaiting ingot in the specified empty pit.
-tryLoadPit :: MonadComp m => Furnace m -> Pit m -> Event m ()       
+tryLoadPit :: Furnace -> Pit -> Event DES ()       
 tryLoadPit furnace pit =
   do ingot <- tryDequeue (furnaceQueue furnace)
      case ingot of
@@ -160,7 +162,7 @@ tryLoadPit furnace pit =
                                        ingotLoadTemp = 400.0 }) pit
               
 -- | Unload the ingot from the specified pit.       
-unloadIngot :: MonadComp m => Furnace m -> Ingot m -> Pit m -> Event m ()
+unloadIngot :: Furnace -> Ingot -> Pit -> Event DES ()
 unloadIngot furnace ingot pit = 
   do h' <- readRef (pitTemp pit)
      writeRef (pitIngot pit) Nothing
@@ -181,7 +183,7 @@ unloadIngot furnace ingot pit =
      modifyRef (furnaceReadyCount furnace) (+ 1)
      
 -- | Load the ingot in the specified pit
-loadIngot :: MonadComp m => Furnace m -> Ingot m -> Pit m -> Event m ()
+loadIngot :: Furnace -> Ingot -> Pit -> Event DES ()
 loadIngot furnace ingot pit =
   do writeRef (pitIngot pit) $ Just ingot
      writeRef (pitTemp pit) $ ingotLoadTemp ingot
@@ -197,7 +199,7 @@ loadIngot furnace ingot pit =
      writeRef (furnaceTemp furnace) $ h + dh
  
 -- | Start iterating the furnace processing through the event queue.
-startIteratingFurnace :: MonadComp m => Furnace m -> Event m ()
+startIteratingFurnace :: Furnace -> Event DES ()
 startIteratingFurnace furnace = 
   let pits = furnacePits furnace
   in enqueueEventWithIntegTimes $
@@ -217,14 +219,14 @@ startIteratingFurnace furnace =
           h + dt' * (2600.0 - h) * 0.2
 
 -- | Return all empty pits.
-emptyPits :: MonadComp m => Furnace m -> Event m [Pit m]
+emptyPits :: Furnace -> Event DES [Pit]
 emptyPits furnace =
   filterM (fmap isNothing . readRef . pitIngot) $
   furnacePits furnace
 
 -- | This process takes ingots from the queue and then
 -- loads them in the furnace.
-loadingProcess :: MonadComp m => Furnace m -> Process m ()
+loadingProcess :: Furnace -> Process DES ()
 loadingProcess furnace =
   do ingot <- dequeue (furnaceQueue furnace)
      let wait =
@@ -241,7 +243,7 @@ loadingProcess furnace =
      loadingProcess furnace
                   
 -- | The input process that adds new ingots to the queue.
-inputProcess :: MonadComp m => Furnace m -> Process m ()
+inputProcess :: Furnace -> Process DES ()
 inputProcess furnace =
   do delay <- liftParameter $
               randomExponential 2.5
@@ -254,7 +256,7 @@ inputProcess furnace =
      inputProcess furnace
 
 -- | Initialize the furnace.
-initializeFurnace :: MonadComp m => Furnace m -> Event m ()
+initializeFurnace :: Furnace -> Event DES ()
 initializeFurnace furnace =
   do x1 <- newIngot furnace
      x2 <- newIngot furnace
@@ -273,7 +275,7 @@ initializeFurnace furnace =
      writeRef (furnaceTemp furnace) 1650.0
      
 -- | The simulation model.
-model :: MonadComp m => Simulation m (Results m)
+model :: Simulation DES (Results DES)
 model =
   do furnace <- newFurnace
   
