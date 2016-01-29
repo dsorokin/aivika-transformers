@@ -10,7 +10,7 @@
 -- Tested with: GHC 7.10.3
 --
 -- The module defines a template-based event queue, where
--- a 'MonadIO'-based monad can be an instance of 'EventQueueing'.
+-- the 'MonadIO'-based monad can be an instance of 'EventQueueing'.
 --
 module Simulation.Aivika.IO.Event () where
 

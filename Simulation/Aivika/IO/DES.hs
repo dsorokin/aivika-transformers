@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.3
 --
--- It allows making a 'MonadIO'-based monad an instance of type class 'MonadDES'.
+-- It allows making the 'MonadIO'-based monad an instance of type class 'MonadDES'.
 --
 module Simulation.Aivika.IO.DES () where
 

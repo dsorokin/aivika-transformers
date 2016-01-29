@@ -7,9 +7,10 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- This module defines the preemptible resource.
+-- This module defines the preemptible resource, where
+-- the 'MonadIO'-based monad can be an instance of 'MonadResource'.
 --
 module Simulation.Aivika.IO.Resource.Preemption () where
 

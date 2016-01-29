@@ -10,7 +10,7 @@
 -- Tested with: GHC 7.10.1
 --
 -- Here is defined a random number generator, where
--- a 'MonadIO'-based monad can be an instance of 'MonadGenerator'.
+-- the 'MonadIO'-based monad can be an instance of 'MonadGenerator'.
 --
 module Simulation.Aivika.IO.Generator () where
 

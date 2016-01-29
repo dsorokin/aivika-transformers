@@ -10,7 +10,7 @@
 -- Tested with: GHC 7.10.3
 --
 -- This module defines some queue strategy instances
--- for 'MonadIO'-based computations.
+-- for the 'MonadIO'-based computations.
 --
 module Simulation.Aivika.IO.QueueStrategy () where
 
