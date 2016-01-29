@@ -7,11 +7,11 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- It instantiates a class of 'IO'-based monads for Discrete Event Simulation (DES).
+-- It allows making an 'IO'-based monad an instance of type class 'MonadDES'.
 --
-module Simulation.Aivika.IO.DES where
+module Simulation.Aivika.IO.DES () where
 
 import Control.Monad.Trans
 
