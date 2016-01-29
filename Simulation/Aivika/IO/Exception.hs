@@ -7,9 +7,10 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.1
 --
--- It instantiates a class of 'IO'-based monads with exception handling capabilities.
+-- It provides with exception handling capabilities,
+-- where 'IO' is an instance of 'MonadException'.
 --
-module Simulation.Aivika.IO.Exception where
+module Simulation.Aivika.IO.Exception () where
 
 import Control.Exception
 
