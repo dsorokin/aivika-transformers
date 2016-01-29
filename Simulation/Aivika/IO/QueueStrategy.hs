@@ -7,11 +7,12 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- This module defines some queue strategy instances.
+-- This module defines some queue strategy instances
+-- for 'MonadIO'-based computations.
 --
-module Simulation.Aivika.IO.QueueStrategy where
+module Simulation.Aivika.IO.QueueStrategy () where
 
 import Control.Monad.Trans
 
