@@ -86,4 +86,7 @@ module Simulation.Aivika.Trans.Process
         -- * Debugging
         traceProcess) where
 
+import Simulation.Aivika.Trans.Internal.Simulation
+import Simulation.Aivika.Trans.Internal.Dynamics
+import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Process
