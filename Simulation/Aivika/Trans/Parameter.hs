@@ -6,7 +6,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.1
 --
--- The module defines the 'ParameterT' monad transformer that allows representing the model
+-- The module defines the 'Parameter' monad transformer that allows representing the model
 -- parameters. For example, they can be used when running the Monte-Carlo simulation.
 --
 -- In general, this monad tranformer is very useful for representing a computation which is external
