@@ -18,7 +18,7 @@ import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.QueueStrategy
 
--- | It defines a type class of monads for Discrete Event Simulation (DES).
+-- | It defines a type class of monads for DES.
 class (MonadComp m,
        MonadRef m,
        EventQueueing m,
