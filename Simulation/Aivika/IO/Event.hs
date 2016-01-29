@@ -7,9 +7,10 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- The module defines a template-based event queue.
+-- The module defines a template-based event queue, where
+-- a 'MonadIO'-based monad can be an instance of 'EventQueueing'.
 --
 module Simulation.Aivika.IO.Event () where
 
