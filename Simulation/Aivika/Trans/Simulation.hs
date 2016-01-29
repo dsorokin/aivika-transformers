@@ -7,7 +7,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.1
 --
--- The module defines the 'SimulationT' monad transformer that represents a simulation run.
+-- The module defines the 'Simulation' monad transformer that represents a simulation run.
 -- 
 module Simulation.Aivika.Trans.Simulation
        (-- * Simulation
