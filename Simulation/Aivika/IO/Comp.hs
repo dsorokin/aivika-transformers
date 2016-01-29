@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.3
 --
--- It allows making an 'IO'-based monad an instance of type class 'MonadComp'
+-- It allows making a 'MonadIO'-based monad an instance of type class 'MonadComp'
 -- on top of which the simulation monads can be built.
 --
 module Simulation.Aivika.IO.Comp () where

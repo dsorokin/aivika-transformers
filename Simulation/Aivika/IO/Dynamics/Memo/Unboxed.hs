@@ -7,12 +7,12 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
+-- The 'MonadIO'-based monad can be an instance of the 'MonadMemo' type class.
 --
 
-module Simulation.Aivika.IO.Dynamics.Memo.Unboxed where
+module Simulation.Aivika.IO.Dynamics.Memo.Unboxed () where
 
 import Control.Monad
 import Control.Monad.Trans
