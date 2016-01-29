@@ -30,6 +30,7 @@ module Simulation.Aivika.Trans.Dynamics.Random
 
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Internal.Specs
+import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
