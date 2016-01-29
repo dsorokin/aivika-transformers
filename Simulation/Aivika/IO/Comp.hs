@@ -7,11 +7,12 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- It instantiates a class of 'IO'-based monads on top of which the simulation monads can be built.
+-- It allows instantiating an 'IO'-based monad as instance of type class 'MonadComp'
+-- on top of which the simulation monads can be built.
 --
-module Simulation.Aivika.IO.Comp where
+module Simulation.Aivika.IO.Comp () where
 
 import Control.Monad
 import Control.Monad.Trans
