@@ -17,7 +17,7 @@ import Simulation.Aivika.Trans.Comp
 import qualified Simulation.Aivika.Trans.Dynamics.Memo as M
 import qualified Simulation.Aivika.Trans.Dynamics.Memo.Unboxed as MU
 
--- | A type class of monads for System Dynamics (SD). 
+-- | A type class of monads for SD. 
 class (MonadComp m,
        M.MonadMemo m,
        MU.MonadMemo m Double,
