@@ -7,11 +7,12 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.1
+-- Tested with: GHC 7.10.3
 --
--- It instantiates a class of 'IO'-based monads for System Dynamics (SD).
+-- It allows making the 'MonadIO'-based monad an instance of type class 'MonadSD'
+-- used for System Dynamics (SD).
 --
-module Simulation.Aivika.IO.SD where
+module Simulation.Aivika.IO.SD () where
 
 import Control.Monad.Trans
 
