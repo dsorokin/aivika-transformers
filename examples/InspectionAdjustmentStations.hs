@@ -21,6 +21,9 @@ import Control.Category (id, (.))
 
 import Simulation.Aivika.Trans
 import Simulation.Aivika.Trans.Queue.Infinite
+import Simulation.Aivika.IO
+
+type DES = IO
 
 -- | The simulation specs.
 specs = Specs { spcStartTime = 0.0,
@@ -57,7 +60,7 @@ maxAdjustmentTime = 40
 adjustmentStationCount = 1
 
 -- create an inspection station (server)
-newInspectionStation :: MonadComp m => Simulation m (Server m () a (Either a a))
+newInspectionStation :: Simulation DES (Server DES () a (Either a a))
 newInspectionStation =
   newServer $ \a ->
   do holdProcess =<<
@@ -71,7 +74,7 @@ newInspectionStation =
        else return $ Left a 
 
 -- create an adjustment station (server)
-newAdjustmentStation :: MonadComp m => Simulation m (Server m () a a)
+newAdjustmentStation :: Simulation DES (Server DES () a a)
 newAdjustmentStation =
   newServer $ \a ->
   do holdProcess =<<
@@ -79,7 +82,7 @@ newAdjustmentStation =
         randomUniform minAdjustmentTime maxAdjustmentTime)
      return a
   
-model :: (MonadComp m, MonadFix m) => Simulation m (Results m)
+model :: Simulation DES (Results DES)
 model = mdo
   -- to count the arrived TV sets for inspecting and adjusting
   inputArrivalTimer <- newArrivalTimer
@@ -155,7 +158,7 @@ model = mdo
      "adjustmentStations" "the adjustment stations"
      adjustmentStations]
 
-modelSummary :: (MonadComp m, MonadFix m) => Simulation m (Results m)
+modelSummary :: Simulation DES (Results DES)
 modelSummary = fmap resultSummary model
 
 main =
