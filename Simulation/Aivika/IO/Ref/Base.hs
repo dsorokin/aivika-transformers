@@ -9,9 +9,9 @@
 -- Stability  : experimental
 -- Tested with: GHC 7.10.1
 --
--- The 'MonadIO' based monad is an instance of 'MonadRef'.
+-- The 'MonadIO'-based monad can be an instance of 'MonadRef'.
 --
-module Simulation.Aivika.IO.Ref.Base where
+module Simulation.Aivika.IO.Ref.Base () where
 
 import Data.IORef
 
