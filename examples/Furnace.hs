@@ -24,7 +24,7 @@ specs = Specs { spcStartTime = 0.0,
                 spcGeneratorType = SimpleGenerator }
         
 -- | Return a random initial temperature of the item.     
-randomTemp :: Parameter IO Double
+randomTemp :: Parameter DES Double
 randomTemp = randomUniform 400 600
 
 -- | Represents the furnace.
