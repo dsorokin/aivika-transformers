@@ -46,7 +46,8 @@ module Simulation.Aivika.Trans.Resource
         usingResource,
         usingResourceWithPriority,
         -- * Altering Resource
-        incResourceCount) where
+        incResourceCount,
+        decResourceCount) where
 
 import Control.Monad
 import Control.Monad.Trans
