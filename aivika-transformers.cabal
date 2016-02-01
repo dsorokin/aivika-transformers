@@ -74,6 +74,7 @@ library
                      Simulation.Aivika.Trans.Resource
                      Simulation.Aivika.Trans.Resource.Base
                      Simulation.Aivika.Trans.Resource.Preemption
+                     Simulation.Aivika.Trans.Resource.Preemption.Base
                      Simulation.Aivika.Trans.Results.Locale
                      Simulation.Aivika.Trans.Results
                      Simulation.Aivika.Trans.Results.IO
@@ -110,6 +111,7 @@ library
                      Simulation.Aivika.IO.Signal
                      Simulation.Aivika.IO.Ref.Base
                      Simulation.Aivika.IO.Resource.Preemption
+                     Simulation.Aivika.IO.Resource.Preemption.Base
                      Simulation.Aivika.IO.Var
                      Simulation.Aivika.IO.Var.Unboxed
 
