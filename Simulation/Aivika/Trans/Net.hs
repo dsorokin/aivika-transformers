@@ -61,7 +61,7 @@ import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.QueueStrategy
-import Simulation.Aivika.Trans.Resource
+import Simulation.Aivika.Trans.Resource.Base
 import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Circuit
 import Simulation.Aivika.Arrival (Arrival(..))

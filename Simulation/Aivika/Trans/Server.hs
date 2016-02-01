@@ -83,7 +83,6 @@ import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Signal
-import Simulation.Aivika.Trans.Resource
 import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Processor

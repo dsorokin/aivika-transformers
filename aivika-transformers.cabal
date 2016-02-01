@@ -72,6 +72,7 @@ library
                      Simulation.Aivika.Trans.Ref
                      Simulation.Aivika.Trans.Ref.Base
                      Simulation.Aivika.Trans.Resource
+                     Simulation.Aivika.Trans.Resource.Base
                      Simulation.Aivika.Trans.Resource.Preemption
                      Simulation.Aivika.Trans.Results.Locale
                      Simulation.Aivika.Trans.Results
