@@ -28,7 +28,7 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Cont
 import Simulation.Aivika.Trans.Internal.Process
-import Simulation.Aivika.Trans.Resource.Preemption
+import Simulation.Aivika.Trans.Resource.Preemption.Base
 
 import Simulation.Aivika.IO.DES
 

@@ -20,6 +20,8 @@ import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Process
+import Simulation.Aivika.Trans.Statistics
+import Simulation.Aivika.Trans.Signal
 
 -- | A type class of monads whithin which we can create preemptible resources.
 class MonadDES m => MonadResource m where
@@ -30,7 +32,7 @@ class MonadDES m => MonadResource m where
   -- | Create a new resource with the specified initial count that becomes the upper bound as well.
   newResource :: Int
                  -- ^ the initial count (and maximal count too) of the resource
-                 -> Simulation m (Resource m)
+                 -> Event m (Resource m)
 
   -- | Create a new resource with the specified initial and maximum counts,
   -- where 'Nothing' means that the resource has no upper bound.
@@ -38,7 +40,7 @@ class MonadDES m => MonadResource m where
                              -- ^ the initial count of the resource
                              -> Maybe Int
                              -- ^ the maximum count of the resource, which can be indefinite
-                             -> Simulation m (Resource m)
+                             -> Event m (Resource m)
 
   -- | Return the current count of the resource.
   resourceCount :: Resource m -> Event m Int
@@ -46,7 +48,55 @@ class MonadDES m => MonadResource m where
   -- | Return the maximum count of the resource, where 'Nothing'
   -- means that the resource has no upper bound.
   resourceMaxCount :: Resource m -> Maybe Int
-             
+
+  -- | Return the statistics for the available count of the resource.
+  resourceCountStats :: Resource m -> Event m (TimingStats Int)
+
+  -- | Signal triggered when the 'resourceCount' property changes.
+  resourceCountChanged :: Resource m -> Signal m Int
+
+  -- | Signal triggered when the 'resourceCount' property changes.
+  resourceCountChanged_ :: Resource m -> Signal m ()
+
+  -- | Return the current utilisation count of the resource.
+  resourceUtilisationCount :: Resource m -> Event m Int
+
+  -- | Return the statistics for the utilisation count of the resource.
+  resourceUtilisationCountStats :: Resource m -> Event m (TimingStats Int)
+
+  -- | Signal triggered when the 'resourceUtilisationCount' property changes.
+  resourceUtilisationCountChanged :: Resource m -> Signal m Int
+
+  -- | Signal triggered when the 'resourceUtilisationCount' property changes.
+  resourceUtilisationCountChanged_ :: Resource m -> Signal m ()
+
+  -- | Return the current queue length of the resource.
+  resourceQueueCount :: Resource m -> Event m Int
+
+  -- | Return the statistics for the queue length of the resource.
+  resourceQueueCountStats :: Resource m -> Event m (TimingStats Int)
+
+  -- | Signal triggered when the 'resourceQueueCount' property changes.
+  resourceQueueCountChanged :: Resource m -> Signal m Int
+
+  -- | Signal triggered when the 'resourceQueueCount' property changes.
+  resourceQueueCountChanged_ :: Resource m -> Signal m ()
+
+  -- | Return the total wait time of the resource.
+  resourceTotalWaitTime :: Resource m -> Event m Double
+
+  -- | Return the statistics for the wait time of the resource.
+  resourceWaitTime :: Resource m -> Event m (SamplingStats Double)
+
+  -- | Signal triggered when the 'resourceTotalWaitTime' and 'resourceWaitTime' properties change.
+  resourceWaitTimeChanged :: Resource m -> Signal m (SamplingStats Double)
+
+  -- | Signal triggered when the 'resourceTotalWaitTime' and 'resourceWaitTime' properties change.
+  resourceWaitTimeChanged_ :: Resource m -> Signal m ()
+
+  -- | Signal triggered when one of the resource counters changes.
+  resourceChanged_ :: Resource m -> Signal m ()
+
   -- | Request with the priority for the resource decreasing its count
   -- in case of success, otherwise suspending the discontinuous process
   -- until some other process releases the resource.

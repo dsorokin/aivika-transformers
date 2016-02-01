@@ -19,6 +19,7 @@ import Control.Monad.Trans
 
 import Data.Maybe
 import Data.IORef
+import Data.Monoid
 
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.DES
@@ -29,6 +30,8 @@ import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Cont
 import Simulation.Aivika.Trans.Internal.Process
 import Simulation.Aivika.Trans.Resource.Preemption
+import Simulation.Aivika.Trans.Statistics
+import Simulation.Aivika.Trans.Signal
 
 import Simulation.Aivika.IO.DES
 
@@ -42,29 +45,33 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
   -- | A template-based implementation of the preemptible resource.
   data Resource m = 
     Resource { resourceMaxCount0 :: Maybe Int,
+               -- ^ Return the maximum count of the resource, where 'Nothing'
+               -- means that the resource has no upper bound.
                resourceCountRef :: IORef Int,
+               resourceCountStatsRef :: IORef (TimingStats Int),
+               resourceCountSource :: SignalSource m Int,
+               resourceUtilisationCountRef :: IORef Int,
+               resourceUtilisationCountStatsRef :: IORef (TimingStats Int),
+               resourceUtilisationCountSource :: SignalSource m Int,
+               resourceQueueCountRef :: IORef Int,
+               resourceQueueCountStatsRef :: IORef (TimingStats Int),
+               resourceQueueCountSource :: SignalSource m Int,
+               resourceTotalWaitTimeRef :: IORef Double,
+               resourceWaitTimeRef :: IORef (SamplingStats Double),
+               resourceWaitTimeSource :: SignalSource m (),
                resourceActingQueue :: PQ.PriorityQueue (ResourceActingItem m),
                resourceWaitQueue :: PQ.PriorityQueue (ResourceAwaitingItem m) }
 
   {-# INLINABLE newResource #-}
   newResource count =
-    Simulation $ \r ->
-    do when (count < 0) $
-         error $
-         "The resource count cannot be negative: " ++
-         "newResource."
-       countRef <- liftIO $ newIORef count
-       actingQueue <- liftIO PQ.newQueue
-       waitQueue <- liftIO PQ.newQueue
-       return Resource { resourceMaxCount0 = Just count,
-                         resourceCountRef = countRef,
-                         resourceActingQueue = actingQueue,
-                         resourceWaitQueue = waitQueue }
+    newResourceWithMaxCount count (Just count)
 
   {-# INLINABLE newResourceWithMaxCount #-}
   newResourceWithMaxCount count maxCount =
-    Simulation $ \r ->
-    do when (count < 0) $
+    Event $ \p ->
+    do let r = pointRun p
+           t = pointTime p
+       when (count < 0) $
          error $
          "The resource count cannot be negative: " ++
          "newResourceWithMaxCount."
@@ -76,26 +83,115 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
          _ ->
            return ()
        countRef <- liftIO $ newIORef count
+       countStatsRef <- liftIO $ newIORef $ returnTimingStats t count
+       countSource <- invokeSimulation r newSignalSource
+       utilCountRef <- liftIO $ newIORef 0
+       utilCountStatsRef <- liftIO $ newIORef $ returnTimingStats t 0
+       utilCountSource <- invokeSimulation r newSignalSource
+       queueCountRef <- liftIO $ newIORef 0
+       queueCountStatsRef <- liftIO $ newIORef $ returnTimingStats t 0
+       queueCountSource <- invokeSimulation r newSignalSource
+       totalWaitTimeRef <- liftIO $ newIORef 0
+       waitTimeRef <- liftIO $ newIORef emptySamplingStats
+       waitTimeSource <- invokeSimulation r newSignalSource
        actingQueue <- liftIO PQ.newQueue
        waitQueue <- liftIO PQ.newQueue
        return Resource { resourceMaxCount0 = maxCount,
                          resourceCountRef = countRef,
+                         resourceCountStatsRef = countStatsRef,
+                         resourceCountSource = countSource,
+                         resourceUtilisationCountRef = utilCountRef,
+                         resourceUtilisationCountStatsRef = utilCountStatsRef,
+                         resourceUtilisationCountSource = utilCountSource,
+                         resourceQueueCountRef = queueCountRef,
+                         resourceQueueCountStatsRef = queueCountStatsRef,
+                         resourceQueueCountSource = queueCountSource,
+                         resourceTotalWaitTimeRef = totalWaitTimeRef,
+                         resourceWaitTimeRef = waitTimeRef,
+                         resourceWaitTimeSource = waitTimeSource,
                          resourceActingQueue = actingQueue,
                          resourceWaitQueue = waitQueue }
+
+  {-# INLINABLE resourceMaxCount #-}
+  resourceMaxCount = resourceMaxCount0
 
   {-# INLINABLE resourceCount #-}
   resourceCount r =
     Event $ \p -> liftIO $ readIORef (resourceCountRef r)
 
-  {-# INLINABLE resourceMaxCount #-}
-  resourceMaxCount = resourceMaxCount0
+  {-# INLINABLE resourceCountStats #-}
+  resourceCountStats r =
+    Event $ \p -> liftIO $ readIORef (resourceCountStatsRef r)
+
+  {-# INLINABLE resourceCountChanged #-}
+  resourceCountChanged r =
+    publishSignal $ resourceCountSource r
+
+  {-# INLINABLE resourceCountChanged_ #-}
+  resourceCountChanged_ r =
+    mapSignal (const ()) $ resourceCountChanged r
+
+  {-# INLINABLE resourceUtilisationCount #-}
+  resourceUtilisationCount r =
+    Event $ \p -> liftIO $ readIORef (resourceUtilisationCountRef r)
+
+  {-# INLINABLE resourceUtilisationCountStats #-}
+  resourceUtilisationCountStats r =
+    Event $ \p -> liftIO $ readIORef (resourceUtilisationCountStatsRef r)
+
+  {-# INLINABLE resourceUtilisationCountChanged #-}
+  resourceUtilisationCountChanged r =
+    publishSignal $ resourceUtilisationCountSource r
+
+  {-# INLINABLE resourceUtilisationCountChanged_ #-}
+  resourceUtilisationCountChanged_ r =
+    mapSignal (const ()) $ resourceUtilisationCountChanged r
+
+  {-# INLINABLE resourceQueueCount #-}
+  resourceQueueCount r =
+    Event $ \p -> liftIO $ readIORef (resourceQueueCountRef r)
+
+  {-# INLINABLE resourceQueueCountStats #-}
+  resourceQueueCountStats r =
+    Event $ \p -> liftIO $ readIORef (resourceQueueCountStatsRef r)
+
+  {-# INLINABLE resourceQueueCountChanged #-}
+  resourceQueueCountChanged r =
+    publishSignal $ resourceQueueCountSource r
+
+  {-# INLINABLE resourceQueueCountChanged_ #-}
+  resourceQueueCountChanged_ r =
+    mapSignal (const ()) $ resourceQueueCountChanged r
+
+  {-# INLINABLE resourceTotalWaitTime #-}
+  resourceTotalWaitTime r =
+    Event $ \p -> liftIO $ readIORef (resourceTotalWaitTimeRef r)
+
+  {-# INLINABLE resourceWaitTime #-}
+  resourceWaitTime r =
+    Event $ \p -> liftIO $ readIORef (resourceWaitTimeRef r)
+
+  {-# INLINABLE resourceWaitTimeChanged #-}
+  resourceWaitTimeChanged r =
+    mapSignalM (\() -> resourceWaitTime r) $ resourceWaitTimeChanged_ r
+
+  {-# INLINABLE resourceWaitTimeChanged_ #-}
+  resourceWaitTimeChanged_ r =
+    publishSignal $ resourceWaitTimeSource r
+
+  {-# INLINABLE resourceChanged_ #-}
+  resourceChanged_ r =
+    resourceCountChanged_ r <>
+    resourceUtilisationCountChanged_ r <>
+    resourceQueueCountChanged_ r
 
   {-# INLINABLE requestResourceWithPriority #-}
   requestResourceWithPriority r priority =
     Process $ \pid ->
     Cont $ \c ->
     Event $ \p ->
-    do a <- liftIO $ readIORef (resourceCountRef r)
+    do let t = pointTime p
+       a <- liftIO $ readIORef (resourceCountRef r)
        if a == 0
          then do f <- liftIO $ PQ.queueNull (resourceActingQueue r)
                  if f
@@ -104,14 +200,16 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
                                 invokeCont c $
                                 invokeProcess pid $
                                 requestResourceWithPriority r priority
-                           liftIO $ PQ.enqueue (resourceWaitQueue r) priority (Left $ ResourceRequestingItem priority pid c)
+                           liftIO $ PQ.enqueue (resourceWaitQueue r) priority (Left $ ResourceRequestingItem priority t pid c)
+                           invokeEvent p $ updateResourceQueueCount r 1
                    else do (p0', item0) <- liftIO $ PQ.queueFront (resourceActingQueue r)
                            let p0 = - p0'
                                pid0 = actingItemId item0
                            if priority < p0
                              then do liftIO $ PQ.dequeue (resourceActingQueue r)
                                      liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
-                                     liftIO $ PQ.enqueue (resourceWaitQueue r) p0 (Right $ ResourcePreemptedItem p0 pid0)
+                                     liftIO $ PQ.enqueue (resourceWaitQueue r) p0 (Right $ ResourcePreemptedItem p0 t pid0)
+                                     invokeEvent p $ updateResourceQueueCount r 1
                                      invokeEvent p $ processPreemptionBegin pid0
                                      invokeEvent p $ resumeCont c ()
                              else do c <- invokeEvent p $
@@ -119,10 +217,12 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
                                           invokeCont c $
                                           invokeProcess pid $
                                           requestResourceWithPriority r priority
-                                     liftIO $ PQ.enqueue (resourceWaitQueue r) priority (Left $ ResourceRequestingItem priority pid c)
-         else do let a' = a - 1
-                 a' `seq` liftIO $ writeIORef (resourceCountRef r) a'
-                 liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
+                                     liftIO $ PQ.enqueue (resourceWaitQueue r) priority (Left $ ResourceRequestingItem priority t pid c)
+                                     invokeEvent p $ updateResourceQueueCount r 1
+         else do liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
+                 invokeEvent p $ updateResourceWaitTime r 0
+                 invokeEvent p $ updateResourceCount r (-1)
+                 invokeEvent p $ updateResourceUtilisationCount r 1
                  invokeEvent p $ resumeCont c ()
 
   {-# INLINABLE releaseResource #-}
@@ -132,11 +232,12 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
     Event $ \p ->
     do f <- liftIO $ fmap isJust $ PQ.queueDeleteBy (resourceActingQueue r) (\item -> actingItemId item == pid)
        if f
-         then do invokeEvent p $ releaseResource' r
+         then do invokeEvent p $ updateResourceUtilisationCount r (-1)
+                 invokeEvent p $ releaseResource' r
                  invokeEvent p $ resumeCont c ()
          else error $
               "The resource was not acquired by this process: releaseResource"
-               
+
   {-# INLINABLE usingResourceWithPriority #-}
   usingResourceWithPriority r priority m =
     do requestResourceWithPriority r priority
@@ -169,20 +270,21 @@ data ResourceActingItem m =
   ResourceActingItem { actingItemPriority :: Double,
                        actingItemId :: ProcessId m }
 
+-- | Idenitifies an awaiting item that waits for releasing of the resource to take it.
+type ResourceAwaitingItem m = Either (ResourceRequestingItem m) (ResourcePreemptedItem m)
+
 -- | Idenitifies an item that requests for the resource.
 data ResourceRequestingItem m =
   ResourceRequestingItem { requestingItemPriority :: Double,
+                           requestingItemTime :: Double,
                            requestingItemId :: ProcessId m,
                            requestingItemCont :: FrozenCont m () }
 
 -- | Idenitifies an item that was preempted.
 data ResourcePreemptedItem m =
   ResourcePreemptedItem { preemptedItemPriority :: Double,
+                          preemptedItemTime :: Double,
                           preemptedItemId :: ProcessId m }
-
--- | Idenitifies an awaiting item that waits for releasing of the resource to take it.
-type ResourceAwaitingItem m =
-  Either (ResourceRequestingItem m) (ResourcePreemptedItem m)
 
 instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (Resource m) where
 
@@ -194,7 +296,12 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (ResourceActingItem m) w
   {-# INLINABLE (==) #-}
   x == y = actingItemId x == actingItemId y
 
-releaseResource' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
+-- | Release the resource increasing its count and resuming one of the
+-- previously suspended or preempted processes as possible.
+releaseResource' :: (MonadDES m, MonadIO m, MonadTemplate m)
+                    => Resource m
+                    -- ^ the resource to release
+                    -> Event m ()
 {-# INLINABLE releaseResource' #-}
 releaseResource' r =
   Event $ \p ->
@@ -209,32 +316,40 @@ releaseResource' r =
          return ()
      f <- liftIO $ PQ.queueNull (resourceWaitQueue r)
      if f 
-       then a' `seq` liftIO $ writeIORef (resourceCountRef r) a'
+       then invokeEvent p $ updateResourceCount r 1
        else do (priority', item) <- liftIO $ PQ.queueFront (resourceWaitQueue r)
                liftIO $ PQ.dequeue (resourceWaitQueue r)
+               invokeEvent p $ updateResourceQueueCount r (-1)
                case item of
-                 Left (ResourceRequestingItem priority pid c) ->
+                 Left (ResourceRequestingItem priority t pid c) ->
                    do c <- invokeEvent p $ unfreezeCont c
                       case c of
                         Nothing ->
                           invokeEvent p $ releaseResource' r
                         Just c ->
                           do liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
+                             invokeEvent p $ updateResourceWaitTime r (pointTime p - t)
+                             invokeEvent p $ updateResourceUtilisationCount r 1
                              invokeEvent p $ enqueueEvent (pointTime p) $ resumeCont c ()
-                 Right (ResourcePreemptedItem priority pid) ->
+                 Right (ResourcePreemptedItem priority t pid) ->
                    do f <- invokeEvent p $ processCancelled pid
                       case f of
                         True ->
                           invokeEvent p $ releaseResource' r
                         False ->
                           do liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
+                             invokeEvent p $ updateResourceWaitTime r (pointTime p - t)
+                             invokeEvent p $ updateResourceUtilisationCount r 1
                              invokeEvent p $ processPreemptionEnd pid
 
+-- | Preempt a process with the lowest priority that acquires yet the resource
+-- and decrease the count of available resource by 1. 
 decResourceCount' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
 {-# INLINABLE decResourceCount' #-}
 decResourceCount' r =
   Event $ \p ->
-  do a <- liftIO $ readIORef (resourceCountRef r)
+  do let t = pointTime p
+     a <- liftIO $ readIORef (resourceCountRef r)
      when (a == 0) $
        error $
        "The resource exceeded and its count is zero: decResourceCount'"
@@ -244,7 +359,64 @@ decResourceCount' r =
           let p0 = - p0'
               pid0 = actingItemId item0
           liftIO $ PQ.dequeue (resourceActingQueue r)
-          liftIO $ PQ.enqueue (resourceWaitQueue r) p0 (Right $ ResourcePreemptedItem p0 pid0)
+          liftIO $ PQ.enqueue (resourceWaitQueue r) p0 (Right $ ResourcePreemptedItem p0 t pid0)
           invokeEvent p $ processPreemptionBegin pid0
-     let a' = a - 1
+          invokeEvent p $ updateResourceUtilisationCount r (-1)
+          invokeEvent p $ updateResourceQueueCount r 1
+     invokeEvent p $ updateResourceCount r (-1)
+
+-- | Update the resource count and its statistics.
+updateResourceCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
+{-# INLINABLE updateResourceCount #-}
+updateResourceCount r delta =
+  Event $ \p ->
+  do a <- liftIO $ readIORef (resourceCountRef r)
+     let a' = a + delta
      a' `seq` liftIO $ writeIORef (resourceCountRef r) a'
+     liftIO $
+       modifyIORef' (resourceCountStatsRef r) $
+       addTimingStats (pointTime p) a'
+     invokeEvent p $
+       triggerSignal (resourceCountSource r) a'
+
+-- | Update the resource queue length and its statistics.
+updateResourceQueueCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
+{-# INLINABLE updateResourceQueueCount #-}
+updateResourceQueueCount r delta =
+  Event $ \p ->
+  do a <- liftIO $ readIORef (resourceQueueCountRef r)
+     let a' = a + delta
+     a' `seq` liftIO $ writeIORef (resourceQueueCountRef r) a'
+     liftIO $
+       modifyIORef' (resourceQueueCountStatsRef r) $
+       addTimingStats (pointTime p) a'
+     invokeEvent p $
+       triggerSignal (resourceQueueCountSource r) a'
+
+-- | Update the resource utilisation count and its statistics.
+updateResourceUtilisationCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
+{-# INLINABLE updateResourceUtilisationCount #-}
+updateResourceUtilisationCount r delta =
+  Event $ \p ->
+  do a <- liftIO $ readIORef (resourceUtilisationCountRef r)
+     let a' = a + delta
+     a' `seq` liftIO $ writeIORef (resourceUtilisationCountRef r) a'
+     liftIO $
+       modifyIORef' (resourceUtilisationCountStatsRef r) $
+       addTimingStats (pointTime p) a'
+     invokeEvent p $
+       triggerSignal (resourceUtilisationCountSource r) a'
+
+-- | Update the resource wait time and its statistics.
+updateResourceWaitTime :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Double -> Event m ()
+{-# INLINABLE updateResourceWaitTime #-}
+updateResourceWaitTime r delta =
+  Event $ \p ->
+  do a <- liftIO $ readIORef (resourceTotalWaitTimeRef r)
+     let a' = a + delta
+     a' `seq` liftIO $ writeIORef (resourceTotalWaitTimeRef r) a'
+     liftIO $
+       modifyIORef' (resourceWaitTimeRef r) $
+       addSamplingStats delta
+     invokeEvent p $
+       triggerSignal (resourceWaitTimeSource r) ()
