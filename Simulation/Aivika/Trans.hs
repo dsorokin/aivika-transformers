@@ -37,7 +37,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Processor.RoundRobbin,
         module Simulation.Aivika.Trans.QueueStrategy,
         module Simulation.Aivika.Trans.Ref,
-        module Simulation.Aivika.Trans.Resource,
+        module Simulation.Aivika.Trans.Resource.Base,
         module Simulation.Aivika.Trans.Results,
         module Simulation.Aivika.Trans.Results.Locale,
         module Simulation.Aivika.Trans.Results.IO,
@@ -85,7 +85,7 @@ import Simulation.Aivika.Trans.Processor.Random
 import Simulation.Aivika.Trans.Processor.RoundRobbin
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Ref
-import Simulation.Aivika.Trans.Resource
+import Simulation.Aivika.Trans.Resource.Base
 import Simulation.Aivika.Trans.Results
 import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.Results.IO
