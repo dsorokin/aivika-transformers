@@ -22,6 +22,7 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/ChemicalReaction.hs
                      examples/ChemicalReactionCircuit.hs
                      examples/FishBank.hs
+                     examples/MachineBreakdowns.hs
                      examples/MachRep1.hs
                      examples/MachRep1EventDriven.hs
                      examples/MachRep1TimeDriven.hs
