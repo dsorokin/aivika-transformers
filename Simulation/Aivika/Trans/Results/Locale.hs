@@ -34,6 +34,7 @@ import qualified Simulation.Aivika.Trans.Queue.Infinite as IQ
 import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Activity
+import Simulation.Aivika.Trans.Resource
 
 -- | A locale to output the simulation results.
 --
@@ -203,6 +204,24 @@ data ResultId = TimeId
                 -- ^ Property 'activityUtilisationFactor'.
               | ActivityIdleFactorId
                 -- ^ Property 'activityIdleFactor'.
+              | ResourceId
+                -- ^ Represents a 'Resource'.
+              | ResourceCountId
+                -- ^ Property 'resourceCount'.
+              | ResourceCountStatsId
+                -- ^ Property 'resourceCountStats'.
+              | ResourceUtilisationCountId
+                -- ^ Property 'resourceUtilisationCount'.
+              | ResourceUtilisationCountStatsId
+                -- ^ Property 'resourceUtilisationCountStats'.
+              | ResourceQueueCountId
+                -- ^ Property 'resourceQueueCount'.
+              | ResourceQueueCountStatsId
+                -- ^ Property 'resourceQueueCountStats'.
+              | ResourceTotalWaitTimeId
+                -- ^ Property 'resourceTotalWaitTime'.
+              | ResourceWaitTimeId
+                -- ^ Property 'resourceWaitTime'.
               | UserDefinedResultId ResultDescription
                 -- ^ An user defined description.
               | LocalisedResultId (M.Map ResultLocale ResultDescription)
@@ -297,6 +316,15 @@ russianResultLocalisation ActivityUtilisationTimeId = "статистика вр
 russianResultLocalisation ActivityIdleTimeId = "статистика времени простоя"
 russianResultLocalisation ActivityUtilisationFactorId = "относительное время использования (от 0 до 1)"
 russianResultLocalisation ActivityIdleFactorId = "относительное время простоя (от 0 до 1)"
+russianResultLocalisation ResourceId = "ресурс"
+russianResultLocalisation ResourceCountId = "текущее доступное количество ресурса"
+russianResultLocalisation ResourceCountStatsId = "статистика по доступному количеству ресурса"
+russianResultLocalisation ResourceUtilisationCountId = "текущее используемое количество ресурса"
+russianResultLocalisation ResourceUtilisationCountStatsId = "статистика по используемому количеству ресурса"
+russianResultLocalisation ResourceQueueCountId = "текущая длина очереди к ресурсу"
+russianResultLocalisation ResourceQueueCountStatsId = "статистика длины очереди к ресурсу"
+russianResultLocalisation ResourceTotalWaitTimeId = "общее время ожидания ресурса"
+russianResultLocalisation ResourceWaitTimeId = "время ожидания ресурса"
 russianResultLocalisation (UserDefinedResultId m) = m
 russianResultLocalisation x@(LocalisedResultId m) =
   lookupResultLocalisation russianResultLocale x
@@ -381,6 +409,15 @@ englishResultLocalisation ActivityUtilisationTimeId = "the utilisation time"
 englishResultLocalisation ActivityIdleTimeId = "the idle time"
 englishResultLocalisation ActivityUtilisationFactorId = "the relative utilisation time (от 0 до 1)"
 englishResultLocalisation ActivityIdleFactorId = "the relative idle time (от 0 до 1)"
+englishResultLocalisation ResourceId = "the resource"
+englishResultLocalisation ResourceCountId = "the current available count"
+englishResultLocalisation ResourceCountStatsId = "the available count statistics"
+englishResultLocalisation ResourceUtilisationCountId = "the current utilisation count"
+englishResultLocalisation ResourceUtilisationCountStatsId = "the utilisation count statistics"
+englishResultLocalisation ResourceQueueCountId = "the current queue length"
+englishResultLocalisation ResourceQueueCountStatsId = "the queue length statistics"
+englishResultLocalisation ResourceTotalWaitTimeId = "the total wait time"
+englishResultLocalisation ResourceWaitTimeId = "the wait time"
 englishResultLocalisation (UserDefinedResultId m) = m
 englishResultLocalisation x@(LocalisedResultId m) =
   lookupResultLocalisation englishResultLocale x

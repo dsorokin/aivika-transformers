@@ -134,6 +134,8 @@ import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Resource
+import qualified Simulation.Aivika.Trans.Resource.Preemption as PR
 
 -- | A name used for indentifying the results when generating output.
 type ResultName = String
@@ -1741,6 +1743,91 @@ activityResultSummary c =
       resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
       resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_ ] }
 
+-- | Return a source by the specified resource.
+resourceResultSource :: (MonadDES m,
+                         Show s, ResultItemable (ResultValue s))
+                        => ResultContainer (Resource m s) m
+                        -- ^ the resource container
+                        -> ResultSource m
+resourceResultSource c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = ResourceId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = resourceResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "queueCount" ResourceQueueCountId resourceQueueCount resourceQueueCountChanged_,
+      resultContainerProperty c "queueCountStats" ResourceQueueCountStatsId resourceQueueCountStats resourceQueueCountChanged_,
+      resultContainerProperty c "totalWaitTime" ResourceTotalWaitTimeId resourceTotalWaitTime resourceWaitTimeChanged_,
+      resultContainerProperty c "waitTime" ResourceWaitTimeId resourceWaitTime resourceWaitTimeChanged_,
+      resultContainerProperty c "count" ResourceCountId resourceCount resourceCountChanged_,
+      resultContainerProperty c "countStats" ResourceCountStatsId resourceCountStats resourceCountChanged_,
+      resultContainerProperty c "utilisationCount" ResourceUtilisationCountId resourceUtilisationCount resourceUtilisationCountChanged_,
+      resultContainerProperty c "utilisationCountStats" ResourceUtilisationCountStatsId resourceUtilisationCountStats resourceUtilisationCountChanged_ ] }
+
+-- | Return a summary by the specified resource.
+resourceResultSummary :: MonadDES m
+                         => ResultContainer (Resource m s) m
+                         -- ^ the resource container
+                         -> ResultSource m
+resourceResultSummary c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = ResourceId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = resourceResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "queueCountStats" ResourceQueueCountStatsId resourceQueueCountStats resourceQueueCountChanged_,
+      resultContainerProperty c "waitTime" ResourceWaitTimeId resourceWaitTime resourceWaitTimeChanged_,
+      resultContainerProperty c "countStats" ResourceCountStatsId resourceCountStats resourceCountChanged_,
+      resultContainerProperty c "utilisationCountStats" ResourceUtilisationCountStatsId resourceUtilisationCountStats resourceUtilisationCountChanged_ ] }
+
+-- | Return a source by the specified resource.
+preemptibleResourceResultSource :: PR.MonadResource m
+                                   => ResultContainer (PR.Resource m) m
+                                   -- ^ the resource container
+                                   -> ResultSource m
+preemptibleResourceResultSource c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = ResourceId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = preemptibleResourceResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "queueCount" ResourceQueueCountId PR.resourceQueueCount PR.resourceQueueCountChanged_,
+      resultContainerProperty c "queueCountStats" ResourceQueueCountStatsId PR.resourceQueueCountStats PR.resourceQueueCountChanged_,
+      resultContainerProperty c "totalWaitTime" ResourceTotalWaitTimeId PR.resourceTotalWaitTime PR.resourceWaitTimeChanged_,
+      resultContainerProperty c "waitTime" ResourceWaitTimeId PR.resourceWaitTime PR.resourceWaitTimeChanged_,
+      resultContainerProperty c "count" ResourceCountId PR.resourceCount PR.resourceCountChanged_,
+      resultContainerProperty c "countStats" ResourceCountStatsId PR.resourceCountStats PR.resourceCountChanged_,
+      resultContainerProperty c "utilisationCount" ResourceUtilisationCountId PR.resourceUtilisationCount PR.resourceUtilisationCountChanged_,
+      resultContainerProperty c "utilisationCountStats" ResourceUtilisationCountStatsId PR.resourceUtilisationCountStats PR.resourceUtilisationCountChanged_ ] }
+
+-- | Return a summary by the specified resource.
+preemptibleResourceResultSummary :: PR.MonadResource m
+                                    => ResultContainer (PR.Resource m) m
+                                    -- ^ the resource container
+                                    -> ResultSource m
+preemptibleResourceResultSummary c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = ResourceId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = preemptibleResourceResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "queueCountStats" ResourceQueueCountStatsId PR.resourceQueueCountStats PR.resourceQueueCountChanged_,
+      resultContainerProperty c "waitTime" ResourceWaitTimeId PR.resourceWaitTime PR.resourceWaitTimeChanged_,
+      resultContainerProperty c "countStats" ResourceCountStatsId PR.resourceCountStats PR.resourceCountChanged_,
+      resultContainerProperty c "utilisationCountStats" ResourceUtilisationCountStatsId PR.resourceUtilisationCountStats PR.resourceUtilisationCountChanged_ ] }
+
 -- | Return an arbitrary text as a separator source.
 textResultSource :: String -> ResultSource m
 textResultSource text =
@@ -1973,3 +2060,13 @@ instance (MonadDES m, Show s, ResultItemable (ResultValue s)) => ResultProvider 
 
   resultSource' name i m =
     activityResultSource $ ResultContainer name i m (ResultSignal $ activityChanged_ m)
+
+instance (MonadDES m, Show s, ResultItemable (ResultValue s)) => ResultProvider (Resource m s) m where
+
+  resultSource' name i m =
+    resourceResultSource $ ResultContainer name i m (ResultSignal $ resourceChanged_ m)
+
+instance PR.MonadResource m => ResultProvider (PR.Resource m) m where
+
+  resultSource' name i m =
+    preemptibleResourceResultSource $ ResultContainer name i m (ResultSignal $ PR.resourceChanged_ m)
