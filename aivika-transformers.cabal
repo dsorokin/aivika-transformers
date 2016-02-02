@@ -70,6 +70,7 @@ library
                      Simulation.Aivika.Trans.Queue
                      Simulation.Aivika.Trans.Queue.Base
                      Simulation.Aivika.Trans.Queue.Infinite
+                     Simulation.Aivika.Trans.Queue.Infinite.Base
                      Simulation.Aivika.Trans.QueueStrategy
                      Simulation.Aivika.Trans.Ref
                      Simulation.Aivika.Trans.Ref.Base
