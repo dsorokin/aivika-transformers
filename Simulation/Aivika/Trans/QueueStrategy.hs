@@ -15,6 +15,8 @@ module Simulation.Aivika.Trans.QueueStrategy where
 
 import Control.Monad
 
+import Data.Maybe
+
 import Simulation.Aivika.Trans.Internal.Types
 
 -- | Defines the basic queue strategy.
@@ -67,6 +69,52 @@ class DequeueStrategy m s => PriorityQueueStrategy m s p | s -> p where
                                  -- ^ the element to be enqueued
                                  -> Event m ()
                                  -- ^ the action of enqueuing
+
+-- | Defines a strategy with support of the deleting operation.
+class DequeueStrategy m s => DeletingQueueStrategy m s where
+
+  -- | Remove the element and return a flag indicating whether
+  -- the element was found and removed.
+  strategyQueueDelete :: Eq a
+                         => StrategyQueue m s a
+                         -- ^ the queue
+                         -> a
+                         -- ^ the element
+                         -> Event m Bool
+                         -- ^ whether the element was found and removed
+  strategyQueueDelete s a =
+    Event $ \p ->
+    do x <- invokeEvent p $ strategyQueueDeleteBy s (== a)
+       return (isJust x)
+
+  -- | Remove an element satisfying the predicate and return the element if found.
+  strategyQueueDeleteBy :: StrategyQueue m s a
+                           -- ^ the queue
+                           -> (a -> Bool)
+                           -- ^ the predicate
+                           -> Event m (Maybe a)
+                           -- ^ the element if it was found and removed
+
+  -- | Detect whether the specified element is contained in the queue.
+  strategyQueueContains :: Eq a
+                           => StrategyQueue m s a
+                           -- ^ the queue
+                           -> a
+                           -- ^ the element to find
+                           -> Event m Bool
+                           -- ^ whether the element is contained in the queue
+  strategyQueueContains s a =
+    Event $ \p ->
+    do x <- invokeEvent p $ strategyQueueContainsBy s (== a)
+       return (isJust x)
+
+  -- | Detect whether an element satifying the specified predicate is contained in the queue.
+  strategyQueueContainsBy :: StrategyQueue m s a
+                             -- ^ the queue
+                             -> (a -> Bool)
+                             -- ^ the predicate
+                             -> Event m (Maybe a)
+                             -- ^ the element if it was found
 
 -- | Strategy: First Come - First Served (FCFS).
 data FCFS = FCFS deriving (Eq, Ord, Show)
