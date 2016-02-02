@@ -71,6 +71,20 @@ instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
   strategyEnqueue (FCFSQueue q) i =
     liftIO $ LL.listAddLast q i
 
+-- | An implementation of the 'FCFS' queue strategy.
+instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
+         => DeletingQueueStrategy m FCFS where
+
+  {-# SPECIALISE instance DeletingQueueStrategy IO FCFS #-}
+
+  {-# INLINABLE strategyQueueDeleteBy #-}
+  strategyQueueDeleteBy (FCFSQueue q) p =
+    liftIO $ LL.listRemoveBy q p
+
+  {-# INLINABLE strategyQueueContainsBy #-}
+  strategyQueueContainsBy (FCFSQueue q) p =
+    liftIO $ LL.listContainsBy q p
+
 -- | An implementation of the 'LCFS' queue strategy.
 instance (MonadComp m, MonadIO m, MonadTemplate m)
          => QueueStrategy m LCFS where
@@ -112,6 +126,20 @@ instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
   strategyEnqueue (LCFSQueue q) i =
     liftIO $ LL.listInsertFirst q i
 
+-- | An implementation of the 'LCFS' queue strategy.
+instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
+         => DeletingQueueStrategy m LCFS where
+
+  {-# SPECIALISE instance DeletingQueueStrategy IO LCFS #-}
+
+  {-# INLINABLE strategyQueueDeleteBy #-}
+  strategyQueueDeleteBy (LCFSQueue q) p =
+    liftIO $ LL.listRemoveBy q p
+
+  {-# INLINABLE strategyQueueContainsBy #-}
+  strategyQueueContainsBy (LCFSQueue q) p =
+    liftIO $ LL.listContainsBy q p
+
 -- | A template-based implementation of the 'StaticPriorities' queue strategy.
 instance (MonadComp m, MonadIO m, MonadTemplate m)
          => QueueStrategy m StaticPriorities where
@@ -152,6 +180,20 @@ instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTempl
   {-# INLINABLE strategyEnqueueWithPriority #-}
   strategyEnqueueWithPriority (StaticPriorityQueue q) p i =
     liftIO $ PQ.enqueue q p i
+
+-- | An implementation of the 'StaticPriorities' queue strategy.
+instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
+         => DeletingQueueStrategy m StaticPriorities where
+
+  {-# SPECIALISE instance DeletingQueueStrategy IO StaticPriorities #-}
+
+  {-# INLINABLE strategyQueueDeleteBy #-}
+  strategyQueueDeleteBy (StaticPriorityQueue q) p =
+    liftIO $ PQ.queueDeleteBy q p
+
+  {-# INLINABLE strategyQueueContainsBy #-}
+  strategyQueueContainsBy (StaticPriorityQueue q) p =
+    liftIO $ PQ.queueContainsBy q p
 
 -- | A template-based implementation of the 'SIRO' queue strategy.
 instance (MonadComp m, MonadIO m, MonadTemplate m)
@@ -196,3 +238,17 @@ instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
   {-# INLINABLE strategyEnqueue #-}
   strategyEnqueue (SIROQueue q) i =
     liftIO $ V.appendVector q i
+
+-- | An implementation of the 'SIRO' queue strategy.
+instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
+         => DeletingQueueStrategy m SIRO where
+
+  {-# SPECIALISE instance DeletingQueueStrategy IO SIRO #-}
+
+  {-# INLINABLE strategyQueueDeleteBy #-}
+  strategyQueueDeleteBy (SIROQueue q) p =
+    liftIO $ V.vectorDeleteBy q p
+
+  {-# INLINABLE strategyQueueContainsBy #-}
+  strategyQueueContainsBy (SIROQueue q) p =
+    liftIO $ V.vectorContainsBy q p
