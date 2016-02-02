@@ -64,10 +64,8 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Internal.Process
-import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Resource.Base
 import Simulation.Aivika.Trans.QueueStrategy
-import Simulation.Aivika.Trans.Statistics
 
 -- | A type synonym for the ordinary FIFO queue also known as the FCFS
 -- (First Come - First Serviced) queue.
