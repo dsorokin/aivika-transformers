@@ -45,6 +45,13 @@ module Simulation.Aivika.Trans.Queue.Infinite
         tryDequeue,
         enqueue,
         enqueueWithStoringPriority,
+        queueDelete,
+        queueDelete_,
+        queueDeleteBy,
+        queueDeleteBy_,
+        queueContains,
+        queueContainsBy,
+        clearQueue,
         -- * Summary
         queueSummary,
         -- * Derived Signals for Properties
@@ -72,6 +79,7 @@ module Simulation.Aivika.Trans.Queue.Infinite
         queueChanged_) where
 
 import Data.Monoid
+import Data.Maybe
 
 import Control.Monad
 import Control.Monad.Trans
@@ -450,6 +458,111 @@ tryDequeue q =
                fmap Just $ dequeueExtract q t
        else return Nothing
 
+-- | Remove the item from the queue and return a flag indicating
+-- whether the item was found and actually removed.
+queueDelete :: (MonadDES m,
+                Eq a,
+                DeletingQueueStrategy m sm,
+                DequeueStrategy m so)
+               => Queue m sm so a
+               -- ^ the queue
+               -> a
+               -- ^ the item to remove from the queue
+               -> Event m Bool
+               -- ^ whether the item was found and removed
+{-# INLINABLE queueDelete #-}
+queueDelete q a = fmap isJust $ queueDeleteBy q (== a)
+
+-- | Remove the specified item from the queue.
+queueDelete_ :: (MonadDES m,
+                 Eq a,
+                 DeletingQueueStrategy m sm,
+                 DequeueStrategy m so)
+                => Queue m sm so a
+                -- ^ the queue
+                -> a
+                -- ^ the item to remove from the queue
+                -> Event m ()
+{-# INLINABLE queueDelete_ #-}
+queueDelete_ q a = fmap (const ()) $ queueDeleteBy q (== a)
+
+-- | Remove an item satisfying the specified predicate and return the item if found.
+queueDeleteBy :: (MonadDES m,
+                  DeletingQueueStrategy m sm,
+                  DequeueStrategy m so)
+                 => Queue m sm so a
+                 -- ^ the queue
+                 -> (a -> Bool)
+                 -- ^ the predicate
+                 -> Event m (Maybe a)
+{-# INLINABLE queueDeleteBy #-}
+queueDeleteBy q pred =
+  do x <- tryRequestResourceWithinEvent (dequeueRes q)
+     if x
+       then do i <- strategyQueueDeleteBy (queueStore q) (pred . itemValue)
+               case i of
+                 Nothing ->
+                   do releaseResourceWithinEvent (dequeueRes q)
+                      return Nothing
+                 Just i ->
+                   do t <- dequeueRequest q
+                      fmap Just $ dequeuePostExtract q t i
+       else return Nothing
+               
+-- | Remove an item satisfying the specified predicate.
+queueDeleteBy_ :: (MonadDES m,
+                   DeletingQueueStrategy m sm,
+                   DequeueStrategy m so)
+                  => Queue m sm so a
+                  -- ^ the queue
+                  -> (a -> Bool)
+                  -- ^ the predicate
+                  -> Event m ()
+{-# INLINABLE queueDeleteBy_ #-}
+queueDeleteBy_ q pred = fmap (const ()) $ queueDeleteBy q pred
+
+-- | Detect whether the item is contained in the queue.
+queueContains :: (MonadDES m,
+                  Eq a,
+                  DeletingQueueStrategy m sm)
+                 => Queue m sm so a
+                 -- ^ the queue
+                 -> a
+                 -- ^ the item to search the queue for
+                 -> Event m Bool
+                 -- ^ whether the item was found
+{-# INLINABLE queueContains #-}
+queueContains q a = fmap isJust $ queueContainsBy q (== a)
+
+-- | Detect whether an item satisfying the specified predicate is contained in the queue.
+queueContainsBy :: (MonadDES m,
+                    DeletingQueueStrategy m sm)
+                   => Queue m sm so a
+                   -- ^ the queue
+                   -> (a -> Bool)
+                   -- ^ the predicate
+                   -> Event m (Maybe a)
+                   -- ^ the item if it was found
+{-# INLINABLE queueContainsBy #-}
+queueContainsBy q pred =
+  do x <- strategyQueueContainsBy (queueStore q) (pred . itemValue)
+     case x of
+       Nothing -> return Nothing
+       Just i  -> return $ Just (itemValue i)
+
+-- | Clear the queue immediately.
+clearQueue :: (MonadDES m,
+               DequeueStrategy m sm)
+              => Queue m sm so a
+              -- ^ the queue
+              -> Event m ()
+{-# INLINABLE clearQueue #-}
+clearQueue q =
+  do x <- tryDequeue q
+     case x of
+       Nothing -> return ()
+       Just a  -> clearQueue q
+
 -- | Enqueue the item.  
 enqueue :: (MonadDES m,
             EnqueueStrategy m sm,
@@ -585,7 +698,24 @@ dequeueExtract q t' =
   Event $ \p ->
   do i <- invokeEvent p $
           strategyDequeue (queueStore q)
-     c <- invokeEvent p $
+     invokeEvent p $
+       dequeuePostExtract q t' i
+
+-- | A post action after extracting the item by the dequeuing request.  
+dequeuePostExtract :: (MonadDES m,
+                       DequeueStrategy m sm)
+                      => Queue m sm so a
+                      -- ^ the queue
+                      -> Double
+                      -- ^ the time of the dequeuing request
+                      -> QueueItem a
+                      -- ^ the item to dequeue
+                      -> Event m a
+                      -- ^ the dequeued value
+{-# INLINE dequeuePostExtract #-}
+dequeuePostExtract q t' i =
+  Event $ \p ->
+  do c <- invokeEvent p $
           readRef (queueCountRef q)
      let c' = c - 1
          t  = pointTime p
