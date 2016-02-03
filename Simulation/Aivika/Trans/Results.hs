@@ -1672,12 +1672,15 @@ serverResultSource c =
       resultContainerProperty c "totalInputWaitTime" ServerTotalInputWaitTimeId serverTotalInputWaitTime serverTotalInputWaitTimeChanged_,
       resultContainerProperty c "totalProcessingTime" ServerTotalProcessingTimeId serverTotalProcessingTime serverTotalProcessingTimeChanged_,
       resultContainerProperty c "totalOutputWaitTime" ServerTotalOutputWaitTimeId serverTotalOutputWaitTime serverTotalOutputWaitTimeChanged_,
+      resultContainerProperty c "totalPreemptionTime" ServerTotalPreemptionTimeId serverTotalPreemptionTime serverTotalPreemptionTimeChanged_,
       resultContainerProperty c "inputWaitTime" ServerInputWaitTimeId serverInputWaitTime serverInputWaitTimeChanged_,
       resultContainerProperty c "processingTime" ServerProcessingTimeId serverProcessingTime serverProcessingTimeChanged_,
       resultContainerProperty c "outputWaitTime" ServerOutputWaitTimeId serverOutputWaitTime serverOutputWaitTimeChanged_,
+      resultContainerProperty c "preemptionTime" ServerPreemptionTimeId serverPreemptionTime serverPreemptionTimeChanged_,
       resultContainerProperty c "inputWaitFactor" ServerInputWaitFactorId serverInputWaitFactor serverInputWaitFactorChanged_,
       resultContainerProperty c "processingFactor" ServerProcessingFactorId serverProcessingFactor serverProcessingFactorChanged_,
-      resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
+      resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_,
+      resultContainerProperty c "preemptionFactor" ServerPreemptionFactorId serverPreemptionFactor serverPreemptionFactorChanged_ ] }
 
 -- | Return the summary by the specified server.
 serverResultSummary :: MonadDES m
@@ -1696,9 +1699,11 @@ serverResultSummary c =
       resultContainerProperty c "inputWaitTime" ServerInputWaitTimeId serverInputWaitTime serverInputWaitTimeChanged_,
       resultContainerProperty c "processingTime" ServerProcessingTimeId serverProcessingTime serverProcessingTimeChanged_,
       resultContainerProperty c "outputWaitTime" ServerOutputWaitTimeId serverOutputWaitTime serverOutputWaitTimeChanged_,
+      resultContainerProperty c "preemptionTime" ServerPreemptionTimeId serverPreemptionTime serverPreemptionTimeChanged_,
       resultContainerProperty c "inputWaitFactor" ServerInputWaitFactorId serverInputWaitFactor serverInputWaitFactorChanged_,
       resultContainerProperty c "processingFactor" ServerProcessingFactorId serverProcessingFactor serverProcessingFactorChanged_,
-      resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_ ] }
+      resultContainerProperty c "outputWaitFactor" ServerOutputWaitFactorId serverOutputWaitFactor serverOutputWaitFactorChanged_,
+      resultContainerProperty c "preemptionFactor" ServerPreemptionFactorId serverPreemptionFactor serverPreemptionFactorChanged_ ] }
 
 -- | Return a source by the specified activity.
 activityResultSource :: (MonadDES m,

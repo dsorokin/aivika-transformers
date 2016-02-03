@@ -174,10 +174,14 @@ data ResultId = TimeId
                 -- ^ Property 'serverTotalProcessingTime'.
               | ServerTotalOutputWaitTimeId
                 -- ^ Property 'serverTotalOutputWaitTime'.
+              | ServerTotalPreemptionTimeId
+                -- ^ Property 'serverTotalPreemptionTime'.
               | ServerInputWaitTimeId
                 -- ^ Property 'serverInputWaitTime'.
               | ServerProcessingTimeId
                 -- ^ Property 'serverProcessingTime'.
+              | ServerPreemptionTimeId
+                -- ^ Property 'serverPreemptionTime'.
               | ServerOutputWaitTimeId
                 -- ^ Property 'serverOutputWaitTime'.
               | ServerInputWaitFactorId
@@ -186,6 +190,8 @@ data ResultId = TimeId
                 -- ^ Property 'serverProcessingFactor'.
               | ServerOutputWaitFactorId
                 -- ^ Property 'serverOutputWaitFactor'.
+              | ServerPreemptionFactorId
+                -- ^ Property 'serverPreemptionFactor'.
               | ActivityId
                 -- ^ Represents an 'Activity'.
               | ActivityInitStateId
@@ -301,12 +307,15 @@ russianResultLocalisation ServerStateId = "текущее состояние"
 russianResultLocalisation ServerTotalInputWaitTimeId = "общее время блокировки в ожидании ввода"
 russianResultLocalisation ServerTotalProcessingTimeId = "общее время, потраченное на саму обработку заданий"
 russianResultLocalisation ServerTotalOutputWaitTimeId = "общее время блокировки при попытке доставить вывод"
+russianResultLocalisation ServerTotalPreemptionTimeId = "общее время вытеснения"
 russianResultLocalisation ServerInputWaitTimeId = "время блокировки в ожидании ввода"
 russianResultLocalisation ServerProcessingTimeId = "время, потраченное на саму обработку заданий"
 russianResultLocalisation ServerOutputWaitTimeId = "время блокировки при попытке доставить вывод"
+russianResultLocalisation ServerPreemptionTimeId = "время вытеснения"
 russianResultLocalisation ServerInputWaitFactorId = "относительное время блокировки в ожидании ввода (от 0 до 1)"
 russianResultLocalisation ServerProcessingFactorId = "относительное время, потраченное на саму обработку заданий (от 0 до 1)"
 russianResultLocalisation ServerOutputWaitFactorId = "относительное время блокировки при попытке доставить вывод (от 0 до 1)"
+russianResultLocalisation ServerPreemptionFactorId = "относительное время вытеснения (от 0 до 1)"
 russianResultLocalisation ActivityId = "активность"
 russianResultLocalisation ActivityInitStateId = "начальное состояние"
 russianResultLocalisation ActivityStateId = "текущее состояние"
@@ -394,12 +403,15 @@ englishResultLocalisation ServerStateId = "the current state"
 englishResultLocalisation ServerTotalInputWaitTimeId = "the total time spent while waiting for input"
 englishResultLocalisation ServerTotalProcessingTimeId = "the total time spent on actual processing the tasks"
 englishResultLocalisation ServerTotalOutputWaitTimeId = "the total time spent on delivering the output"
+englishResultLocalisation ServerTotalPreemptionTimeId = "the total time spent being preempted"
 englishResultLocalisation ServerInputWaitTimeId = "the time spent while waiting for input"
 englishResultLocalisation ServerProcessingTimeId = "the time spent on processing the tasks"
 englishResultLocalisation ServerOutputWaitTimeId = "the time spent on delivering the output"
+englishResultLocalisation ServerPreemptionTimeId = "the time spent being preempted"
 englishResultLocalisation ServerInputWaitFactorId = "the relative time spent while waiting for input (from 0 to 1)"
 englishResultLocalisation ServerProcessingFactorId = "the relative time spent on processing the tasks (from 0 to 1)"
 englishResultLocalisation ServerOutputWaitFactorId = "the relative time spent on delivering the output (from 0 to 1)"
+englishResultLocalisation ServerPreemptionFactorId = "the relative time spent being preempted (from 0 to 1)"
 englishResultLocalisation ActivityId = "the activity"
 englishResultLocalisation ActivityInitStateId = "the initial state"
 englishResultLocalisation ActivityStateId = "the current state"
