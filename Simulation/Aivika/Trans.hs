@@ -29,6 +29,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Gate,
         module Simulation.Aivika.Trans.Generator,
         module Simulation.Aivika.Trans.Net,
+        module Simulation.Aivika.Trans.Net.Random,
         module Simulation.Aivika.Trans.Parameter,
         module Simulation.Aivika.Trans.Parameter.Random,
         module Simulation.Aivika.Trans.Process,
