@@ -202,14 +202,20 @@ data ResultId = TimeId
                 -- ^ Property 'activityTotalUtilisationTime'.
               | ActivityTotalIdleTimeId
                 -- ^ Property 'activityTotalIdleTime'.
+              | ActivityTotalPreemptionTimeId
+                -- ^ Property 'activityTotalPreemptionTime'.
               | ActivityUtilisationTimeId
                 -- ^ Property 'activityUtilisationTime'.
               | ActivityIdleTimeId
                 -- ^ Property 'activityIdleTime'.
+              | ActivityPreemptionTimeId
+                -- ^ Property 'activityPreemptionTime'.
               | ActivityUtilisationFactorId
                 -- ^ Property 'activityUtilisationFactor'.
               | ActivityIdleFactorId
                 -- ^ Property 'activityIdleFactor'.
+              | ActivityPreemptionFactorId
+                -- ^ Property 'activityPreemptionFactor'.
               | ResourceId
                 -- ^ Represents a 'Resource'.
               | ResourceCountId
@@ -321,10 +327,13 @@ russianResultLocalisation ActivityInitStateId = "начальное состоя
 russianResultLocalisation ActivityStateId = "текущее состояние"
 russianResultLocalisation ActivityTotalUtilisationTimeId = "общее время использования"
 russianResultLocalisation ActivityTotalIdleTimeId = "общее время простоя"
+russianResultLocalisation ActivityTotalPreemptionTimeId = "общее время вытеснения"
 russianResultLocalisation ActivityUtilisationTimeId = "статистика времени использования"
 russianResultLocalisation ActivityIdleTimeId = "статистика времени простоя"
+russianResultLocalisation ActivityPreemptionTimeId = "статистика времени вытеснения"
 russianResultLocalisation ActivityUtilisationFactorId = "относительное время использования (от 0 до 1)"
 russianResultLocalisation ActivityIdleFactorId = "относительное время простоя (от 0 до 1)"
+russianResultLocalisation ActivityPreemptionFactorId = "относительное время вытеснения (от 0 до 1)"
 russianResultLocalisation ResourceId = "ресурс"
 russianResultLocalisation ResourceCountId = "текущее доступное количество ресурса"
 russianResultLocalisation ResourceCountStatsId = "статистика по доступному количеству ресурса"
@@ -417,10 +426,13 @@ englishResultLocalisation ActivityInitStateId = "the initial state"
 englishResultLocalisation ActivityStateId = "the current state"
 englishResultLocalisation ActivityTotalUtilisationTimeId = "the total time of utilisation"
 englishResultLocalisation ActivityTotalIdleTimeId = "the total idle time"
+englishResultLocalisation ActivityTotalPreemptionTimeId = "the total time of preemption"
 englishResultLocalisation ActivityUtilisationTimeId = "the utilisation time"
 englishResultLocalisation ActivityIdleTimeId = "the idle time"
+englishResultLocalisation ActivityPreemptionTimeId = "the preemption time"
 englishResultLocalisation ActivityUtilisationFactorId = "the relative utilisation time (от 0 до 1)"
 englishResultLocalisation ActivityIdleFactorId = "the relative idle time (от 0 до 1)"
+englishResultLocalisation ActivityPreemptionFactorId = "the relative preemption time (from 0 to 1)"
 englishResultLocalisation ResourceId = "the resource"
 englishResultLocalisation ResourceCountId = "the current available count"
 englishResultLocalisation ResourceCountStatsId = "the available count statistics"

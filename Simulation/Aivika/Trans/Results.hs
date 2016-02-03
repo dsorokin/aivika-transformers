@@ -1724,10 +1724,13 @@ activityResultSource c =
       resultContainerProperty c "state" ActivityStateId activityState activityStateChanged_,
       resultContainerProperty c "totalUtilisationTime" ActivityTotalUtilisationTimeId activityTotalUtilisationTime activityTotalUtilisationTimeChanged_,
       resultContainerProperty c "totalIdleTime" ActivityTotalIdleTimeId activityTotalIdleTime activityTotalIdleTimeChanged_,
+      resultContainerProperty c "totalPreemptionTime" ActivityTotalPreemptionTimeId activityTotalPreemptionTime activityTotalPreemptionTimeChanged_,
       resultContainerProperty c "utilisationTime" ActivityUtilisationTimeId activityUtilisationTime activityUtilisationTimeChanged_,
       resultContainerProperty c "idleTime" ActivityIdleTimeId activityIdleTime activityIdleTimeChanged_,
+      resultContainerProperty c "preemptionTime" ActivityPreemptionTimeId activityPreemptionTime activityPreemptionTimeChanged_,
       resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
-      resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_ ] }
+      resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_,
+      resultContainerProperty c "preemptionFactor" ActivityPreemptionFactorId activityPreemptionFactor activityPreemptionFactorChanged_ ] }
 
 -- | Return a summary by the specified activity.
 activityResultSummary :: MonadDES m
@@ -1745,8 +1748,10 @@ activityResultSummary c =
     resultObjectProperties = [
       resultContainerProperty c "utilisationTime" ActivityUtilisationTimeId activityUtilisationTime activityUtilisationTimeChanged_,
       resultContainerProperty c "idleTime" ActivityIdleTimeId activityIdleTime activityIdleTimeChanged_,
+      resultContainerProperty c "preemptionTime" ActivityPreemptionTimeId activityPreemptionTime activityPreemptionTimeChanged_,
       resultContainerProperty c "utilisationFactor" ActivityUtilisationFactorId activityUtilisationFactor activityUtilisationFactorChanged_,
-      resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_ ] }
+      resultContainerProperty c "idleFactor" ActivityIdleFactorId activityIdleFactor activityIdleFactorChanged_,
+      resultContainerProperty c "preemptionFactor" ActivityPreemptionFactorId activityPreemptionFactor activityPreemptionFactorChanged_ ] }
 
 -- | Return a source by the specified resource.
 resourceResultSource :: (MonadDES m,
