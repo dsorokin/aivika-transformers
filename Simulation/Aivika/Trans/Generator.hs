@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, RankNTypes #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Generator
@@ -13,9 +13,12 @@
 --
 module Simulation.Aivika.Trans.Generator 
        (MonadGenerator(..),
-        GeneratorType(..)) where
+        GeneratorType(..),
+        DiscretePDF(..)) where
 
 import System.Random
+
+import Simulation.Aivika.Generator (DiscretePDF)
 
 -- | Defines a monad whithin which computation the random number generator can work.
 class (Functor m, Monad m) => MonadGenerator m where
@@ -30,10 +33,18 @@ class (Functor m, Monad m) => MonadGenerator m where
   -- | Generate an uniform integer random number
   -- with the specified minimum and maximum.
   generateUniformInt :: Generator m -> Int -> Int -> m Int
+  
+  -- | Generate a triangular random number
+  -- by the specified minimum, median and maximum.
+  generateTriangular :: Generator m -> Double -> Double -> Double -> m Double
 
   -- | Generate a normal random number
   -- with the specified mean and deviation.
   generateNormal :: Generator m -> Double -> Double -> m Double
+  
+  -- | Generate a random number from the lognormal distribution derived
+  -- from a normal distribution with the specified mean and deviation.
+  generateLogNormal :: Generator m -> Double -> Double -> m Double
 
   -- | Generate a random number distributed exponentially
   -- with the specified mean (the reciprocal of the rate).
@@ -50,7 +61,30 @@ class (Functor m, Monad m) => MonadGenerator m where
   -- | Generate the binomial random number
   -- with the specified probability and number of trials.
   generateBinomial :: Generator m -> Double -> Int -> m Int
-  
+
+  -- | Generate a random number from the Gamma distribution with
+  -- the specified shape (kappa) and scale (theta, a reciprocal of the rate).
+  --
+  -- The probability density for the Gamma distribution is
+  --
+  -- @f x = x ** (kappa - 1) * exp (- x \/ theta) \/ theta ** kappa * Gamma kappa@
+  generateGamma :: Generator m -> Double -> Double -> m Double
+
+  -- | Generate a random number from the Beta distribution by
+  -- the specified shape parameters (alpha and beta).
+  --
+  -- The probability density for the Beta distribution is
+  --
+  -- @f x = x ** (alpha - 1) * (1 - x) ** (beta - 1) \/ B alpha beta@
+  generateBeta :: Generator m -> Double -> Double -> m Double
+
+  -- | Generate a random number from the Weibull distribution by
+  -- the specified shape and scale.
+  generateWeibull :: Generator m -> Double -> Double -> m Double
+
+  -- | Generate a random value from the specified discrete distribution.
+  generateDiscrete :: forall a. Generator m -> DiscretePDF a -> m a
+
   -- | Create a new random number generator.
   newGenerator :: GeneratorType m -> m (Generator m)
 
