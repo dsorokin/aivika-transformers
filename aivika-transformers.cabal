@@ -61,6 +61,7 @@ library
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Net.Random
                      Simulation.Aivika.Trans.Operation
+                     Simulation.Aivika.Trans.Operation.Random
                      Simulation.Aivika.Trans.Parameter
                      Simulation.Aivika.Trans.Parameter.Random
                      Simulation.Aivika.Trans.Process
