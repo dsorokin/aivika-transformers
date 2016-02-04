@@ -57,6 +57,7 @@ library
                      Simulation.Aivika.Trans.Exception
                      Simulation.Aivika.Trans.Gate
                      Simulation.Aivika.Trans.Generator
+                     Simulation.Aivika.Trans.Generator.Primitive
                      Simulation.Aivika.Trans.Internal.Types
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Net.Random
