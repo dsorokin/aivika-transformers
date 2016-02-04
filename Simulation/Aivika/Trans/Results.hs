@@ -131,6 +131,7 @@ import qualified Simulation.Aivika.Trans.Queue.Infinite as IQ
 import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Activity
+import Simulation.Aivika.Trans.Operation
 import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.DES
@@ -1838,6 +1839,46 @@ preemptibleResourceResultSummary c =
       resultContainerProperty c "countStats" ResourceCountStatsId PR.resourceCountStats PR.resourceCountChanged_,
       resultContainerProperty c "utilisationCountStats" ResourceUtilisationCountStatsId PR.resourceUtilisationCountStats PR.resourceUtilisationCountChanged_ ] }
 
+-- | Return a source by the specified operation.
+operationResultSource :: MonadDES m
+                         => ResultContainer (Operation m a b) m
+                         -- ^ the operation container
+                         -> ResultSource m
+operationResultSource c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = OperationId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = operationResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "totalUtilisationTime" OperationTotalUtilisationTimeId operationTotalUtilisationTime operationTotalUtilisationTimeChanged_,
+      resultContainerProperty c "totalPreemptionTime" OperationTotalPreemptionTimeId operationTotalPreemptionTime operationTotalPreemptionTimeChanged_,
+      resultContainerProperty c "utilisationTime" OperationUtilisationTimeId operationUtilisationTime operationUtilisationTimeChanged_,
+      resultContainerProperty c "preemptionTime" OperationPreemptionTimeId operationPreemptionTime operationPreemptionTimeChanged_,
+      resultContainerProperty c "utilisationFactor" OperationUtilisationFactorId operationUtilisationFactor operationUtilisationFactorChanged_,
+      resultContainerProperty c "preemptionFactor" OperationPreemptionFactorId operationPreemptionFactor operationPreemptionFactorChanged_ ] }
+
+-- | Return a summary by the specified operation.
+operationResultSummary :: MonadDES m
+                          => ResultContainer (Operation m a b) m
+                          -- ^ the operation container
+                          -> ResultSource m
+operationResultSummary c =
+  ResultObjectSource $
+  ResultObject {
+    resultObjectName = resultContainerName c,
+    resultObjectId = resultContainerId c,
+    resultObjectTypeId = OperationId,
+    resultObjectSignal = resultContainerSignal c,
+    resultObjectSummary = operationResultSummary c,
+    resultObjectProperties = [
+      resultContainerProperty c "utilisationTime" OperationUtilisationTimeId operationUtilisationTime operationUtilisationTimeChanged_,
+      resultContainerProperty c "preemptionTime" OperationPreemptionTimeId operationPreemptionTime operationPreemptionTimeChanged_,
+      resultContainerProperty c "utilisationFactor" OperationUtilisationFactorId operationUtilisationFactor operationUtilisationFactorChanged_,
+      resultContainerProperty c "preemptionFactor" OperationPreemptionFactorId operationPreemptionFactor operationPreemptionFactorChanged_ ] }
+
 -- | Return an arbitrary text as a separator source.
 textResultSource :: String -> ResultSource m
 textResultSource text =
@@ -2080,3 +2121,8 @@ instance PR.MonadResource m => ResultProvider (PR.Resource m) m where
 
   resultSource' name i m =
     preemptibleResourceResultSource $ ResultContainer name i m (ResultSignal $ PR.resourceChanged_ m)
+
+instance MonadDES m => ResultProvider (Operation m a b) m where
+
+  resultSource' name i m =
+    operationResultSource $ ResultContainer name i m (ResultSignal $ operationChanged_ m)

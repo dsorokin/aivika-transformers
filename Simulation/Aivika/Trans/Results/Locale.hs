@@ -35,6 +35,7 @@ import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Activity
 import Simulation.Aivika.Trans.Resource
+import Simulation.Aivika.Trans.Operation
 
 -- | A locale to output the simulation results.
 --
@@ -234,6 +235,20 @@ data ResultId = TimeId
                 -- ^ Property 'resourceTotalWaitTime'.
               | ResourceWaitTimeId
                 -- ^ Property 'resourceWaitTime'.
+              | OperationId
+                -- ^ Represents an 'Operation'.
+              | OperationTotalUtilisationTimeId
+                -- ^ Property 'operationTotalUtilisationTime'.
+              | OperationTotalPreemptionTimeId
+                -- ^ Property 'operationTotalPreemptionTime'.
+              | OperationUtilisationTimeId
+                -- ^ Property 'operationUtilisationTime'.
+              | OperationPreemptionTimeId
+                -- ^ Property 'operationPreemptionTime'.
+              | OperationUtilisationFactorId
+                -- ^ Property 'operationUtilisationFactor'.
+              | OperationPreemptionFactorId
+                -- ^ Property 'operationPreemptionFactor'.
               | UserDefinedResultId ResultDescription
                 -- ^ An user defined description.
               | LocalisedResultId (M.Map ResultLocale ResultDescription)
@@ -343,6 +358,13 @@ russianResultLocalisation ResourceQueueCountId = "текущая длина оч
 russianResultLocalisation ResourceQueueCountStatsId = "статистика длины очереди к ресурсу"
 russianResultLocalisation ResourceTotalWaitTimeId = "общее время ожидания ресурса"
 russianResultLocalisation ResourceWaitTimeId = "время ожидания ресурса"
+russianResultLocalisation OperationId = "операция"
+russianResultLocalisation OperationTotalUtilisationTimeId = "общее время использования"
+russianResultLocalisation OperationTotalPreemptionTimeId = "общее время вытеснения"
+russianResultLocalisation OperationUtilisationTimeId = "статистика времени использования"
+russianResultLocalisation OperationPreemptionTimeId = "статистика времени вытеснения"
+russianResultLocalisation OperationUtilisationFactorId = "относительное время использования (от 0 до 1)"
+russianResultLocalisation OperationPreemptionFactorId = "относительное время вытеснения (от 0 до 1)"
 russianResultLocalisation (UserDefinedResultId m) = m
 russianResultLocalisation x@(LocalisedResultId m) =
   lookupResultLocalisation russianResultLocale x
@@ -442,6 +464,13 @@ englishResultLocalisation ResourceQueueCountId = "the current queue length"
 englishResultLocalisation ResourceQueueCountStatsId = "the queue length statistics"
 englishResultLocalisation ResourceTotalWaitTimeId = "the total wait time"
 englishResultLocalisation ResourceWaitTimeId = "the wait time"
+englishResultLocalisation OperationId = "the operation"
+englishResultLocalisation OperationTotalUtilisationTimeId = "the total time of utilisation"
+englishResultLocalisation OperationTotalPreemptionTimeId = "the total time of preemption"
+englishResultLocalisation OperationUtilisationTimeId = "the utilisation time"
+englishResultLocalisation OperationPreemptionTimeId = "the preemption time"
+englishResultLocalisation OperationUtilisationFactorId = "the relative utilisation time (from 0 to 1)"
+englishResultLocalisation OperationPreemptionFactorId = "the relative preemption time (from 0 to 1)"
 englishResultLocalisation (UserDefinedResultId m) = m
 englishResultLocalisation x@(LocalisedResultId m) =
   lookupResultLocalisation englishResultLocale x
