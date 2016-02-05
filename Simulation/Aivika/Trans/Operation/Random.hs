@@ -15,18 +15,30 @@
 module Simulation.Aivika.Trans.Operation.Random
        (newRandomUniformOperation,
         newRandomUniformIntOperation,
+        newRandomTriangularOperation,
         newRandomNormalOperation,
+        newRandomLogNormalOperation,
         newRandomExponentialOperation,
         newRandomErlangOperation,
         newRandomPoissonOperation,
         newRandomBinomialOperation,
+        newRandomGammaOperation,
+        newRandomBetaOperation,
+        newRandomWeibullOperation,
+        newRandomDiscreteOperation,
         newPreemptibleRandomUniformOperation,
         newPreemptibleRandomUniformIntOperation,
+        newPreemptibleRandomTriangularOperation,
         newPreemptibleRandomNormalOperation,
+        newPreemptibleRandomLogNormalOperation,
         newPreemptibleRandomExponentialOperation,
         newPreemptibleRandomErlangOperation,
         newPreemptibleRandomPoissonOperation,
-        newPreemptibleRandomBinomialOperation) where
+        newPreemptibleRandomBinomialOperation,
+        newPreemptibleRandomGammaOperation,
+        newPreemptibleRandomBetaOperation,
+        newPreemptibleRandomWeibullOperation,
+        newPreemptibleRandomDiscreteOperation) where
 
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Generator
@@ -66,6 +78,23 @@ newRandomUniformIntOperation =
   newPreemptibleRandomUniformIntOperation False
 
 -- | Create a new operation that holds the process for a random time interval
+-- having the triangular distribution, when processing every input element.
+--
+-- By default, it is assumed that the operation process cannot be preempted,
+-- because the handling of possible task preemption is rather costly.
+newRandomTriangularOperation :: MonadDES m
+                                => Double
+                                -- ^ the minimum time interval
+                                -> Double
+                                -- ^ the median of the time interval
+                                -> Double
+                                -- ^ the maximum time interval
+                                -> Event m (Operation m a a)
+{-# INLINABLE newRandomTriangularOperation #-}
+newRandomTriangularOperation =
+  newPreemptibleRandomTriangularOperation False
+
+-- | Create a new operation that holds the process for a random time interval
 -- distributed normally, when processing every input element.
 --
 -- By default, it is assumed that the operation process cannot be preempted,
@@ -79,6 +108,23 @@ newRandomNormalOperation :: MonadDES m
 {-# INLINABLE newRandomNormalOperation #-}
 newRandomNormalOperation =
   newPreemptibleRandomNormalOperation False
+         
+-- | Create a new operation that holds the process for a random time interval
+-- having the lognormal distribution, when processing every input element.
+--
+-- By default, it is assumed that the operation process cannot be preempted,
+-- because the handling of possible task preemption is rather costly.
+newRandomLogNormalOperation :: MonadDES m
+                               => Double
+                               -- ^ the mean of a normal distribution which
+                               -- this distribution is derived from
+                               -> Double
+                               -- ^ the deviation of a normal distribution which
+                               -- this distribution is derived from
+                               -> Event m (Operation m a a)
+{-# INLINABLE newRandomLogNormalOperation #-}
+newRandomLogNormalOperation =
+  newPreemptibleRandomLogNormalOperation False
          
 -- | Create a new operation that holds the process for a random time interval
 -- distributed exponentially with the specified mean (the reciprocal of the rate),
@@ -141,6 +187,67 @@ newRandomBinomialOperation =
   newPreemptibleRandomBinomialOperation False
 
 -- | Create a new operation that holds the process for a random time interval
+-- having the Gamma distribution with the specified shape and scale,
+-- when processing every input element.
+--
+-- By default, it is assumed that the operation process cannot be preempted,
+-- because the handling of possible task preemption is rather costly.
+newRandomGammaOperation :: MonadDES m
+                           => Double
+                           -- ^ the shape
+                           -> Double
+                           -- ^ the scale (a reciprocal of the rate)
+                           -> Event m (Operation m a a)
+{-# INLINABLE newRandomGammaOperation #-}
+newRandomGammaOperation =
+  newPreemptibleRandomGammaOperation False
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the Beta distribution with the specified shape parameters (alpha and beta),
+-- when processing every input element.
+--
+-- By default, it is assumed that the operation process cannot be preempted,
+-- because the handling of possible task preemption is rather costly.
+newRandomBetaOperation :: MonadDES m
+                          => Double
+                          -- ^ shape (alpha)
+                          -> Double
+                          -- ^ shape (beta)
+                          -> Event m (Operation m a a)
+{-# INLINABLE newRandomBetaOperation #-}
+newRandomBetaOperation =
+  newPreemptibleRandomBetaOperation False
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the Weibull distribution with the specified shape and scale,
+-- when processing every input element.
+--
+-- By default, it is assumed that the operation process cannot be preempted,
+-- because the handling of possible task preemption is rather costly.
+newRandomWeibullOperation :: MonadDES m
+                             => Double
+                             -- ^ shape
+                             -> Double
+                             -- ^ scale
+                             -> Event m (Operation m a a)
+{-# INLINABLE newRandomWeibullOperation #-}
+newRandomWeibullOperation =
+  newPreemptibleRandomWeibullOperation False
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the specified discrete distribution, when processing every input element.
+--
+-- By default, it is assumed that the operation process cannot be preempted,
+-- because the handling of possible task preemption is rather costly.
+newRandomDiscreteOperation :: MonadDES m
+                              => DiscretePDF Double
+                              -- ^ the discrete probability density function
+                              -> Event m (Operation m a a)
+{-# INLINABLE newRandomDiscreteOperation #-}
+newRandomDiscreteOperation =
+  newPreemptibleRandomDiscreteOperation False
+
+-- | Create a new operation that holds the process for a random time interval
 -- distributed uniformly, when processing every input element.
 newPreemptibleRandomUniformOperation :: MonadDES m
                                         => Bool
@@ -173,6 +280,24 @@ newPreemptibleRandomUniformIntOperation preemptible min max =
      return a
 
 -- | Create a new operation that holds the process for a random time interval
+-- having the triangular distribution, when processing every input element.
+newPreemptibleRandomTriangularOperation :: MonadDES m
+                                           => Bool
+                                           -- ^ whether the operation process can be preempted
+                                           -> Double
+                                           -- ^ the minimum time interval
+                                           -> Double
+                                           -- ^ the median of the time interval
+                                           -> Double
+                                           -- ^ the maximum time interval
+                                           -> Event m (Operation m a a)
+{-# INLINABLE newPreemptibleRandomTriangularOperation #-}
+newPreemptibleRandomTriangularOperation preemptible min median max =
+  newPreemptibleOperation preemptible $ \a ->
+  do randomTriangularProcess_ min median max
+     return a
+
+-- | Create a new operation that holds the process for a random time interval
 -- distributed normally, when processing every input element.
 newPreemptibleRandomNormalOperation :: MonadDES m
                                        => Bool
@@ -186,6 +311,24 @@ newPreemptibleRandomNormalOperation :: MonadDES m
 newPreemptibleRandomNormalOperation preemptible mu nu =
   newPreemptibleOperation preemptible $ \a ->
   do randomNormalProcess_ mu nu
+     return a
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the lognormal distribution, when processing every input element.
+newPreemptibleRandomLogNormalOperation :: MonadDES m
+                                          => Bool
+                                          -- ^ whether the operation process can be preempted
+                                          -> Double
+                                          -- ^ the mean of a normal distribution which
+                                          -- this distribution is derived from
+                                          -> Double
+                                          -- ^ the deviation of a normal distribution which
+                                          -- this distribution is derived from
+                                          -> Event m (Operation m a a)
+{-# INLINABLE newPreemptibleRandomLogNormalOperation #-}
+newPreemptibleRandomLogNormalOperation preemptible mu nu =
+  newPreemptibleOperation preemptible $ \a ->
+  do randomLogNormalProcess_ mu nu
      return a
 
 -- | Create a new operation that holds the process for a random time interval
@@ -250,4 +393,69 @@ newPreemptibleRandomBinomialOperation :: MonadDES m
 newPreemptibleRandomBinomialOperation preemptible prob trials =
   newPreemptibleOperation preemptible $ \a ->
   do randomBinomialProcess_ prob trials
+     return a
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the Gamma distribution with the specified shape and scale,
+-- when processing every input element.
+newPreemptibleRandomGammaOperation :: MonadDES m
+                                      => Bool
+                                      -- ^ whether the operation process can be preempted
+                                      -> Double
+                                      -- ^ the shape
+                                      -> Double
+                                      -- ^ the scale
+                                      -> Event m (Operation m a a)
+{-# INLINABLE newPreemptibleRandomGammaOperation #-}
+newPreemptibleRandomGammaOperation preemptible kappa theta =
+  newPreemptibleOperation preemptible $ \a ->
+  do randomGammaProcess_ kappa theta
+     return a
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the Beta distribution with the specified shape parameters (alpha and beta),
+-- when processing every input element.
+newPreemptibleRandomBetaOperation :: MonadDES m
+                                     => Bool
+                                     -- ^ whether the operation process can be preempted
+                                     -> Double
+                                     -- ^ shape (alpha)
+                                     -> Double
+                                     -- ^ shape (beta)
+                                     -> Event m (Operation m a a)
+{-# INLINABLE newPreemptibleRandomBetaOperation #-}
+newPreemptibleRandomBetaOperation preemptible alpha beta =
+  newPreemptibleOperation preemptible $ \a ->
+  do randomBetaProcess_ alpha beta
+     return a
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the Weibull distribution with the specified shape and scale,
+-- when processing every input element.
+newPreemptibleRandomWeibullOperation :: MonadDES m
+                                        => Bool
+                                        -- ^ whether the operation process can be preempted
+                                        -> Double
+                                        -- ^ shape
+                                        -> Double
+                                        -- ^ scale
+                                        -> Event m (Operation m a a)
+{-# INLINABLE newPreemptibleRandomWeibullOperation #-}
+newPreemptibleRandomWeibullOperation preemptible alpha beta =
+  newPreemptibleOperation preemptible $ \a ->
+  do randomWeibullProcess_ alpha beta
+     return a
+
+-- | Create a new operation that holds the process for a random time interval
+-- having the specified discrete distribution, when processing every input element.
+newPreemptibleRandomDiscreteOperation :: MonadDES m
+                                         => Bool
+                                         -- ^ whether the operation process can be preempted
+                                         -> DiscretePDF Double
+                                         -- ^ the discrete probability density function
+                                         -> Event m (Operation m a a)
+{-# INLINABLE newPreemptibleRandomDiscreteOperation #-}
+newPreemptibleRandomDiscreteOperation preemptible dpdf =
+  newPreemptibleOperation preemptible $ \a ->
+  do randomDiscreteProcess_ dpdf
      return a
