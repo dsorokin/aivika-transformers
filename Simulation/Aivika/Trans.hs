@@ -37,6 +37,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Process,
         module Simulation.Aivika.Trans.Process.Random,
         module Simulation.Aivika.Trans.Processor,
+        module Simulation.Aivika.Trans.Processor.Random,
         module Simulation.Aivika.Trans.Processor.RoundRobbin,
         module Simulation.Aivika.Trans.QueueStrategy,
         module Simulation.Aivika.Trans.Ref,
