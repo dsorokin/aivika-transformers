@@ -15,13 +15,20 @@
 module Simulation.Aivika.Trans.Net.Random
        (randomUniformNet,
         randomUniformIntNet,
+        randomTriangularNet,
         randomNormalNet,
+        randomLogNormalNet,
         randomExponentialNet,
         randomErlangNet,
         randomPoissonNet,
-        randomBinomialNet) where
+        randomBinomialNet,
+        randomGammaNet,
+        randomBetaNet,
+        randomWeibullNet,
+        randomDiscreteNet) where
 
 import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Process.Random
 import Simulation.Aivika.Trans.Net
@@ -53,6 +60,21 @@ randomUniformIntNet min max =
   randomUniformIntProcess_ min max
 
 -- | When processing every input element, hold the process
+-- for a random time interval having the triangular distribution.
+randomTriangularNet :: MonadDES m
+                       => Double
+                       -- ^ the minimum time interval
+                       -> Double
+                       -- ^ the median of the time interval
+                       -> Double
+                       -- ^ the maximum time interval
+                       -> Net m a a
+{-# INLINABLE randomTriangularNet #-}
+randomTriangularNet min median max =
+  withinNet $
+  randomTriangularProcess_ min median max
+
+-- | When processing every input element, hold the process
 -- for a random time interval distributed normally.
 randomNormalNet :: MonadDES m
                    => Double
@@ -64,6 +86,21 @@ randomNormalNet :: MonadDES m
 randomNormalNet mu nu =
   withinNet $
   randomNormalProcess_ mu nu
+         
+-- | When processing every input element, hold the process
+-- for a random time interval having the lognormal distribution.
+randomLogNormalNet :: MonadDES m
+                      => Double
+                      -- ^ the mean of a normal distribution which
+                      -- this distribution is derived from
+                      -> Double
+                      -- ^ the deviation of a normal distribution which
+                      -- this distribution is derived from
+                      -> Net m a a
+{-# INLINABLE randomLogNormalNet #-}
+randomLogNormalNet mu nu =
+  withinNet $
+  randomLogNormalProcess_ mu nu
          
 -- | When processing every input element, hold the process
 -- for a random time interval distributed exponentially
@@ -116,3 +153,56 @@ randomBinomialNet :: MonadDES m
 randomBinomialNet prob trials =
   withinNet $
   randomBinomialProcess_ prob trials
+
+-- | When processing every input element, hold the process
+-- for a random time interval having the Gamma distribution
+-- with the specified shape and scale.
+randomGammaNet :: MonadDES m
+                  => Double
+                  -- ^ the shape
+                  -> Double
+                  -- ^ the scale (a reciprocal of the rate)
+                  -> Net m a a
+{-# INLINABLE randomGammaNet #-}
+randomGammaNet kappa theta =
+  withinNet $
+  randomGammaProcess_ kappa theta
+
+-- | When processing every input element, hold the process
+-- for a random time interval having the Beta distribution
+-- with the specified shape parameters (alpha and beta).
+randomBetaNet :: MonadDES m
+                 => Double
+                 -- ^ shape (alpha)
+                 -> Double
+                 -- ^ shape (beta)
+                 -> Net m a a
+{-# INLINABLE randomBetaNet #-}
+randomBetaNet alpha beta =
+  withinNet $
+  randomBetaProcess_ alpha beta
+
+-- | When processing every input element, hold the process
+-- for a random time interval having the Weibull distribution
+-- with the specified shape and scale.
+randomWeibullNet :: MonadDES m
+                    => Double
+                    -- ^ shape
+                    -> Double
+                    -- ^ scale
+                    -> Net m a a
+{-# INLINABLE randomWeibullNet #-}
+randomWeibullNet alpha beta =
+  withinNet $
+  randomWeibullProcess_ alpha beta
+
+-- | When processing every input element, hold the process
+-- for a random time interval having the specified discrete distribution.
+randomDiscreteNet :: MonadDES m
+                     => DiscretePDF Double
+                     -- ^ the discrete probability density function
+                     -> Net m a a
+{-# INLINABLE randomDiscreteNet #-}
+randomDiscreteNet dpdf =
+  withinNet $
+  randomDiscreteProcess_ dpdf
