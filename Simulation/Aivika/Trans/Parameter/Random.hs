@@ -22,11 +22,17 @@
 module Simulation.Aivika.Trans.Parameter.Random
        (randomUniform,
         randomUniformInt,
+        randomTriangular,
         randomNormal,
+        randomLogNormal,
         randomExponential,
         randomErlang,
         randomPoisson,
         randomBinomial,
+        randomGamma,
+        randomBeta,
+        randomWeibull,
+        randomDiscrete,
         randomTrue,
         randomFalse) where
 
@@ -63,6 +69,18 @@ randomUniformInt min max =
   let g = runGenerator r
   in generateUniformInt g min max
 
+-- | Computation that generates a new random number from the triangular distribution.
+randomTriangular :: MonadComp m
+                    => Double  -- ^ minimum
+                    -> Double  -- ^ median
+                    -> Double  -- ^ maximum
+                    -> Parameter m Double
+{-# INLINE randomTriangular #-}
+randomTriangular min median max =
+  Parameter $ \r ->
+  let g = runGenerator r
+  in generateTriangular g min median max
+
 -- | Computation that generates a new random number distributed normally.
 randomNormal :: MonadComp m
                 => Double     -- ^ mean
@@ -73,6 +91,21 @@ randomNormal mu nu =
   Parameter $ \r ->
   let g = runGenerator r
   in generateNormal g mu nu
+
+-- | Computation that generates a new random number from the lognormal distribution.
+randomLogNormal :: MonadComp m
+                   => Double
+                   -- ^ the mean of a normal distribution
+                   -- which this distribution is derived from
+                   -> Double
+                   -- ^ the deviation of a normal distribution
+                   -- which this distribution is derived from
+                   -> Parameter m Double
+{-# INLINE randomLogNormal #-}
+randomLogNormal mu nu =
+  Parameter $ \r ->
+  let g = runGenerator r
+  in generateLogNormal g mu nu
 
 -- | Computation that returns a new exponential random number with the specified mean
 -- (the reciprocal of the rate).
@@ -122,6 +155,47 @@ randomBinomial prob trials =
   Parameter $ \r ->
   let g = runGenerator r
   in generateBinomial g prob trials
+
+-- | Computation that returns a new random number from the Gamma distribution.
+randomGamma :: MonadComp m
+               => Double  -- ^ the shape
+               -> Double  -- ^ the scale (a reciprocal of the rate)
+               -> Parameter m Double
+{-# INLINE randomGamma #-}
+randomGamma kappa theta =
+  Parameter $ \r ->
+  let g = runGenerator r
+  in generateGamma g kappa theta
+
+-- | Computation that returns a new random number from the Beta distribution.
+randomBeta :: MonadComp m
+              => Double  -- ^ the shape (alpha)
+              -> Double  -- ^ the shape (beta)
+              -> Parameter m Double
+{-# INLINE randomBeta #-}
+randomBeta alpha beta =
+  Parameter $ \r ->
+  let g = runGenerator r
+  in generateBeta g alpha beta
+
+-- | Computation that returns a new random number from the Weibull distribution.
+randomWeibull :: MonadComp m
+                 => Double  -- ^ shape
+                 -> Double  -- ^ scale
+                 -> Parameter m Double
+{-# INLINE randomWeibull #-}
+randomWeibull alpha beta =
+  Parameter $ \r ->
+  let g = runGenerator r
+  in generateWeibull g alpha beta
+
+-- | Computation that returns a new random value from the specified discrete distribution.
+randomDiscrete :: MonadComp m => DiscretePDF a -> Parameter m a
+{-# INLINE randomDiscrete #-}
+randomDiscrete dpdf =
+  Parameter $ \r ->
+  let g = runGenerator r
+  in generateDiscrete g dpdf
 
 -- | Computation that returns 'True' in case of success.
 randomTrue :: MonadComp m
