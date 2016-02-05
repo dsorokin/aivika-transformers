@@ -16,18 +16,23 @@ module Simulation.Aivika.Trans.Stream.Random
         randomStream,
         randomUniformStream,
         randomUniformIntStream,
+        randomTriangularStream,
         randomNormalStream,
+        randomLogNormalStream,
         randomExponentialStream,
         randomErlangStream,
         randomPoissonStream,
-        randomBinomialStream) where
-
-import System.Random
+        randomBinomialStream,
+        randomGammaStream,
+        randomBetaStream,
+        randomWeibullStream,
+        randomDiscreteStream) where
 
 import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Parameter.Random
 import Simulation.Aivika.Trans.Simulation
@@ -99,6 +104,22 @@ randomUniformIntStream min max =
   randomUniformInt min max >>= \x ->
   return (fromIntegral x, x)
 
+-- | Create a new stream with random delays having the triangular distribution.
+randomTriangularStream :: MonadDES m
+                          => Double
+                          -- ^ the minimum delay
+                          -> Double
+                          -- ^ the median of the delay
+                          -> Double
+                          -- ^ the maximum delay
+                          -> Stream m (Arrival Double)
+                          -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomTriangularStream #-}
+randomTriangularStream min median max =
+  randomStream $
+  randomTriangular min median max >>= \x ->
+  return (x, x)
+
 -- | Create a new stream with delays distributed normally.
 randomNormalStream :: MonadDES m
                       => Double
@@ -111,6 +132,22 @@ randomNormalStream :: MonadDES m
 randomNormalStream mu nu =
   randomStream $
   randomNormal mu nu >>= \x ->
+  return (x, x)
+
+-- | Create a new stream with random delays having the lognormal distribution.
+randomLogNormalStream :: MonadDES m
+                         => Double
+                         -- ^ the mean of a normal distribution which
+                         -- this distribution is derived from
+                         -> Double
+                         -- ^ the deviation of a normal distribution which
+                         -- this distribution is derived from
+                         -> Stream m (Arrival Double)
+                         -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomLogNormalStream #-}
+randomLogNormalStream mu nu =
+  randomStream $
+  randomLogNormal mu nu >>= \x ->
   return (x, x)
          
 -- | Return a new stream with delays distibuted exponentially with the specified mean
@@ -168,3 +205,60 @@ randomBinomialStream prob trials =
   randomStream $
   randomBinomial prob trials >>= \x ->
   return (fromIntegral x, x)
+
+-- | Return a new stream with random delays having the Gamma distribution by the specified
+-- shape and scale.
+randomGammaStream :: MonadDES m
+                     => Double
+                     -- ^ the shape
+                     -> Double
+                     -- ^ the scale (a reciprocal of the rate)
+                     -> Stream m (Arrival Double)
+                     -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomGammaStream #-}
+randomGammaStream kappa theta =
+  randomStream $
+  randomGamma kappa theta >>= \x ->
+  return (x, x)
+
+-- | Return a new stream with random delays having the Beta distribution by the specified
+-- shape parameters (alpha and beta).
+randomBetaStream :: MonadDES m
+                    => Double
+                    -- ^ the shape (alpha)
+                    -> Double
+                    -- ^ the shape (beta)
+                    -> Stream m (Arrival Double)
+                    -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomBetaStream #-}
+randomBetaStream alpha beta =
+  randomStream $
+  randomBeta alpha beta >>= \x ->
+  return (x, x)
+
+-- | Return a new stream with random delays having the Weibull distribution by the specified
+-- shape and scale.
+randomWeibullStream :: MonadDES m
+                       => Double
+                       -- ^ shape
+                       -> Double
+                       -- ^ scale
+                       -> Stream m (Arrival Double)
+                       -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomWeibullStream #-}
+randomWeibullStream alpha beta =
+  randomStream $
+  randomWeibull alpha beta >>= \x ->
+  return (x, x)
+
+-- | Return a new stream with random delays having the specified discrete distribution.
+randomDiscreteStream :: MonadDES m
+                        => DiscretePDF Double
+                        -- ^ the discrete probability density function
+                        -> Stream m (Arrival Double)
+                        -- ^ the stream of random events with the delays generated
+{-# INLINABLE randomDiscreteStream #-}
+randomDiscreteStream dpdf =
+  randomStream $
+  randomDiscrete dpdf >>= \x ->
+  return (x, x)
