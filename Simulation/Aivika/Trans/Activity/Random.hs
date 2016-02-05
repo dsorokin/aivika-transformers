@@ -15,20 +15,33 @@
 module Simulation.Aivika.Trans.Activity.Random
        (newRandomUniformActivity,
         newRandomUniformIntActivity,
+        newRandomTriangularActivity,
         newRandomNormalActivity,
+        newRandomLogNormalActivity,
         newRandomExponentialActivity,
         newRandomErlangActivity,
         newRandomPoissonActivity,
         newRandomBinomialActivity,
+        newRandomGammaActivity,
+        newRandomBetaActivity,
+        newRandomWeibullActivity,
+        newRandomDiscreteActivity,
         newPreemptibleRandomUniformActivity,
         newPreemptibleRandomUniformIntActivity,
+        newPreemptibleRandomTriangularActivity,
         newPreemptibleRandomNormalActivity,
+        newPreemptibleRandomLogNormalActivity,
         newPreemptibleRandomExponentialActivity,
         newPreemptibleRandomErlangActivity,
         newPreemptibleRandomPoissonActivity,
-        newPreemptibleRandomBinomialActivity) where
+        newPreemptibleRandomBinomialActivity,
+        newPreemptibleRandomGammaActivity,
+        newPreemptibleRandomBetaActivity,
+        newPreemptibleRandomWeibullActivity,
+        newPreemptibleRandomDiscreteActivity) where
 
 import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Process.Random
@@ -67,6 +80,24 @@ newRandomUniformIntActivity =
   newPreemptibleRandomUniformIntActivity False
 
 -- | Create a new activity that holds the process for a random time interval
+-- having the triangular distribution, when processing every input element.
+--
+-- By default, it is assumed that the activity process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
+-- operation.
+newRandomTriangularActivity :: MonadDES m
+                               => Double
+                               -- ^ the minimum time interval
+                               -> Double
+                               -- ^ the median of the time interval
+                               -> Double
+                               -- ^ the maximum time interval
+                               -> Simulation m (Activity m () a a)
+{-# INLINABLE newRandomTriangularActivity #-}
+newRandomTriangularActivity =
+  newPreemptibleRandomTriangularActivity False
+
+-- | Create a new activity that holds the process for a random time interval
 -- distributed normally, when processing every input element.
 --
 -- By default, it is assumed that the activity process cannot be preempted,
@@ -81,6 +112,24 @@ newRandomNormalActivity :: MonadDES m
 {-# INLINABLE newRandomNormalActivity #-}
 newRandomNormalActivity =
   newPreemptibleRandomNormalActivity False
+         
+-- | Create a new activity that holds the process for a random time interval
+-- having the lognormal distribution, when processing every input element.
+--
+-- By default, it is assumed that the activity process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
+-- operation.
+newRandomLogNormalActivity :: MonadDES m
+                              => Double
+                              -- ^ the mean of a normal distribution which
+                              -- this distribution is derived from
+                              -> Double
+                              -- ^ the deviation of a normal distribution which
+                              -- this distribution is derived from
+                              -> Simulation m (Activity m () a a)
+{-# INLINABLE newRandomLogNormalActivity #-}
+newRandomLogNormalActivity =
+  newPreemptibleRandomLogNormalActivity False
          
 -- | Create a new activity that holds the process for a random time interval
 -- distributed exponentially with the specified mean (the reciprocal of the rate),
@@ -147,6 +196,71 @@ newRandomBinomialActivity =
   newPreemptibleRandomBinomialActivity False
 
 -- | Create a new activity that holds the process for a random time interval
+-- having the Gamma distribution with the specified shape and scale,
+-- when processing every input element.
+--
+-- By default, it is assumed that the activity process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
+-- operation.
+newRandomGammaActivity :: MonadDES m
+                          => Double
+                          -- ^ the shape
+                          -> Double
+                          -- ^ the scale (a reciprocal of the rate)
+                          -> Simulation m (Activity m () a a)
+{-# INLINABLE newRandomGammaActivity #-}
+newRandomGammaActivity =
+  newPreemptibleRandomGammaActivity False
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the Beta distribution with the specified shape parameters (alpha and beta),
+-- when processing every input element.
+--
+-- By default, it is assumed that the activity process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
+-- operation.
+newRandomBetaActivity :: MonadDES m
+                         => Double
+                         -- ^ shape (alpha)
+                         -> Double
+                         -- ^ shape (beta)
+                         -> Simulation m (Activity m () a a)
+{-# INLINABLE newRandomBetaActivity #-}
+newRandomBetaActivity =
+  newPreemptibleRandomBetaActivity False
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the Weibull distribution with the specified shape and scale,
+-- when processing every input element.
+--
+-- By default, it is assumed that the activity process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
+-- operation.
+newRandomWeibullActivity :: MonadDES m
+                            => Double
+                            -- ^ shape
+                            -> Double
+                            -- ^ scale
+                            -> Simulation m (Activity m () a a)
+{-# INLINABLE newRandomWeibullActivity #-}
+newRandomWeibullActivity =
+  newPreemptibleRandomWeibullActivity False
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the specified discrete distribution, when processing every input element.
+--
+-- By default, it is assumed that the activity process cannot be preempted,
+-- because the handling of possible task preemption is rather costly
+-- operation.
+newRandomDiscreteActivity :: MonadDES m
+                             => DiscretePDF Double
+                             -- ^ the discrete probability density function
+                             -> Simulation m (Activity m () a a)
+{-# INLINABLE newRandomDiscreteActivity #-}
+newRandomDiscreteActivity =
+  newPreemptibleRandomDiscreteActivity False
+
+-- | Create a new activity that holds the process for a random time interval
 -- distributed uniformly, when processing every input element.
 newPreemptibleRandomUniformActivity :: MonadDES m
                                        => Bool
@@ -179,6 +293,24 @@ newPreemptibleRandomUniformIntActivity preemptible min max =
      return a
 
 -- | Create a new activity that holds the process for a random time interval
+-- having the triangular distribution, when processing every input element.
+newPreemptibleRandomTriangularActivity :: MonadDES m
+                                          => Bool
+                                          -- ^ whether the activity process can be preempted
+                                          -> Double
+                                          -- ^ the minimum time interval
+                                          -> Double
+                                          -- ^ the median of the time interval
+                                          -> Double
+                                          -- ^ the maximum time interval
+                                          -> Simulation m (Activity m () a a)
+{-# INLINABLE newPreemptibleRandomTriangularActivity #-}
+newPreemptibleRandomTriangularActivity preemptible min median max =
+  newPreemptibleActivity preemptible $ \a ->
+  do randomTriangularProcess_ min median max
+     return a
+
+-- | Create a new activity that holds the process for a random time interval
 -- distributed normally, when processing every input element.
 newPreemptibleRandomNormalActivity :: MonadDES m
                                       => Bool
@@ -192,6 +324,24 @@ newPreemptibleRandomNormalActivity :: MonadDES m
 newPreemptibleRandomNormalActivity preemptible mu nu =
   newPreemptibleActivity preemptible $ \a ->
   do randomNormalProcess_ mu nu
+     return a
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the lognormal distribution, when processing every input element.
+newPreemptibleRandomLogNormalActivity :: MonadDES m
+                                         => Bool
+                                         -- ^ whether the activity process can be preempted
+                                         -> Double
+                                         -- ^ the mean of a normal distribution which
+                                         -- this distribution is derived from
+                                         -> Double
+                                         -- ^ the deviation of a normal distribution which
+                                         -- this distribution is derived from
+                                         -> Simulation m (Activity m () a a)
+{-# INLINABLE newPreemptibleRandomLogNormalActivity #-}
+newPreemptibleRandomLogNormalActivity preemptible mu nu =
+  newPreemptibleActivity preemptible $ \a ->
+  do randomLogNormalProcess_ mu nu
      return a
          
 -- | Create a new activity that holds the process for a random time interval
@@ -256,4 +406,69 @@ newPreemptibleRandomBinomialActivity :: MonadDES m
 newPreemptibleRandomBinomialActivity preemptible prob trials =
   newPreemptibleActivity preemptible $ \a ->
   do randomBinomialProcess_ prob trials
+     return a
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the Gamma distribution with the specified shape and scale,
+-- when processing every input element.
+newPreemptibleRandomGammaActivity :: MonadDES m
+                                     => Bool
+                                     -- ^ whether the activity process can be preempted
+                                     -> Double
+                                     -- ^ the shape
+                                     -> Double
+                                     -- ^ the scale
+                                     -> Simulation m (Activity m () a a)
+{-# INLINABLE newPreemptibleRandomGammaActivity #-}
+newPreemptibleRandomGammaActivity preemptible kappa theta =
+  newPreemptibleActivity preemptible $ \a ->
+  do randomGammaProcess_ kappa theta
+     return a
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the Beta distribution with the specified shape parameters (alpha and beta),
+-- when processing every input element.
+newPreemptibleRandomBetaActivity :: MonadDES m
+                                    => Bool
+                                    -- ^ whether the activity process can be preempted
+                                    -> Double
+                                    -- ^ shape (alpha)
+                                    -> Double
+                                    -- ^ shape (beta)
+                                    -> Simulation m (Activity m () a a)
+{-# INLINABLE newPreemptibleRandomBetaActivity #-}
+newPreemptibleRandomBetaActivity preemptible alpha beta =
+  newPreemptibleActivity preemptible $ \a ->
+  do randomBetaProcess_ alpha beta
+     return a
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the Weibull distribution with the specified shape and scale,
+-- when processing every input element.
+newPreemptibleRandomWeibullActivity :: MonadDES m
+                                       => Bool
+                                       -- ^ whether the activity process can be preempted
+                                       -> Double
+                                       -- ^ shape
+                                       -> Double
+                                       -- ^ scale
+                                       -> Simulation m (Activity m () a a)
+{-# INLINABLE newPreemptibleRandomWeibullActivity #-}
+newPreemptibleRandomWeibullActivity preemptible alpha beta =
+  newPreemptibleActivity preemptible $ \a ->
+  do randomWeibullProcess_ alpha beta
+     return a
+
+-- | Create a new activity that holds the process for a random time interval
+-- having the specified discrete distribution, when processing every input element.
+newPreemptibleRandomDiscreteActivity :: MonadDES m
+                                        => Bool
+                                        -- ^ whether the activity process can be preempted
+                                        -> DiscretePDF Double
+                                        -- ^ the discrete probability density function
+                                        -> Simulation m (Activity m () a a)
+{-# INLINABLE newPreemptibleRandomDiscreteActivity #-}
+newPreemptibleRandomDiscreteActivity preemptible dpdf =
+  newPreemptibleActivity preemptible $ \a ->
+  do randomDiscreteProcess_ dpdf
      return a
