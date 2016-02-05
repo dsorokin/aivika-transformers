@@ -17,8 +17,12 @@ module Simulation.Aivika.Trans.Process.Random
         randomUniformProcess_,
         randomUniformIntProcess,
         randomUniformIntProcess_,
+        randomTriangularProcess,
+        randomTriangularProcess_,
         randomNormalProcess,
         randomNormalProcess_,
+        randomLogNormalProcess,
+        randomLogNormalProcess_,
         randomExponentialProcess,
         randomExponentialProcess_,
         randomErlangProcess,
@@ -26,12 +30,21 @@ module Simulation.Aivika.Trans.Process.Random
         randomPoissonProcess,
         randomPoissonProcess_,
         randomBinomialProcess,
-        randomBinomialProcess_) where
+        randomBinomialProcess_,
+        randomGammaProcess,
+        randomGammaProcess_,
+        randomBetaProcess,
+        randomBetaProcess_,
+        randomWeibullProcess,
+        randomWeibullProcess_,
+        randomDiscreteProcess,
+        randomDiscreteProcess_) where
 
 import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Parameter.Random
 import Simulation.Aivika.Trans.Process
@@ -90,6 +103,37 @@ randomUniformIntProcess_ min max =
   do t <- liftParameter $ randomUniformInt min max
      holdProcess $ fromIntegral t
 
+-- | Hold the process for a random time interval having the triangular distribution.
+randomTriangularProcess :: MonadDES m
+                           => Double
+                           -- ^ the minimum time interval
+                           -> Double
+                           -- ^ a median of the time interval
+                           -> Double
+                           -- ^ the maximum time interval
+                           -> Process m Double
+                           -- ^ a computation of the time interval
+                           -- for which the process was actually held
+{-# INLINABLE randomTriangularProcess #-}
+randomTriangularProcess min median max =
+  do t <- liftParameter $ randomTriangular min median max
+     holdProcess t
+     return t
+
+-- | Hold the process for a random time interval having the triangular distribution.
+randomTriangularProcess_ :: MonadDES m
+                            => Double
+                            -- ^ the minimum time interval
+                            -> Double
+                            -- ^ a median of the time interval
+                            -> Double
+                            -- ^ the maximum time interval
+                            -> Process m ()
+{-# INLINABLE randomTriangularProcess_ #-}
+randomTriangularProcess_ min median max =
+  do t <- liftParameter $ randomTriangular min median max
+     holdProcess t
+
 -- | Hold the process for a random time interval distributed normally.
 randomNormalProcess :: MonadDES m
                        => Double
@@ -118,6 +162,37 @@ randomNormalProcess_ mu nu =
   do t <- liftParameter $ randomNormal mu nu
      when (t > 0) $
        holdProcess t
+
+-- | Hold the process for a random time interval having the lognormal distribution.
+randomLogNormalProcess :: MonadDES m
+                          => Double
+                          -- ^ the mean for a normal distribution
+                          -- which this distribution is derived from
+                          -> Double
+                          -- ^ the deviation for a normal distribution
+                          -- which this distribution is derived from
+                          -> Process m Double
+                          -- ^ a computation of the time interval
+                          -- for which the process was actually held
+{-# INLINABLE randomLogNormalProcess #-}
+randomLogNormalProcess mu nu =
+  do t <- liftParameter $ randomLogNormal mu nu
+     holdProcess t
+     return t
+
+-- | Hold the process for a random time interval having the lognormal distribution.
+randomLogNormalProcess_ :: MonadDES m
+                           => Double
+                           -- ^ the mean for a normal distribution
+                           -- which this distribution is derived from
+                           -> Double
+                           -- ^ the deviation for a normal distribution
+                           -- which this distribution is derived from
+                           -> Process m ()
+{-# INLINABLE randomLogNormalProcess_ #-}
+randomLogNormalProcess_ mu nu =
+  do t <- liftParameter $ randomLogNormal mu nu
+     holdProcess t
          
 -- | Hold the process for a random time interval distributed exponentially
 -- with the specified mean (the reciprocal of the rate).
@@ -226,3 +301,113 @@ randomBinomialProcess_ :: MonadDES m
 randomBinomialProcess_ prob trials =
   do t <- liftParameter $ randomBinomial prob trials
      holdProcess $ fromIntegral t
+
+-- | Hold the process for a random time interval having the Gamma distribution
+-- with the specified shape and scale.
+randomGammaProcess :: MonadDES m
+                      => Double
+                      -- ^ the shape
+                      -> Double
+                      -- ^ the scale (a reciprocal of the rate)
+                      -> Process m Double
+                      -- ^ a computation of the time interval
+                      -- for which the process was actually held
+{-# INLINABLE randomGammaProcess #-}
+randomGammaProcess kappa theta =
+  do t <- liftParameter $ randomGamma kappa theta
+     holdProcess t
+     return t
+
+-- | Hold the process for a random time interval having the Gamma distribution
+-- with the specified shape and scale.
+randomGammaProcess_ :: MonadDES m
+                       => Double
+                       -- ^ the shape
+                       -> Double
+                       -- ^ the scale (a reciprocal of the rate)
+                       -> Process m ()
+{-# INLINABLE randomGammaProcess_ #-}
+randomGammaProcess_ kappa theta =
+  do t <- liftParameter $ randomGamma kappa theta
+     holdProcess t
+
+-- | Hold the process for a random time interval having the Beta distribution
+-- with the specified shape parameters (alpha and beta).
+randomBetaProcess :: MonadDES m
+                     => Double
+                     -- ^ the shape (alpha)
+                     -> Double
+                     -- ^ the shape (beta)
+                     -> Process m Double
+                     -- ^ a computation of the time interval
+                     -- for which the process was actually held
+{-# INLINABLE randomBetaProcess #-}
+randomBetaProcess alpha beta =
+  do t <- liftParameter $ randomBeta alpha beta
+     holdProcess t
+     return t
+
+-- | Hold the process for a random time interval having the Beta distribution
+-- with the specified shape parameters (alpha and beta).
+randomBetaProcess_ :: MonadDES m
+                      => Double
+                      -- ^ the shape (alpha)
+                      -> Double
+                      -- ^ the shape (beta)
+                      -> Process m ()
+{-# INLINABLE randomBetaProcess_ #-}
+randomBetaProcess_ alpha beta =
+  do t <- liftParameter $ randomBeta alpha beta
+     holdProcess t
+
+-- | Hold the process for a random time interval having the Weibull distribution
+-- with the specified shape and scale.
+randomWeibullProcess :: MonadDES m
+                        => Double
+                        -- ^ the shape
+                        -> Double
+                        -- ^ the scale
+                        -> Process m Double
+                        -- ^ a computation of the time interval
+                        -- for which the process was actually held
+{-# INLINABLE randomWeibullProcess #-}
+randomWeibullProcess alpha beta =
+  do t <- liftParameter $ randomWeibull alpha beta
+     holdProcess t
+     return t
+
+-- | Hold the process for a random time interval having the Weibull distribution
+-- with the specified shape and scale.
+randomWeibullProcess_ :: MonadDES m
+                         => Double
+                         -- ^ the shape
+                         -> Double
+                         -- ^ the scale
+                         -> Process m ()
+{-# INLINABLE randomWeibullProcess_ #-}
+randomWeibullProcess_ alpha beta =
+  do t <- liftParameter $ randomWeibull alpha beta
+     holdProcess t
+
+-- | Hold the process for a random time interval having the specified discrete distribution.
+randomDiscreteProcess :: MonadDES m
+                         => DiscretePDF Double
+                         -- ^ the discrete probability density function
+                         -> Process m Double
+                         -- ^ a computation of the time interval
+                         -- for which the process was actually held
+{-# INLINABLE randomDiscreteProcess #-}
+randomDiscreteProcess dpdf =
+  do t <- liftParameter $ randomDiscrete dpdf
+     holdProcess t
+     return t
+
+-- | Hold the process for a random time interval having the specified discrete distribution.
+randomDiscreteProcess_ :: MonadDES m
+                          => DiscretePDF Double
+                          -- ^ the discrete probability density function
+                          -> Process m ()
+{-# INLINABLE randomDiscreteProcess_ #-}
+randomDiscreteProcess_ dpdf =
+  do t <- liftParameter $ randomDiscrete dpdf
+     holdProcess t
