@@ -50,6 +50,7 @@ module Simulation.Aivika.Trans.Stream
         repeatProcess,
         mapStream,
         mapStreamM,
+        accumStream,
         apStream,
         apStreamM,
         filterStream,
@@ -73,6 +74,11 @@ module Simulation.Aivika.Trans.Stream
         replaceLeftStream,
         replaceRightStream,
         partitionEitherStream,
+        -- * Assemblying Streams
+        cloneStream,
+        firstArrivalStream,
+        lastArrivalStream,
+        assembleAccumStream,
         -- * Debugging
         traceStream) where
 
@@ -94,7 +100,7 @@ import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Signal
 import Simulation.Aivika.Trans.Resource.Base
 import Simulation.Aivika.Trans.QueueStrategy
-import Simulation.Aivika.Trans.Queue.Infinite
+import Simulation.Aivika.Trans.Queue.Infinite.Base
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents an infinite stream of data in time,
@@ -238,6 +244,15 @@ mapStreamM f (Cons s) = Cons y where
   y = do (a, xs) <- s
          b <- f a
          return (b, mapStreamM f xs)
+
+-- | Accumulator that outputs a value determined by the supplied function.
+accumStream :: MonadDES m => (acc -> a -> Process m (acc, b)) -> acc -> Stream m a -> Stream m b
+{-# INLINABLE accumStream #-}
+accumStream f acc xs = Cons $ loop xs acc where
+  loop (Cons s) acc =
+    do (a, xs) <- s
+       (acc', b) <- f acc a
+       return (b, Cons $ loop xs acc') 
 
 -- | Sequential application.
 apStream :: MonadDES m => Stream m (a -> b) -> Stream m a -> Stream m b
@@ -603,7 +618,7 @@ prefetchStream s = Cons z where
 signalStream :: MonadDES m => Signal m a -> Process m (Stream m a)
 {-# INLINABLE signalStream #-}
 signalStream s =
-  do q <- liftEvent newFCFSQueue
+  do q <- liftSimulation newFCFSQueue
      h <- liftEvent $
           handleSignal s $ 
           enqueue q
@@ -759,6 +774,60 @@ dropStreamWhileM p s =
      if f
        then runStream $ dropStreamWhileM p xs
        else return (a, xs)
+
+-- | Create the specified number of equivalent clones of the input stream.
+cloneStream :: MonadDES m => Int -> Stream m a -> Simulation m [Stream m a]
+{-# INLINABLE cloneStream #-}
+cloneStream n s =
+  do qs  <- forM [1..n] $ \i -> newFCFSQueue
+     rs  <- newFCFSResource 1
+     ref <- newRef s
+     let reader m q =
+           do a <- liftEvent $ tryDequeue q
+              case a of
+                Just a  -> return a
+                Nothing ->
+                  usingResource rs $
+                  do a <- liftEvent $ tryDequeue q
+                     case a of
+                       Just a  -> return a
+                       Nothing ->
+                         do s <- liftEvent $ readRef ref
+                            (a, xs) <- runStream s
+                            liftEvent $ writeRef ref xs
+                            forM_ (zip [1..] qs) $ \(i, q) ->
+                              unless (i == m) $
+                              liftEvent $ enqueue q a
+                            return a
+     forM (zip [1..] qs) $ \(i, q) ->
+       return $ repeatProcess $ reader i q
+
+-- | Return a stream of first arrivals after assembling the specified number of elements.
+firstArrivalStream :: MonadDES m => Int -> Stream m a -> Stream m a
+{-# INLINABLE firstArrivalStream #-}
+firstArrivalStream n s = assembleAccumStream f (1, Nothing) s
+  where f (i, a0) a =
+          let a0' = Just $ fromMaybe a a0
+          in if i `mod` n == 0
+             then return ((1, Nothing), a0')
+             else return ((i + 1, a0'), Nothing)
+
+-- | Return a stream of last arrivals after assembling the specified number of elements.
+lastArrivalStream :: MonadDES m => Int -> Stream m a -> Stream m a
+{-# INLINABLE lastArrivalStream #-}
+lastArrivalStream n s = assembleAccumStream f 1 s
+  where f i a =
+          if i `mod` n == 0
+          then return (1, Just a)
+          else return (i + 1, Nothing)
+
+-- | Assemble an accumulated stream using the supplied function.
+assembleAccumStream :: MonadDES m => (acc -> a -> Process m (acc, Maybe b)) -> acc -> Stream m a -> Stream m b
+{-# INLINABLE assembleAccumStream #-}
+assembleAccumStream f acc s =
+  mapStream fromJust $
+  filterStream isJust $
+  accumStream f acc s
 
 -- | Show the debug messages with the current simulation time.
 traceStream :: MonadDES m
