@@ -22,18 +22,19 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/ChemicalReaction.hs
                      examples/ChemicalReactionCircuit.hs
                      examples/FishBank.hs
-                     examples/MachineBreakdowns.hs
+                     examples/Furnace.hs
+                     examples/InspectionAdjustmentStations.hs
                      examples/MachRep1.hs
                      examples/MachRep1EventDriven.hs
                      examples/MachRep1TimeDriven.hs
                      examples/MachRep2.hs
                      examples/MachRep3.hs
-                     examples/Furnace.hs
-                     examples/InspectionAdjustmentStations.hs
-                     examples/WorkStationsInSeries.hs
+                     examples/MachineBreakdowns.hs
                      examples/TimeOut.hs
                      examples/TimeOutInt.hs
                      examples/TimeOutWait.hs
+                     examples/TruckHaulingSituation.hs
+                     examples/WorkStationsInSeries.hs
 
 library
 
