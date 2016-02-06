@@ -36,6 +36,7 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/PortOperations.hs
                      examples/QuarryOperations.hs
                      examples/RenegingFromQueue.hs
+                     examples/SingleLaneTraffic.hs
                      examples/TimeOut.hs
                      examples/TimeOutInt.hs
                      examples/TimeOutWait.hs
