@@ -24,6 +24,7 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/FishBank.hs
                      examples/Furnace.hs
                      examples/InspectionAdjustmentStations.hs
+                     examples/InventorySystem.hs
                      examples/MachRep1.hs
                      examples/MachRep1EventDriven.hs
                      examples/MachRep1TimeDriven.hs
