@@ -32,6 +32,7 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/MachRep3.hs
                      examples/MachineBreakdowns.hs
                      examples/PERT.hs
+                     examples/PingPong.hs
                      examples/TimeOut.hs
                      examples/TimeOutInt.hs
                      examples/TimeOutWait.hs
