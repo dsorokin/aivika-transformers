@@ -861,7 +861,7 @@ sleepCont c a =
                        ContPreemptionEnding ->
                          invokeEvent p $
                          enqueueEvent (pointTime p) $
-                         resumeCont c a
+                         reenterCont c a
                        ContPreemptionBeginning ->
                          error "The computation was already preempted: sleepCont."
      invokeEvent p $ writeRef rh (Just h)
