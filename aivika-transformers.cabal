@@ -144,7 +144,7 @@ library
                      containers >= 0.4.0.0,
                      random >= 1.0.0.3,
                      vector >= 0.10.0.1,
-                     aivika >= 4.3.1
+                     aivika >= 4.3.4
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,

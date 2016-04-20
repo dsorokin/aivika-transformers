@@ -22,6 +22,7 @@ module Simulation.Aivika.Trans.Simulation
         throwSimulation,
         -- * Exceptions
         SimulationException(..),
-        SimulationAbort(..)) where
+        SimulationAbort(..),
+        SimulationRetry(..)) where
 
 import Simulation.Aivika.Trans.Internal.Simulation

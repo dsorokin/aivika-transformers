@@ -37,6 +37,8 @@ module Simulation.Aivika.Trans.Event
         memoEventInTime,
         -- * Disposable
         DisposableEvent(..),
+        -- * Retrying Computation
+        retryEvent,
         -- * Debugging
         traceEvent) where
 

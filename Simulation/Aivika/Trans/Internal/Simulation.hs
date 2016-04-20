@@ -26,7 +26,8 @@ module Simulation.Aivika.Trans.Internal.Simulation
         throwSimulation,
         -- * Exceptions
         SimulationException(..),
-        SimulationAbort(..)) where
+        SimulationAbort(..),
+        SimulationRetry(..)) where
 
 import Control.Exception
 import Control.Monad
@@ -42,7 +43,7 @@ import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 
-import Simulation.Aivika.Simulation (SimulationException, SimulationAbort)
+import Simulation.Aivika.Simulation (SimulationException(..), SimulationAbort(..), SimulationRetry(..))
 
 instance Monad m => Monad (Simulation m) where
 

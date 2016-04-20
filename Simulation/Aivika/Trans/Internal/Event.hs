@@ -41,6 +41,8 @@ module Simulation.Aivika.Trans.Internal.Event
         memoEventInTime,
         -- * Disposable
         DisposableEvent(..),
+        -- * Retrying Computation
+        retryEvent,
         -- * Debugging
         traceEvent) where
 
@@ -296,6 +298,11 @@ instance Monad m => Monoid (DisposableEvent m) where
 
   {-# INLINE mappend #-}
   mappend (DisposableEvent x) (DisposableEvent y) = DisposableEvent $ x >> y
+
+-- | Retry the current computation as possible, using the specified argument
+-- as a 'SimulationRetry' exception message in case of failure.
+retryEvent :: MonadException m => String -> Event m a
+retryEvent message = throwEvent $ SimulationRetry message
 
 -- | Show the debug message with the current simulation time.
 traceEvent :: MonadDES m => String -> Event m a -> Event m a

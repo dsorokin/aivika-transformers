@@ -83,6 +83,8 @@ module Simulation.Aivika.Trans.Process
         memoProcess,
         -- * Never Ending Process
         neverProcess,
+        -- * Retrying Computation
+        retryProcess,
         -- * Debugging
         traceProcess) where
 

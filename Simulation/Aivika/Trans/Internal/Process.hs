@@ -85,6 +85,8 @@ module Simulation.Aivika.Trans.Internal.Process
         memoProcess,
         -- * Never Ending Process
         neverProcess,
+        -- * Retrying Computation
+        retryProcess,
         -- * Debugging
         traceProcess) where
 
@@ -762,6 +764,11 @@ neverProcess =
   let signal = processCancelling pid
   in handleSignal_ signal $ \_ ->
      resumeCont c $ error "It must never be computed: neverProcess"
+
+-- | Retry the current computation as possible, using the specified argument
+-- as a 'SimulationRetry' exception message in case of failure.
+retryProcess :: MonadDES m => String -> Process m a
+retryProcess = liftEvent . retryEvent
 
 -- | Show the debug message with the current simulation time.
 traceProcess :: MonadDES m => String -> Process m a -> Process m a
