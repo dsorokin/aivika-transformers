@@ -50,7 +50,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
   newResource count =
     Simulation $ \r ->
     do when (count < 0) $
-         error $
+         fail $
          "The resource count cannot be negative: " ++
          "newResource."
        countRef <- liftIO $ newIORef count
@@ -65,12 +65,12 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
   newResourceWithMaxCount count maxCount =
     Simulation $ \r ->
     do when (count < 0) $
-         error $
+         fail $
          "The resource count cannot be negative: " ++
          "newResourceWithMaxCount."
        case maxCount of
          Just maxCount | count > maxCount ->
-           error $
+           fail $
            "The resource count cannot be greater than " ++
            "its maximum value: newResourceWithMaxCount."
          _ ->
@@ -134,7 +134,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
        if f
          then do invokeEvent p $ releaseResource' r
                  invokeEvent p $ resumeCont c ()
-         else error $
+         else fail $
               "The resource was not acquired by this process: releaseResource"
                
   {-# INLINABLE usingResourceWithPriority #-}
@@ -144,7 +144,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
 
   {-# INLINABLE incResourceCount #-}
   incResourceCount r n
-    | n < 0     = error "The increment cannot be negative: incResourceCount"
+    | n < 0     = fail "The increment cannot be negative: incResourceCount"
     | n == 0    = return ()
     | otherwise =
       do releaseResource' r
@@ -152,7 +152,7 @@ instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
 
   {-# INLINABLE decResourceCount #-}
   decResourceCount r n
-    | n < 0     = error "The decrement cannot be negative: decResourceCount"
+    | n < 0     = fail "The decrement cannot be negative: decResourceCount"
     | n == 0    = return ()
     | otherwise =
       do decResourceCount' r
@@ -202,7 +202,7 @@ releaseResource' r =
      let a' = a + 1
      case resourceMaxCount r of
        Just maxCount | a' > maxCount ->
-         error $
+         fail $
          "The resource count cannot be greater than " ++
          "its maximum value: releaseResource'."
        _ ->
@@ -236,7 +236,7 @@ decResourceCount' r =
   Event $ \p ->
   do a <- liftIO $ readIORef (resourceCountRef r)
      when (a == 0) $
-       error $
+       fail $
        "The resource exceeded and its count is zero: decResourceCount'"
      f <- liftIO $ PQ.queueNull (resourceActingQueue r)
      unless f $
