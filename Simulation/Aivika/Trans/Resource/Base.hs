@@ -57,6 +57,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Exception
 
+import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Specs
@@ -180,7 +181,8 @@ newResource :: (MonadDES m, QueueStrategy m s)
 newResource s count =
   Simulation $ \r ->
   do when (count < 0) $
-       fail $
+       throwComp $
+       SimulationRetry $
        "The resource count cannot be negative: " ++
        "newResource."
      countRef <- invokeSimulation r $ newRef count
@@ -204,12 +206,14 @@ newResourceWithMaxCount :: (MonadDES m, QueueStrategy m s)
 newResourceWithMaxCount s count maxCount =
   Simulation $ \r ->
   do when (count < 0) $
-       fail $
+       throwComp $
+       SimulationRetry $
        "The resource count cannot be negative: " ++
        "newResourceWithMaxCount."
      case maxCount of
        Just maxCount | count > maxCount ->
-         fail $
+         throwComp $
+         SimulationRetry $
          "The resource count cannot be greater than " ++
          "its maximum value: newResourceWithMaxCount."
        _ ->
@@ -306,7 +310,8 @@ releaseResourceWithinEvent r =
      let a' = a + 1
      case resourceMaxCount r of
        Just maxCount | a' > maxCount ->
-         fail $
+         throwComp $
+         SimulationRetry $
          "The resource count cannot be greater than " ++
          "its maximum value: releaseResourceWithinEvent."
        _ ->
@@ -382,7 +387,7 @@ incResourceCount :: (MonadDES m, DequeueStrategy m s)
                     -> Event m ()
 {-# INLINABLE incResourceCount #-}
 incResourceCount r n
-  | n < 0     = fail "The increment cannot be negative: incResourceCount"
+  | n < 0     = throwEvent $ SimulationRetry "The increment cannot be negative: incResourceCount"
   | n == 0    = return ()
   | otherwise =
     do releaseResourceWithinEvent r
@@ -398,7 +403,7 @@ decResourceCount :: (MonadDES m, EnqueueStrategy m s)
                     -> Process m ()
 {-# INLINABLE decResourceCount #-}
 decResourceCount r n
-  | n < 0     = fail "The decrement cannot be negative: decResourceCount"
+  | n < 0     = throwProcess $ SimulationRetry "The decrement cannot be negative: decResourceCount"
   | n == 0    = return ()
   | otherwise =
     do requestResource r
