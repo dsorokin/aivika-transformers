@@ -1,5 +1,5 @@
 
-{-# LANGUAGE CPP, FlexibleContexts, FlexibleInstances, UndecidableInstances, ExistentialQuantification, MultiParamTypeClasses, FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances, ExistentialQuantification, MultiParamTypeClasses, FunctionalDependencies #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Results
@@ -28,9 +28,7 @@ module Simulation.Aivika.Trans.Results
         ResultComputing(..),
         ResultListWithSubscript(..),
         ResultArrayWithSubscript(..),
-#ifndef __HASTE__
         ResultVectorWithSubscript(..),
-#endif
         -- * Definitions Focused on Using the Library
         ResultValue(..),
         resultsToIntValues,
@@ -106,10 +104,7 @@ import Control.Monad.Trans
 
 import qualified Data.Map as M
 import qualified Data.Array as A
-
-#ifndef __HASTE__
 import qualified Data.Vector as V
-#endif
 
 import Data.Ix
 import Data.Maybe
@@ -1971,15 +1966,11 @@ instance (Show i, Ix i, ResultProvider p m) => ResultProvider (A.Array i p) m wh
       items = A.elems m
       subscript = map (\i -> "[" ++ show i ++ "]") (A.indices m)
 
-#ifndef __HASTE__
-
 instance ResultProvider p m => ResultProvider (V.Vector p) m where
   
   resultSource' name i m =
     resultSource' name i $ ResultVectorWithSubscript m subscript where
       subscript = V.imap (\i x -> intSubscript i) m
-
-#endif
 
 -- | Represents a list with the specified subscript.
 data ResultListWithSubscript p =
@@ -1989,13 +1980,9 @@ data ResultListWithSubscript p =
 data ResultArrayWithSubscript i p =
   ResultArrayWithSubscript (A.Array i p) (A.Array i String)
 
-#ifndef __HASTE__
-
 -- | Represents a vector with the specified subscript.
 data ResultVectorWithSubscript p =
   ResultVectorWithSubscript (V.Vector p) (V.Vector String)
-
-#endif
 
 instance ResultProvider p m => ResultProvider (ResultListWithSubscript p) m where
 
@@ -2018,15 +2005,13 @@ instance ResultProvider p m => ResultProvider (ResultListWithSubscript p) m wher
         let name' = name ++ y
         in resultSource' name' (VectorItemId y) x
       items' = map resultSourceSummary items
-    
+
 instance (Show i, Ix i, ResultProvider p m) => ResultProvider (ResultArrayWithSubscript i p) m where
 
   resultSource' name i (ResultArrayWithSubscript xs ys) =
     resultSource' name i $ ResultListWithSubscript items subscript where
       items = A.elems xs
       subscript = A.elems ys
-      
-#ifndef __HASTE__
 
 instance ResultProvider p m => ResultProvider (ResultVectorWithSubscript p) m where
 
@@ -2052,8 +2037,6 @@ instance ResultProvider p m => ResultProvider (ResultVectorWithSubscript p) m wh
         in resultSource' name' (VectorItemId y) x
       items' = V.map resultSourceSummary items
 
-#endif
-
 instance (Ix i, Show i, ResultComputing t m) => ResultProvider (t m (A.Array i Double)) m where
 
   resultSource' name i m =
@@ -2064,8 +2047,6 @@ instance (Ix i, Show i, ResultComputing t m) => ResultProvider (t m (A.Array i I
   resultSource' name i m =
     ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
 
-#ifndef __HASTE__
-
 instance ResultComputing t m => ResultProvider (t m (V.Vector Double)) m where
 
   resultSource' name i m =
@@ -2075,8 +2056,6 @@ instance ResultComputing t m => ResultProvider (t m (V.Vector Int)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
-
-#endif
 
 instance (MonadDES m,
           Show si, Show sm, Show so,

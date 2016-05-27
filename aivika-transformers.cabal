@@ -158,8 +158,7 @@ library
                         TypeFamilies,
                         TypeSynonymInstances,
                         DeriveDataTypeable,
-                        RankNTypes,
-                        CPP
+                        RankNTypes
                      
     ghc-options:     -O2
 
