@@ -25,7 +25,7 @@ import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Generator.Primitive
 import Simulation.Aivika.Trans.Template
 
-instance (Functor m, MonadIO m, MonadTemplate m) => MonadGenerator m where
+instance (Functor m, Monad m, MonadIO m, MonadTemplate m) => MonadGenerator m where
 
   {-# SPECIALISE instance MonadGenerator IO #-}
 

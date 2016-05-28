@@ -31,7 +31,7 @@ import qualified Simulation.Aivika.PriorityQueue as PQ
 import qualified Simulation.Aivika.Vector as V
 
 -- | An implementation of the 'FCFS' queue strategy.
-instance (MonadComp m, MonadIO m, MonadTemplate m)
+instance (Monad m, MonadComp m, MonadIO m, MonadTemplate m)
          => QueueStrategy m FCFS where
 
   {-# SPECIALISE instance QueueStrategy IO FCFS #-}

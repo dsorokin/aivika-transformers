@@ -31,7 +31,7 @@ import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Array
 
 -- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
-instance (MonadIO m, MonadTemplate m) => MonadMemo m where
+instance (Monad m, MonadIO m, MonadTemplate m) => MonadMemo m where
 
   {-# SPECIALISE instance MonadMemo IO #-}
 

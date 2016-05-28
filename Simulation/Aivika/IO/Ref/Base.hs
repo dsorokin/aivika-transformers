@@ -23,7 +23,7 @@ import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.Template
 
 -- | The 'MonadIO' based monad is an instance of 'MonadRef'.
-instance (MonadIO m, MonadTemplate m) => MonadRef m where
+instance (Monad m, MonadIO m, MonadTemplate m) => MonadRef m where
 
   {-# SPECIALISE instance MonadRef IO #-}
 

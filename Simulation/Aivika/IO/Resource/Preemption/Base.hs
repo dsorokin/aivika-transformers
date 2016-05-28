@@ -36,7 +36,7 @@ import Simulation.Aivika.IO.DES
 import qualified Simulation.Aivika.PriorityQueue as PQ
 
 -- | The 'MonadIO' based monad is an instance of 'MonadResource'.
-instance (MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
+instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
 
   {-# SPECIALISE instance MonadResource IO #-}
 

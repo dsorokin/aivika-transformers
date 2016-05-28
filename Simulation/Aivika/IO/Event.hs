@@ -28,7 +28,7 @@ import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Types
 
 -- | A template-based implementation of the 'EventQueueing' type class.
-instance (MonadIO m, MonadTemplate m) => EventQueueing m where
+instance (Monad m, MonadIO m, MonadTemplate m) => EventQueueing m where
 
   {-# SPECIALISE instance EventQueueing IO #-}
 

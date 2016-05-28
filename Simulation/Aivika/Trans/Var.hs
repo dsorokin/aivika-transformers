@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, ConstrainedClassMethods #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Var

@@ -33,7 +33,7 @@ import Simulation.Aivika.Unboxed
 import qualified Simulation.Aivika.Vector.Unboxed as UV
 
 -- | The 'MonadIO' based monad is an instance of 'MonadVar'.
-instance (MonadDES m, MonadIO m, MonadTemplate m, Unboxed a) => MonadVar m a where
+instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m, Unboxed a) => MonadVar m a where
 
   {-# SPECIALISE instance MonadVar IO Double #-}
   {-# SPECIALISE instance MonadVar IO Float #-}
