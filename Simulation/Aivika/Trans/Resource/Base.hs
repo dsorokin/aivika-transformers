@@ -7,7 +7,7 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.3
+-- Tested with: GHC 8.0.1
 --
 -- This module defines an optimised version of the resource 
 -- which can be acquired and then released by the discontinuous 

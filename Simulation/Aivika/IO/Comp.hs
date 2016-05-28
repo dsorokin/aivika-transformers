@@ -7,7 +7,7 @@
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
--- Tested with: GHC 7.10.3
+-- Tested with: GHC 8.0.1
 --
 -- It allows making the 'MonadIO'-based monad an instance of type class 'MonadComp'
 -- on top of which the simulation monads can be built.
