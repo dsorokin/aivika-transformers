@@ -1,8 +1,8 @@
 Transformers for the Aivika simulation library
 
-The represented [Aivika Transformers] [2] package is a generalization of 
-the [Aivika] [1] simulation library with extensive use of monad transformers and 
+The represented [aivika-transformers] [2] package is a generalization of 
+the [aivika] [1] simulation library with extensive use of monad transformers and 
 type families.
 
-[1]: http://hackage.haskell.org/package/aivika  "Aivika"
-[2]: http://hackage.haskell.org/package/aivika-transformers  "Aivika Transformers"
+[1]: http://hackage.haskell.org/package/aivika  "aivika"
+[2]: http://hackage.haskell.org/package/aivika-transformers  "aivika-transformers"
