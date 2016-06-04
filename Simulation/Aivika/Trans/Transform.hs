@@ -93,15 +93,15 @@ instance MonadSD m => Arrow (Transform m) where
        c' <- g b
        return $ liftM2 (,) c c'
 
-instance (MonadSD m, MonadFix m) => ArrowLoop (Transform m) where
-
-  {-# INLINABLE loop #-}
-  loop (Transform f) =
-    Transform $ \b ->
-    mdo let bd = liftM2 (,) b d
-        cd <- f bd
-        (c, d) <- M.unzip0Dynamics cd
-        return c
+-- instance (MonadSD m, MonadFix m) => ArrowLoop (Transform m) where
+-- 
+--   {-# INLINABLE loop #-}
+--   loop (Transform f) =
+--     Transform $ \b ->
+--     mdo let bd = liftM2 (,) b d
+--         cd <- f bd
+--         (c, d) <- M.unzip0Dynamics cd
+--         return c
 
 -- | A transform that returns the current modeling time.
 timeTransform :: Monad m => Transform m a Double
