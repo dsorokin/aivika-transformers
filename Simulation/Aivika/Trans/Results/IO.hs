@@ -500,7 +500,7 @@ showResultsInIntegTimes f results =
      runEventInStartTime $
        enqueueEventWithIntegTimes $
        do g <- showResultsWithTime f results
-          modifyRef r (g .)
+          modifyRef r (. g)
      runEventInStopTime $
        readRef r
 
@@ -527,7 +527,7 @@ showResultsInTimes ts f results =
      runEventInStartTime $
        enqueueEventWithTimes ts $
        do g <- showResultsWithTime f results
-          modifyRef r (g .)
+          modifyRef r (. g)
      runEventInStopTime $
        readRef r
 
