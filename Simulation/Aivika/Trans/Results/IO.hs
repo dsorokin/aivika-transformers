@@ -393,7 +393,7 @@ showResultSourceInEnglish :: MonadDES m => ResultSourceShowS m
 showResultSourceInEnglish = showResultSource englishResultLocalisation
 
 -- | Print the results with the information about the modeling time.
-printResultsWithTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Event m ()
+printResultsWithTime :: (MonadDES m, MonadIO (Event m)) => ResultSourcePrint m -> Results m -> Event m ()
 {-# INLINABLE printResultsWithTime #-}
 printResultsWithTime print results =
   do let x1 = textResultSource "----------"
@@ -407,43 +407,54 @@ printResultsWithTime print results =
      -- print x3
 
 -- | Print the simulation results in start time.
-printResultsInStartTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
+printResultsInStartTime :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Results m -> Simulation m ()
 {-# INLINABLE printResultsInStartTime #-}
 printResultsInStartTime print results =
-  runEventInStartTime $ printResultsWithTime print results
+  do runEventInStartTime $
+       enqueueEventIOWithStartTime $
+       printResultsWithTime print results
+     runEventInStopTime $
+       return ()
 
 -- | Print the simulation results in stop time.
-printResultsInStopTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
+printResultsInStopTime :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Results m -> Simulation m ()
 {-# INLINABLE printResultsInStopTime #-}
 printResultsInStopTime print results =
-  runEventInStopTime $ printResultsWithTime print results
+  do runEventInStartTime $
+       enqueueEventIOWithStopTime $
+       printResultsWithTime print results
+     runEventInStopTime $
+       return ()
 
 -- | Print the simulation results in the integration time points.
-printResultsInIntegTimes :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Results m -> Simulation m ()
+printResultsInIntegTimes :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Results m -> Simulation m ()
 {-# INLINABLE printResultsInIntegTimes #-}
 printResultsInIntegTimes print results =
-  do let loop (m : ms) = m >> loop ms
-         loop [] = return ()
-     ms <- runDynamicsInIntegTimes $ runEvent $
-           printResultsWithTime print results
-     liftComp $ loop ms
+  do runEventInStartTime $
+       enqueueEventIOWithIntegTimes $
+       printResultsWithTime print results
+     runEventInStopTime $
+       return ()
 
 -- | Print the simulation results in the specified time.
-printResultsInTime :: (MonadDES m, MonadIO m) => Double -> ResultSourcePrint m -> Results m -> Simulation m ()
+printResultsInTime :: (MonadDES m, EventIOQueueing m) => Double -> ResultSourcePrint m -> Results m -> Simulation m ()
 {-# INLINABLE printResultsInTime #-}
 printResultsInTime t print results =
-  runDynamicsInTime t $ runEvent $
-  printResultsWithTime print results
+  do runEventInStartTime $
+       enqueueEventIO t $
+       printResultsWithTime print results
+     runEventInStopTime $
+       return ()
 
 -- | Print the simulation results in the specified time points.
-printResultsInTimes :: (MonadDES m, MonadIO m) => [Double] -> ResultSourcePrint m -> Results m -> Simulation m ()
+printResultsInTimes :: (MonadDES m, EventIOQueueing m) => [Double] -> ResultSourcePrint m -> Results m -> Simulation m ()
 {-# INLINABLE printResultsInTimes #-}
 printResultsInTimes ts print results =
-  do let loop (m : ms) = m >> loop ms
-         loop [] = return ()
-     ms <- runDynamicsInTimes ts $ runEvent $
-           printResultsWithTime print results
-     liftComp $ loop ms
+  do runEventInStartTime $
+       enqueueEventIOWithTimes ts $
+       printResultsWithTime print results
+     runEventInStopTime $
+       return ()
 
 -- | Show the results with the information about the modeling time.
 showResultsWithTime :: MonadDES m => ResultSourceShowS m -> Results m -> Event m ShowS
@@ -510,35 +521,35 @@ showResultsInTimes ts f results =
      liftComp $ loop ms
 
 -- | Run the simulation and then print the results in the start time.
-printSimulationResultsInStartTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+printSimulationResultsInStartTime :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 {-# INLINABLE printSimulationResultsInStartTime #-}
 printSimulationResultsInStartTime print model specs =
   flip runSimulation specs $
   model >>= printResultsInStartTime print
 
 -- | Run the simulation and then print the results in the final time.
-printSimulationResultsInStopTime :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+printSimulationResultsInStopTime :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 {-# INLINABLE printSimulationResultsInStopTime #-}
 printSimulationResultsInStopTime print model specs =
   flip runSimulation specs $
   model >>= printResultsInStopTime print
 
 -- | Run the simulation and then print the results in the integration time points.
-printSimulationResultsInIntegTimes :: (MonadDES m, MonadIO m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+printSimulationResultsInIntegTimes :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 {-# INLINABLE printSimulationResultsInIntegTimes #-}
 printSimulationResultsInIntegTimes print model specs =
   flip runSimulation specs $
   model >>= printResultsInIntegTimes print
 
 -- | Run the simulation and then print the results in the specified time point.
-printSimulationResultsInTime :: (MonadDES m, MonadIO m) => Double -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+printSimulationResultsInTime :: (MonadDES m, EventIOQueueing m) => Double -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 {-# INLINABLE printSimulationResultsInTime #-}
 printSimulationResultsInTime t print model specs =
   flip runSimulation specs $
   model >>= printResultsInTime t print
 
 -- | Run the simulation and then print the results in the specified time points.
-printSimulationResultsInTimes :: (MonadDES m, MonadIO m) => [Double] -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
+printSimulationResultsInTimes :: (MonadDES m, EventIOQueueing m) => [Double] -> ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
 {-# INLINABLE printSimulationResultsInTimes #-}
 printSimulationResultsInTimes ts print model specs =
   flip runSimulation specs $
