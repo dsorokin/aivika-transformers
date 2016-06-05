@@ -10,7 +10,7 @@
 -- Tested with: GHC 8.0.1
 --
 -- The module defines a template-based event queue, where
--- the 'MonadIO'-based monad can be an instance of 'EventQueueing'.
+-- the 'MonadIO'-based monad can be an instance of 'EventQueueing' and 'EventSync'.
 --
 module Simulation.Aivika.IO.Event () where
 
@@ -26,6 +26,7 @@ import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Types
+import Simulation.Aivika.Trans.Event
 
 -- | A template-based implementation of the 'EventQueueing' type class.
 instance (Monad m, MonadIO m, MonadTemplate m) => EventQueueing m where
@@ -145,3 +146,12 @@ processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
 processEvents EarlierEventsOrFromPast = processEventsIncludingEarlierCore
+
+-- | A template-based implementation of the 'EventSync' type class.
+instance (Monad m, MonadIO m, MonadTemplate m, MonadDES m) => EventSync m where
+
+  syncEvent = enqueueEvent
+  syncEventInTimes = enqueueEventWithTimes
+  syncEventInIntegTimes = enqueueEventWithIntegTimes
+  syncEventInStopTime = enqueueEventWithStopTime
+  
