@@ -26,6 +26,7 @@ module Simulation.Aivika.Trans.Internal.Event
         enqueueEventWithTimes,
         enqueueEventWithPoints,
         enqueueEventWithIntegTimes,
+        enqueueEventWithStopTime,
         yieldEvent,
         -- * Cancelling Event
         EventCancellation,
@@ -197,6 +198,14 @@ enqueueEventWithIntegTimes e =
   Event $ \p ->
   let points = integPointsStartingFrom p
   in invokeEvent p $ enqueueEventWithPoints points e
+
+-- | Actuate the event handler in the final time point.
+enqueueEventWithStopTime :: MonadDES m => Event m () -> Event m ()
+{-# INLINABLE enqueueEventWithStopTime #-}
+enqueueEventWithStopTime e =
+  Event $ \p ->
+  let p0 = integStopPoint $ pointRun p
+  in invokeEvent p $ enqueueEventWithPoints [p0] e
 
 -- | It allows cancelling the event.
 data EventCancellation m =

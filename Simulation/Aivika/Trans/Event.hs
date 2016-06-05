@@ -22,6 +22,7 @@ module Simulation.Aivika.Trans.Event
         enqueueEventWithCancellation,
         enqueueEventWithTimes,
         enqueueEventWithIntegTimes,
+        enqueueEventWithStopTime,
         yieldEvent,
         -- * Cancelling Event
         EventCancellation,
