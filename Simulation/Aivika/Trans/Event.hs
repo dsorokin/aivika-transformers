@@ -42,8 +42,7 @@ module Simulation.Aivika.Trans.Event
         -- * Retrying Computation
         retryEvent,
         -- * Synchronizing IO Actions
-        EventSync(..),
-        EventSyncIO(..),
+        EventIOQueueing(..),
         -- * Debugging
         traceEvent) where
 

@@ -46,8 +46,7 @@ module Simulation.Aivika.Trans.Internal.Event
         -- * Retrying Computation
         retryEvent,
         -- * Synchronizing IO Actions
-        EventSync(..),
-        EventSyncIO(..),
+        EventIOQueueing(..),
         -- * Debugging
         traceEvent) where
 
@@ -340,31 +339,24 @@ traceEvent message m =
 -- within such a handler. It is mainly destined for parallel distributed simulation,
 -- but it should be supported in other cases too.
 --
-class EventSync m where
+class (EventQueueing m, MonadIO (Event m)) => EventIOQueueing m where
 
   -- | Like 'enqueueEvent' but synchronizes the global modeling time before
   -- calling the specified event handler.
-  syncEvent :: Double -> Event m () -> Event m ()
+  enqueueEventIO :: Double -> Event m () -> Event m ()
 
   -- | Like 'enqueueEventWithStartTime' but synchronizes the global modeling time
   -- before calling the specified event handler.
-  syncEventInStartTime :: Event m () -> Event m ()
+  enqueueEventIOWithStartTime :: Event m () -> Event m ()
 
   -- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
   -- before calling the specified event handler.
-  syncEventInStopTime :: Event m () -> Event m ()
+  enqueueEventIOWithStopTime :: Event m () -> Event m ()
 
   -- | Like 'enqueueEventWithTimes' but synchronizes the global modeling time
   -- before calling the specified event handler.
-  syncEventInTimes :: [Double] -> Event m () -> Event m ()
+  enqueueEventIOWithTimes :: [Double] -> Event m () -> Event m ()
 
   -- | Like 'enqueueEventWithIntegTimes' but synchronizes the global modeling time
   -- before calling the specified event handler.
-  syncEventInIntegTimes :: Event m () -> Event m ()
-
--- | A type class of monads that allow synchronizing the global modeling time
--- before performing 'IO' actions within the event handler.
--- It is mainly destined for parallel distributed simulation,
--- but it should be supported in other cases too.
---
-class (EventSync m, MonadIO (Event m)) => EventSyncIO m
+  enqueueEventIOWithIntegTimes :: Event m () -> Event m ()
