@@ -40,8 +40,9 @@ module Simulation.Aivika.Trans.Event
         DisposableEvent(..),
         -- * Retrying Computation
         retryEvent,
-        -- * Synchronizing Global Modeling Time
+        -- * Synchronizing IO Actions
         EventSync(..),
+        EventSyncIO(..),
         -- * Debugging
         traceEvent) where
 

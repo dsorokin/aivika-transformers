@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances, FlexibleContexts #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Event
@@ -44,8 +44,9 @@ module Simulation.Aivika.Trans.Internal.Event
         DisposableEvent(..),
         -- * Retrying Computation
         retryEvent,
-        -- * Synchronizing Global Modeling Time
+        -- * Synchronizing IO Actions
         EventSync(..),
+        EventSyncIO(..),
         -- * Debugging
         traceEvent) where
 
@@ -325,7 +326,7 @@ traceEvent message m =
 
 -- | A type class of monads that allow synchronizing the global modeling time
 -- before calling the event handler so that it is rather safe to perform 'IO' actions
--- within such a handler. It is mainly destined for the parallel distributed simulation,
+-- within such a handler. It is mainly destined for parallel distributed simulation,
 -- but it should be supported in other cases too.
 --
 class EventSync m where
@@ -345,3 +346,10 @@ class EventSync m where
   -- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
   -- before calling the specified event handler.
   syncEventInStopTime :: Event m () -> Event m ()
+
+-- | A type class of monads that allow synchronizing the global modeling time
+-- before performing 'IO' actions within the event handler.
+-- It is mainly destined for parallel distributed simulation,
+-- but it should be supported in other cases too.
+--
+class (EventSync m, MonadIO (Event m)) => EventSyncIO m
