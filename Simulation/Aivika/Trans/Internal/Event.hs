@@ -23,10 +23,11 @@ module Simulation.Aivika.Trans.Internal.Event
         -- * Event Queue
         EventQueueing(..),
         enqueueEventWithCancellation,
+        enqueueEventWithStartTime,
+        enqueueEventWithStopTime,
         enqueueEventWithTimes,
         enqueueEventWithPoints,
         enqueueEventWithIntegTimes,
-        enqueueEventWithStopTime,
         yieldEvent,
         -- * Cancelling Event
         EventCancellation,
@@ -202,6 +203,14 @@ enqueueEventWithIntegTimes e =
   let points = integPointsStartingFrom p
   in invokeEvent p $ enqueueEventWithPoints points e
 
+-- | Actuate the event handler in the start time point.
+enqueueEventWithStartTime :: MonadDES m => Event m () -> Event m ()
+{-# INLINABLE enqueueEventWithStartTime #-}
+enqueueEventWithStartTime e =
+  Event $ \p ->
+  let p0 = integStartPoint $ pointRun p
+  in invokeEvent p $ enqueueEventWithPoints [p0] e
+
 -- | Actuate the event handler in the final time point.
 enqueueEventWithStopTime :: MonadDES m => Event m () -> Event m ()
 {-# INLINABLE enqueueEventWithStopTime #-}
@@ -312,7 +321,9 @@ instance Monad m => Monoid (DisposableEvent m) where
   mappend (DisposableEvent x) (DisposableEvent y) = DisposableEvent $ x >> y
 
 -- | Retry the current computation as possible, using the specified argument
--- as a 'SimulationRetry' exception message in case of failure.
+-- as a 'SimulationRetry' exception message in case of failure. It makes sense
+-- for parallel distributed simulation, when we have to make a rollback,
+-- awaiting for incoming messages.
 retryEvent :: MonadException m => String -> Event m a
 retryEvent message = throwEvent $ SimulationRetry message
 
@@ -335,6 +346,14 @@ class EventSync m where
   -- calling the specified event handler.
   syncEvent :: Double -> Event m () -> Event m ()
 
+  -- | Like 'enqueueEventWithStartTime' but synchronizes the global modeling time
+  -- before calling the specified event handler.
+  syncEventInStartTime :: Event m () -> Event m ()
+
+  -- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
+  -- before calling the specified event handler.
+  syncEventInStopTime :: Event m () -> Event m ()
+
   -- | Like 'enqueueEventWithTimes' but synchronizes the global modeling time
   -- before calling the specified event handler.
   syncEventInTimes :: [Double] -> Event m () -> Event m ()
@@ -342,10 +361,6 @@ class EventSync m where
   -- | Like 'enqueueEventWithIntegTimes' but synchronizes the global modeling time
   -- before calling the specified event handler.
   syncEventInIntegTimes :: Event m () -> Event m ()
-
-  -- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
-  -- before calling the specified event handler.
-  syncEventInStopTime :: Event m () -> Event m ()
 
 -- | A type class of monads that allow synchronizing the global modeling time
 -- before performing 'IO' actions within the event handler.

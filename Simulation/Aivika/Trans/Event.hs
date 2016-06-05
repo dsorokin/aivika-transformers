@@ -20,9 +20,10 @@ module Simulation.Aivika.Trans.Event
         -- * Event Queue
         EventQueueing(..),
         enqueueEventWithCancellation,
+        enqueueEventWithStartTime,
+        enqueueEventWithStopTime,
         enqueueEventWithTimes,
         enqueueEventWithIntegTimes,
-        enqueueEventWithStopTime,
         yieldEvent,
         -- * Cancelling Event
         EventCancellation,

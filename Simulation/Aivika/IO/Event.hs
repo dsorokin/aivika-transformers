@@ -152,9 +152,10 @@ processEvents EarlierEventsOrFromPast = processEventsIncludingEarlierCore
 instance (Monad m, MonadIO m, MonadTemplate m, MonadDES m) => EventSync m where
 
   syncEvent = enqueueEvent
+  syncEventInStartTime = enqueueEventWithStartTime
+  syncEventInStopTime = enqueueEventWithStopTime
   syncEventInTimes = enqueueEventWithTimes
   syncEventInIntegTimes = enqueueEventWithIntegTimes
-  syncEventInStopTime = enqueueEventWithStopTime
   
 -- | A template-based implementation of the 'EventSyncIO' type class.
 instance (Monad m, MonadIO m, MonadTemplate m, MonadDES m) => EventSyncIO m
