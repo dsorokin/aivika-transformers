@@ -324,8 +324,10 @@ traceEvent message m =
   invokeEvent p m
 
 -- | A type class of monads that allow synchronizing the global modeling time
--- before calling the event handler within parallel distributed simulation so that
--- it is rather safe to perform 'IO' actions within such a handler.
+-- before calling the event handler so that it is rather safe to perform 'IO' actions
+-- within such a handler. It is mainly destined for the parallel distributed simulation,
+-- but it should be supported in other cases too.
+--
 class EventSync m where
 
   -- | Like 'enqueueEvent' but synchronizes the global modeling time before
