@@ -79,6 +79,7 @@ import Simulation.Aivika.Trans.Specs
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Event
+import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Results
 import Simulation.Aivika.Trans.Results.Locale
 
@@ -479,7 +480,8 @@ showResultsWithTime f results =
 showResultsInStartTime :: MonadDES m => ResultSourceShowS m -> Results m -> Simulation m ShowS
 {-# INLINABLE showResultsInStartTime #-}
 showResultsInStartTime f results =
-  runEventInStartTime $ showResultsWithTime f results
+  do g <- runEventInStartTime $ showResultsWithTime f results
+     runEventInStopTime $ return g
 
 -- | Show the simulation results in stop time.
 showResultsInStopTime :: MonadDES m => ResultSourceShowS m -> Results m -> Simulation m ShowS
@@ -494,18 +496,25 @@ showResultsInStopTime f results =
 showResultsInIntegTimes :: MonadDES m => ResultSourceShowS m -> Results m -> Simulation m ShowS
 {-# INLINABLE showResultsInIntegTimes #-}
 showResultsInIntegTimes f results =
-  do let loop (m : ms) = return (.) `ap` m `ap` loop ms
-         loop [] = return id
-     ms <- runDynamicsInIntegTimes $ runEvent $
-           showResultsWithTime f results
-     liftComp $ loop ms
+  do r <- newRef id
+     runEventInStartTime $
+       enqueueEventWithIntegTimes $
+       do g <- showResultsWithTime f results
+          modifyRef r (g .)
+     runEventInStopTime $
+       readRef r
 
 -- | Show the simulation results in the specified time point.
 showResultsInTime :: MonadDES m => Double -> ResultSourceShowS m -> Results m -> Simulation m ShowS
 {-# INLINABLE showResultsInTime #-}
 showResultsInTime t f results =
-  runDynamicsInTime t $ runEvent $
-  showResultsWithTime f results
+  do r <- newRef id
+     runEventInStartTime $
+       enqueueEvent t $
+       do g <- showResultsWithTime f results
+          writeRef r g
+     runEventInStopTime $
+       readRef r
 
 -- | Show the simulation results in the specified time points.
 --
@@ -514,11 +523,13 @@ showResultsInTime t f results =
 showResultsInTimes :: MonadDES m => [Double] -> ResultSourceShowS m -> Results m -> Simulation m ShowS
 {-# INLINABLE showResultsInTimes #-}
 showResultsInTimes ts f results =
-  do let loop (m : ms) = return (.) `ap` m `ap` loop ms
-         loop [] = return id
-     ms <- runDynamicsInTimes ts $ runEvent $
-           showResultsWithTime f results
-     liftComp $ loop ms
+  do r <- newRef id
+     runEventInStartTime $
+       enqueueEventWithTimes ts $
+       do g <- showResultsWithTime f results
+          modifyRef r (g .)
+     runEventInStopTime $
+       readRef r
 
 -- | Run the simulation and then print the results in the start time.
 printSimulationResultsInStartTime :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m -> Simulation m (Results m) -> Specs m -> m ()
