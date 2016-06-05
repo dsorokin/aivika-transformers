@@ -1,4 +1,6 @@
 
+{-# LANGUAGE FlexibleContexts #-}
+
 -- |
 -- Module     : Simulation.Aivika.Trans.Results.IO
 -- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
@@ -48,6 +50,15 @@ module Simulation.Aivika.Trans.Results.IO
         printResultSource,
         printResultSourceInRussian,
         printResultSourceInEnglish,
+        -- * Enqueue Printing of the Result Source
+        hEnqueuePrintingResultSourceIndented,
+        hEnqueuePrintingResultSource,
+        hEnqueuePrintingResultSourceInRussian,
+        hEnqueuePrintingResultSourceInEnglish,
+        enqueuePrintingResultSourceIndented,
+        enqueuePrintingResultSource,
+        enqueuePrintingResultSourceInRussian,
+        enqueuePrintingResultSourceInEnglish,
         -- * Showing the Result Source
         showResultSourceIndented,
         showResultSource,
@@ -81,7 +92,7 @@ type ResultSourcePrint m = ResultSource m -> Event m ()
 
 -- | Print a localised text representation of the results by the specified source
 -- and with the given indent.
-hPrintResultSourceIndented :: (MonadDES m, MonadIO m)
+hPrintResultSourceIndented :: (MonadDES m, MonadIO (Event m))
                               => Handle
                               -- ^ a handle
                               -> Int
@@ -101,7 +112,7 @@ hPrintResultSourceIndented h indent loc source@(ResultSeparatorSource x) =
 
 -- | Print an indented and labelled text representation of the results by
 -- the specified source.
-hPrintResultSourceIndentedLabelled :: (MonadDES m, MonadIO m)
+hPrintResultSourceIndentedLabelled :: (MonadDES m, MonadIO (Event m))
                                       => Handle
                                       -- ^ a handle
                                       -> Int
@@ -167,7 +178,7 @@ hPrintResultSourceIndentedLabelled h indent label loc (ResultSeparatorSource x) 
 
 -- | Print a localised text representation of the results by the specified source
 -- and with the given indent.
-printResultSourceIndented :: (MonadDES m, MonadIO m)
+printResultSourceIndented :: (MonadDES m, MonadIO (Event m))
                              => Int
                              -- ^ an indent
                              -> ResultLocalisation
@@ -177,7 +188,7 @@ printResultSourceIndented :: (MonadDES m, MonadIO m)
 printResultSourceIndented = hPrintResultSourceIndented stdout
 
 -- | Print a localised text representation of the results by the specified source.
-hPrintResultSource :: (MonadDES m, MonadIO m)
+hPrintResultSource :: (MonadDES m, MonadIO (Event m))
                       => Handle
                       -- ^ a handle
                       -> ResultLocalisation
@@ -187,7 +198,7 @@ hPrintResultSource :: (MonadDES m, MonadIO m)
 hPrintResultSource h = hPrintResultSourceIndented h 0
 
 -- | Print a localised text representation of the results by the specified source.
-printResultSource :: (MonadDES m, MonadIO m)
+printResultSource :: (MonadDES m, MonadIO (Event m))
                      => ResultLocalisation
                      -- ^ a localisation
                      -> ResultSourcePrint m
@@ -195,24 +206,89 @@ printResultSource :: (MonadDES m, MonadIO m)
 printResultSource = hPrintResultSource stdout
 
 -- | Print in Russian a text representation of the results by the specified source.
-hPrintResultSourceInRussian :: (MonadDES m, MonadIO m) => Handle -> ResultSourcePrint m
+hPrintResultSourceInRussian :: (MonadDES m, MonadIO (Event m)) => Handle -> ResultSourcePrint m
 {-# INLINABLE hPrintResultSourceInRussian #-}
 hPrintResultSourceInRussian h = hPrintResultSource h russianResultLocalisation
 
 -- | Print in English a text representation of the results by the specified source.
-hPrintResultSourceInEnglish :: (MonadDES m, MonadIO m) => Handle -> ResultSourcePrint m
+hPrintResultSourceInEnglish :: (MonadDES m, MonadIO (Event m)) => Handle -> ResultSourcePrint m
 {-# INLINABLE hPrintResultSourceInEnglish #-}
 hPrintResultSourceInEnglish h = hPrintResultSource h englishResultLocalisation
 
 -- | Print in Russian a text representation of the results by the specified source.
-printResultSourceInRussian :: (MonadDES m, MonadIO m) => ResultSourcePrint m
+printResultSourceInRussian :: (MonadDES m, MonadIO (Event m)) => ResultSourcePrint m
 {-# INLINABLE printResultSourceInRussian #-}
 printResultSourceInRussian = hPrintResultSourceInRussian stdout
 
 -- | Print in English a text representation of the results by the specified source.
-printResultSourceInEnglish :: (MonadDES m, MonadIO m) => ResultSourcePrint m
+printResultSourceInEnglish :: (MonadDES m, MonadIO (Event m)) => ResultSourcePrint m
 {-# INLINABLE printResultSourceInEnglish #-}
 printResultSourceInEnglish = hPrintResultSourceInEnglish stdout
+
+-- | Enqueue printing of a localised text representation of the results by the specified source
+-- and with the given indent.
+hEnqueuePrintingResultSourceIndented :: (MonadDES m, EventIOQueueing m)
+                                        => Handle
+                                        -- ^ a handle
+                                        -> Int
+                                        -- ^ an indent
+                                        -> ResultLocalisation
+                                        -- ^ a localisation
+                                        -> ResultSourcePrint m
+{-# INLINABLE hEnqueuePrintingResultSourceIndented #-}
+hEnqueuePrintingResultSourceIndented h indent loc source =
+  do t <- liftDynamics time
+     enqueueEventIO t $
+       hPrintResultSourceIndented h indent loc source
+
+-- | Enqueue printing of a localised text representation of the results by the specified source
+-- and with the given indent.
+enqueuePrintingResultSourceIndented :: (MonadDES m, EventIOQueueing m)
+                                       => Int
+                                       -- ^ an indent
+                                       -> ResultLocalisation
+                                       -- ^ a localisation
+                                       -> ResultSourcePrint m
+{-# INLINABLE enqueuePrintingResultSourceIndented #-}
+enqueuePrintingResultSourceIndented = hEnqueuePrintingResultSourceIndented stdout
+
+-- | Enqueue printing of a localised text representation of the results by the specified source.
+hEnqueuePrintingResultSource :: (MonadDES m, EventIOQueueing m)
+                                => Handle
+                                -- ^ a handle
+                                -> ResultLocalisation
+                                -- ^ a localisation
+                                -> ResultSourcePrint m
+{-# INLINABLE hEnqueuePrintingResultSource #-}
+hEnqueuePrintingResultSource h = hEnqueuePrintingResultSourceIndented h 0
+
+-- | Enqueue printing of a localised text representation of the results by the specified source.
+enqueuePrintingResultSource :: (MonadDES m, EventIOQueueing m)
+                               => ResultLocalisation
+                               -- ^ a localisation
+                               -> ResultSourcePrint m
+{-# INLINABLE enqueuePrintingResultSource #-}
+enqueuePrintingResultSource = hEnqueuePrintingResultSource stdout
+
+-- | Enqueue printing in Russian of a text representation of the results by the specified source.
+hEnqueuePrintingResultSourceInRussian :: (MonadDES m, EventIOQueueing m) => Handle -> ResultSourcePrint m
+{-# INLINABLE hEnqueuePrintingResultSourceInRussian #-}
+hEnqueuePrintingResultSourceInRussian h = hEnqueuePrintingResultSource h russianResultLocalisation
+
+-- | Enqueue printing in English of a text representation of the results by the specified source.
+hEnqueuePrintingResultSourceInEnglish :: (MonadDES m, EventIOQueueing m) => Handle -> ResultSourcePrint m
+{-# INLINABLE hEnqueuePrintingResultSourceInEnglish #-}
+hEnqueuePrintingResultSourceInEnglish h = hEnqueuePrintingResultSource h englishResultLocalisation
+
+-- | Enqueue printing in Russian of a text representation of the results by the specified source.
+enqueuePrintingResultSourceInRussian :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m
+{-# INLINABLE enqueuePrintingResultSourceInRussian #-}
+enqueuePrintingResultSourceInRussian = hEnqueuePrintingResultSourceInRussian stdout
+
+-- | Enqueue printing in English of a text representation of the results by the specified source.
+enqueuePrintingResultSourceInEnglish :: (MonadDES m, EventIOQueueing m) => ResultSourcePrint m
+{-# INLINABLE enqueuePrintingResultSourceInEnglish #-}
+enqueuePrintingResultSourceInEnglish = hEnqueuePrintingResultSourceInEnglish stdout
 
 -- | Show a localised text representation of the results by the specified source
 -- and with the given indent.
