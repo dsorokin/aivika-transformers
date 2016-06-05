@@ -43,6 +43,10 @@ module Simulation.Aivika.Trans.Event
         retryEvent,
         -- * Synchronizing IO Actions
         EventIOQueueing(..),
+        enqueueEventIOWithStartTime,
+        enqueueEventIOWithStopTime,
+        enqueueEventIOWithTimes,
+        enqueueEventIOWithIntegTimes,
         -- * Debugging
         traceEvent) where
 

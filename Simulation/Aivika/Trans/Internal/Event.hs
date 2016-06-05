@@ -47,6 +47,11 @@ module Simulation.Aivika.Trans.Internal.Event
         retryEvent,
         -- * Synchronizing IO Actions
         EventIOQueueing(..),
+        enqueueEventIOWithStartTime,
+        enqueueEventIOWithStopTime,
+        enqueueEventIOWithTimes,
+        enqueueEventIOWithPoints,
+        enqueueEventIOWithIntegTimes,
         -- * Debugging
         traceEvent) where
 
@@ -334,7 +339,7 @@ traceEvent message m =
   trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
   invokeEvent p m
 
--- | A type class of monads that allow synchronizing the global modeling time
+-- | A type class of monads that allows synchronizing the global modeling time
 -- before calling the event handler so that it is rather safe to perform 'IO' actions
 -- within such a handler. It is mainly destined for parallel distributed simulation,
 -- but it should be supported in other cases too.
@@ -345,18 +350,48 @@ class (EventQueueing m, MonadIO (Event m)) => EventIOQueueing m where
   -- calling the specified event handler.
   enqueueEventIO :: Double -> Event m () -> Event m ()
 
-  -- | Like 'enqueueEventWithStartTime' but synchronizes the global modeling time
-  -- before calling the specified event handler.
-  enqueueEventIOWithStartTime :: Event m () -> Event m ()
+-- | Like 'enqueueEventWithTimes' but synchronizes the global modeling time
+-- before calling the specified event handler.
+enqueueEventIOWithTimes :: (MonadDES m, EventIOQueueing m) => [Double] -> Event m () -> Event m ()
+{-# INLINABLE enqueueEventIOWithTimes #-}
+enqueueEventIOWithTimes ts e = loop ts
+  where loop []       = return ()
+        loop (t : ts) = enqueueEventIO t $ e >> loop ts
+       
+-- | Like 'enqueueEventWithPoints' but synchronizes the global modeling time
+-- before calling the specified event handler.
+enqueueEventIOWithPoints :: (MonadDES m, EventIOQueueing m) => [Point m] -> Event m () -> Event m ()
+{-# INLINABLE enqueueEventIOWithPoints #-}
+enqueueEventIOWithPoints xs (Event e) = loop xs
+  where loop []       = return ()
+        loop (x : xs) = enqueueEventIO (pointTime x) $ 
+                        Event $ \p ->
+                        do e x    -- N.B. we substitute the time point!
+                           invokeEvent p $ loop xs
+                           
+-- | Like 'enqueueEventWithIntegTimes' but synchronizes the global modeling time
+-- before calling the specified event handler.
+enqueueEventIOWithIntegTimes :: (MonadDES m, EventIOQueueing m) => Event m () -> Event m ()
+{-# INLINABLE enqueueEventIOWithIntegTimes #-}
+enqueueEventIOWithIntegTimes e =
+  Event $ \p ->
+  let points = integPointsStartingFrom p
+  in invokeEvent p $ enqueueEventIOWithPoints points e
 
-  -- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
-  -- before calling the specified event handler.
-  enqueueEventIOWithStopTime :: Event m () -> Event m ()
+-- | Like 'enqueueEventWithStartTime' but synchronizes the global modeling time
+-- before calling the specified event handler.
+enqueueEventIOWithStartTime :: (MonadDES m, EventIOQueueing m) => Event m () -> Event m ()
+{-# INLINABLE enqueueEventIOWithStartTime #-}
+enqueueEventIOWithStartTime e =
+  Event $ \p ->
+  let p0 = integStartPoint $ pointRun p
+  in invokeEvent p $ enqueueEventIOWithPoints [p0] e
 
-  -- | Like 'enqueueEventWithTimes' but synchronizes the global modeling time
-  -- before calling the specified event handler.
-  enqueueEventIOWithTimes :: [Double] -> Event m () -> Event m ()
-
-  -- | Like 'enqueueEventWithIntegTimes' but synchronizes the global modeling time
-  -- before calling the specified event handler.
-  enqueueEventIOWithIntegTimes :: Event m () -> Event m ()
+-- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
+-- before calling the specified event handler.
+enqueueEventIOWithStopTime :: (MonadDES m, EventIOQueueing m) => Event m () -> Event m ()
+{-# INLINABLE enqueueEventIOWithStopTime #-}
+enqueueEventIOWithStopTime e =
+  Event $ \p ->
+  let p0 = integStopPoint $ pointRun p
+  in invokeEvent p $ enqueueEventIOWithPoints [p0] e

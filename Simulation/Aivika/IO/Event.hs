@@ -151,7 +151,3 @@ processEvents EarlierEventsOrFromPast = processEventsIncludingEarlierCore
 instance (Monad m, MonadIO m, MonadTemplate m, MonadDES m) => EventIOQueueing m where
 
   enqueueEventIO = enqueueEvent
-  enqueueEventIOWithStartTime = enqueueEventWithStartTime
-  enqueueEventIOWithStopTime = enqueueEventWithStopTime
-  enqueueEventIOWithTimes = enqueueEventWithTimes
-  enqueueEventIOWithIntegTimes = enqueueEventWithIntegTimes
