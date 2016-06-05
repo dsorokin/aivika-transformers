@@ -44,6 +44,8 @@ module Simulation.Aivika.Trans.Internal.Event
         DisposableEvent(..),
         -- * Retrying Computation
         retryEvent,
+        -- * Synchronizing Global Modeling Time
+        EventSync(..),
         -- * Debugging
         traceEvent) where
 
@@ -320,3 +322,24 @@ traceEvent message m =
   Event $ \p ->
   trace ("t = " ++ show (pointTime p) ++ ": " ++ message) $
   invokeEvent p m
+
+-- | A type class of monads that allow synchronizing the global modeling time
+-- before calling the event handler within parallel distributed simulation so that
+-- it is rather safe to perform 'IO' actions within such a handler.
+class EventSync m where
+
+  -- | Like 'enqueueEvent' but synchronizes the global modeling time before
+  -- calling the specified event handler.
+  syncEvent :: Double -> Event m () -> Event m ()
+
+  -- | Like 'enqueueEventWithTimes' but synchronizes the global modeling time
+  -- before calling the specified event handler.
+  syncEventInTimes :: [Double] -> Event m () -> Event m ()
+
+  -- | Like 'enqueueEventWithIntegTimes' but synchronizes the global modeling time
+  -- before calling the specified event handler.
+  syncEventInIntegTimes :: Event m () -> Event m ()
+
+  -- | Like 'enqueueEventWithStopTime' but synchronizes the global modeling time
+  -- before calling the specified event handler.
+  syncEventInStopTime :: Event m () -> Event m ()
