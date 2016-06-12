@@ -27,7 +27,7 @@ import Simulation.Aivika.Trans.Observable
 -- | A monad within which we can create mutable references.
 class Monad m => MonadRef m where
 
-  -- | The 'ProtoRef' type represents a mutable variable similar to the 'IORef' variable 
+  -- | The 'Ref' type represents a mutable variable similar to the 'IORef' variable 
   -- but only dependent on the event queue, which allows synchronizing the reference
   -- with the model explicitly through the 'Event' monad.
   data Ref m a
