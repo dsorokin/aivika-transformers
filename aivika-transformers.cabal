@@ -70,6 +70,7 @@ library
                      Simulation.Aivika.Trans.Internal.Types
                      Simulation.Aivika.Trans.Net
                      Simulation.Aivika.Trans.Net.Random
+                     Simulation.Aivika.Trans.Observable
                      Simulation.Aivika.Trans.Operation
                      Simulation.Aivika.Trans.Operation.Random
                      Simulation.Aivika.Trans.Parameter

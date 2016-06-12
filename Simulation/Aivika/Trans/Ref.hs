@@ -1,4 +1,6 @@
 
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
+
 -- |
 -- Module     : Simulation.Aivika.Trans.Ref
 -- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
@@ -29,6 +31,7 @@ import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Signal
 import qualified Simulation.Aivika.Trans.Ref.Base as B
 import Simulation.Aivika.Trans.DES
+import Simulation.Aivika.Trans.Observable
 
 -- | The 'Ref' type represents a mutable variable similar to the 'IORef' variable 
 -- but only dependent on the event queue, which allows synchronizing the reference
@@ -91,3 +94,8 @@ instance MonadDES m => Eq (Ref m a) where
 
   {-# INLINE (==) #-}
   r1 == r2 = (refValue r1) == (refValue r2)
+
+instance (MonadDES m, Observable (B.Ref m) (t m))  => Observable (Ref m) (t m) where
+
+  {-# INLINE readObservable #-}
+  readObservable r = readObservable (refValue r)

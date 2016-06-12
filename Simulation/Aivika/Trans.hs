@@ -30,6 +30,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Generator,
         module Simulation.Aivika.Trans.Net,
         module Simulation.Aivika.Trans.Net.Random,
+        module Simulation.Aivika.Trans.Observable,
         module Simulation.Aivika.Trans.Operation,
         module Simulation.Aivika.Trans.Operation.Random,
         module Simulation.Aivika.Trans.Parameter,
@@ -80,6 +81,7 @@ import Simulation.Aivika.Trans.Gate
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Net
 import Simulation.Aivika.Trans.Net.Random
+import Simulation.Aivika.Trans.Observable
 import Simulation.Aivika.Trans.Operation
 import Simulation.Aivika.Trans.Operation.Random
 import Simulation.Aivika.Trans.Parameter

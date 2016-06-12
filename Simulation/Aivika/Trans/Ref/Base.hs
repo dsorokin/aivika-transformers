@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Ref.Base
@@ -22,6 +22,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.Internal.Types
+import Simulation.Aivika.Trans.Observable
 
 -- | A monad within which we can create mutable references.
 class Monad m => MonadRef m where
@@ -56,3 +57,8 @@ class MonadRef m => MonadRef0 m where
 
   -- | Create a new reference within more low level computation than 'Simulation'.
   newRef0 :: a -> m (Ref m a)
+
+instance (Monad m, MonadRef m) => Observable (Ref m) (Event m) where
+
+  {-# INLINE readObservable #-}
+  readObservable = readRef
