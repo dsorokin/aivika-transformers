@@ -27,6 +27,6 @@ import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.IO.QueueStrategy
 
 -- | A template-based instantiation of the 'MonadDES' type class.
-instance (Monad m, MonadComp m, MonadIO m, MonadTemplate m) => MonadDES m where
+instance (Monad m, MonadComp m, MonadIO m, MonadTemplate m, MonadEventQueueTemplate m) => MonadDES m where
 
   {-# SPECIALISE instance MonadDES IO #-}
