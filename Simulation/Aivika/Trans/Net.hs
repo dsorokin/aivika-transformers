@@ -106,15 +106,13 @@ instance MonadDES m => Arrow (Net m) where
   {-# INLINABLE (***) #-}
   (Net f) *** (Net g) =
     Net $ \(b, b') ->
-    do (c, p1) <- f b
-       (c', p2) <- g b'
+    do ((c, p1), (c', p2)) <- zipProcessParallel (f b) (g b')
        return ((c, c'), p1 *** p2)
        
   {-# INLINABLE (&&&) #-}
   (Net f) &&& (Net g) =
     Net $ \b ->
-    do (c, p1) <- f b
-       (c', p2) <- g b
+    do ((c, p1), (c', p2)) <- zipProcessParallel (f b) (g b)
        return ((c, c'), p1 &&& p2)
 
 instance MonadDES m => ArrowChoice (Net m) where
