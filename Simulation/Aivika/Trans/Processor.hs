@@ -97,25 +97,25 @@ instance MonadDES m => Arrow (Processor m) where
     Processor $ \xys ->
     Cons $
     do (xs, ys) <- liftSimulation $ unzipStream xys
-       runStream $ zipStreamSeq (f xs) ys
+       runStream $ zipStreamParallel (f xs) ys
 
   {-# INLINABLE second #-}
   second (Processor f) =
     Processor $ \xys ->
     Cons $
     do (xs, ys) <- liftSimulation $ unzipStream xys
-       runStream $ zipStreamSeq xs (f ys)
+       runStream $ zipStreamParallel xs (f ys)
 
   {-# INLINABLE (***) #-}
   Processor f *** Processor g =
     Processor $ \xys ->
     Cons $
     do (xs, ys) <- liftSimulation $ unzipStream xys
-       runStream $ zipStreamSeq (f xs) (g ys)
+       runStream $ zipStreamParallel (f xs) (g ys)
 
   {-# INLINABLE (&&&) #-}
   Processor f &&& Processor g =
-    Processor $ \xs -> zipStreamSeq (f xs) (g xs)
+    Processor $ \xs -> zipStreamParallel (f xs) (g xs)
 
 instance MonadDES m => ArrowChoice (Processor m) where
 
