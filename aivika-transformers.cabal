@@ -43,6 +43,7 @@ extra-source-files:  examples/BassDiffusion.hs
                      examples/TimeOutWait.hs
                      examples/TruckHaulingSituation.hs
                      examples/WorkStationsInSeries.hs
+                     CHANGELOG.md
 
 library
 
