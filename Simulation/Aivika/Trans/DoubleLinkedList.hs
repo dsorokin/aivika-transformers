@@ -18,8 +18,16 @@ module Simulation.Aivika.Trans.DoubleLinkedList
         listAddLast,
         listRemoveFirst,
         listRemoveLast,
+        listRemove,
+        listRemoveBy,
+        listContains,
+        listContainsBy,
         listFirst,
-        listLast) where 
+        listLast,
+        clearList,
+        freezeList) where 
+
+import Data.Maybe
 
 import Control.Monad
 
@@ -175,3 +183,74 @@ listLast x =
          error "Empty list: listLast"
        Just t ->
          return $ itemVal t
+
+-- | Remove the specified element from the list and return a flag
+-- indicating whether the element was found and removed.
+listRemove :: (Eq a, MonadRef m) => DoubleLinkedList m a -> a -> Event m Bool
+{-# INLINABLE listRemove #-}
+listRemove x v = fmap isJust $ listRemoveBy x (== v)
+
+-- | Remove an element satisfying the specified predicate and return
+-- the element if found.
+listRemoveBy :: MonadRef m => DoubleLinkedList m a -> (a -> Bool) -> Event m (Maybe a)
+{-# INLINABLE listRemoveBy #-}
+listRemoveBy x p = readRef (listHead x) >>= loop
+  where loop item =
+          case item of
+            Nothing   -> return Nothing
+            Just item ->
+              do let f = p (itemVal item)
+                 if not f
+                   then readRef (itemNext item) >>= loop
+                   else do size <- readRef (listSize x)
+                           prev <- readRef (itemPrev item)
+                           next <- readRef (itemNext item)
+                           writeRef (listSize x) (size - 1)
+                           case (prev, next) of
+                             (Nothing, Nothing) ->
+                               do writeRef (listHead x) Nothing
+                                  writeRef (listTail x) Nothing
+                             (Nothing, head' @ (Just item')) ->
+                               do writeRef (itemPrev item') Nothing
+                                  writeRef (listHead x) head'
+                             (tail' @ (Just item'), Nothing) ->
+                               do writeRef (itemNext item') Nothing
+                                  writeRef (listTail x) tail'
+                             (Just prev', Just next') ->
+                               do writeRef (itemNext prev') (Just next')
+                                  writeRef (itemPrev next') (Just prev')
+                           return (Just $ itemVal item)
+
+-- | Detect whether the specified element is contained in the list.
+listContains :: (Eq a, MonadRef m) => DoubleLinkedList m a -> a -> Event m Bool
+{-# INLINABLE listContains #-}
+listContains x v = fmap isJust $ listContainsBy x (== v)
+
+-- | Detect whether an element satisfying the specified predicate is contained in the list.
+listContainsBy :: MonadRef m => DoubleLinkedList m a -> (a -> Bool) -> Event m (Maybe a)
+{-# INLINABLE listContainsBy #-}
+listContainsBy x p = readRef (listHead x) >>= loop
+  where loop item =
+          case item of
+            Nothing   -> return Nothing
+            Just item ->
+              do let f = p (itemVal item)
+                 if not f
+                   then readRef (itemNext item) >>= loop
+                   else return $ Just (itemVal item)
+
+-- | Clear the contents of the list.
+clearList :: MonadRef m => DoubleLinkedList m a -> Event m ()
+{-# INLINABLE clearList #-}
+clearList q =
+  do writeRef (listHead q) Nothing
+     writeRef (listTail q) Nothing
+     writeRef (listSize q) 0
+
+-- | Freeze the list and return its contents.
+freezeList :: MonadRef m => DoubleLinkedList m a -> Event m [a]
+{-# INLINABLE freezeList #-}
+freezeList x = readRef (listTail x) >>= loop []
+  where loop acc Nothing     = return acc
+        loop acc (Just item) = readRef (itemPrev item) >>= loop (itemVal item : acc)
+  
