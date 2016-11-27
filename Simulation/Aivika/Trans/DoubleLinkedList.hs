@@ -28,6 +28,7 @@ module Simulation.Aivika.Trans.DoubleLinkedList
         freezeList) where 
 
 import Data.Maybe
+import Data.Functor
 
 import Control.Monad
 
@@ -186,7 +187,7 @@ listLast x =
 
 -- | Remove the specified element from the list and return a flag
 -- indicating whether the element was found and removed.
-listRemove :: (Eq a, MonadRef m) => DoubleLinkedList m a -> a -> Event m Bool
+listRemove :: (Eq a, Functor m, MonadRef m) => DoubleLinkedList m a -> a -> Event m Bool
 {-# INLINABLE listRemove #-}
 listRemove x v = fmap isJust $ listRemoveBy x (== v)
 
@@ -222,7 +223,7 @@ listRemoveBy x p = readRef (listHead x) >>= loop
                            return (Just $ itemVal item)
 
 -- | Detect whether the specified element is contained in the list.
-listContains :: (Eq a, MonadRef m) => DoubleLinkedList m a -> a -> Event m Bool
+listContains :: (Eq a, Functor m, MonadRef m) => DoubleLinkedList m a -> a -> Event m Bool
 {-# INLINABLE listContains #-}
 listContains x v = fmap isJust $ listContainsBy x (== v)
 
