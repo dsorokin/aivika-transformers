@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.IO.Resource.Preemption
@@ -10,7 +10,7 @@
 -- Tested with: GHC 8.0.1
 --
 -- This module defines the preemptible resource, where
--- the 'MonadIO'-based monad can be an instance of 'MonadResource'.
+-- the 'IO' monad is an instance of 'MonadResource'.
 --
 module Simulation.Aivika.IO.Resource.Preemption () where
 
@@ -24,7 +24,6 @@ import Data.Monoid
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.DES
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
@@ -38,30 +37,31 @@ import Simulation.Aivika.IO.DES
 
 import qualified Simulation.Aivika.PriorityQueue as PQ
 
--- | The 'MonadIO' based monad is an instance of 'MonadResource'.
-instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
+-- | The 'IO' monad is an instance of 'MonadResource'.
+instance MonadResource IO where
+-- instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
 
   {-# SPECIALISE instance MonadResource IO #-}
 
   -- | A template-based implementation of the preemptible resource.
-  data Resource m = 
+  data Resource IO = 
     Resource { resourceMaxCount0 :: Maybe Int,
                -- ^ Return the maximum count of the resource, where 'Nothing'
                -- means that the resource has no upper bound.
                resourceCountRef :: IORef Int,
                resourceCountStatsRef :: IORef (TimingStats Int),
-               resourceCountSource :: SignalSource m Int,
+               resourceCountSource :: SignalSource IO Int,
                resourceUtilisationCountRef :: IORef Int,
                resourceUtilisationCountStatsRef :: IORef (TimingStats Int),
-               resourceUtilisationCountSource :: SignalSource m Int,
+               resourceUtilisationCountSource :: SignalSource IO Int,
                resourceQueueCountRef :: IORef Int,
                resourceQueueCountStatsRef :: IORef (TimingStats Int),
-               resourceQueueCountSource :: SignalSource m Int,
+               resourceQueueCountSource :: SignalSource IO Int,
                resourceTotalWaitTimeRef :: IORef Double,
                resourceWaitTimeRef :: IORef (SamplingStats Double),
-               resourceWaitTimeSource :: SignalSource m (),
-               resourceActingQueue :: PQ.PriorityQueue (ResourceActingItem m),
-               resourceWaitQueue :: PQ.PriorityQueue (ResourceAwaitingItem m) }
+               resourceWaitTimeSource :: SignalSource IO (),
+               resourceActingQueue :: PQ.PriorityQueue (ResourceActingItem IO),
+               resourceWaitQueue :: PQ.PriorityQueue (ResourceAwaitingItem IO) }
 
   {-# INLINABLE newResource #-}
   newResource count =
@@ -290,22 +290,27 @@ data ResourcePreemptedItem m =
                           preemptedItemTime :: Double,
                           preemptedItemId :: ProcessId m }
 
-instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (Resource m) where
+instance Eq (Resource IO) where
+-- instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (Resource m) where
 
   {-# INLINABLE (==) #-}
   x == y = resourceCountRef x == resourceCountRef y  -- unique references
 
-instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (ResourceActingItem m) where
+instance Eq (ResourceActingItem IO) where
+-- instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (ResourceActingItem m) where
 
   {-# INLINABLE (==) #-}
   x == y = actingItemId x == actingItemId y
 
 -- | Release the resource increasing its count and resuming one of the
 -- previously suspended or preempted processes as possible.
-releaseResource' :: (MonadDES m, MonadIO m, MonadTemplate m)
-                    => Resource m
+releaseResource' :: Resource IO
                     -- ^ the resource to release
-                    -> Event m ()
+                    -> Event IO ()
+-- releaseResource' :: (MonadDES m, MonadIO m, MonadTemplate m)
+--                     => Resource m
+--                     -- ^ the resource to release
+--                     -> Event m ()
 {-# INLINABLE releaseResource' #-}
 releaseResource' r =
   Event $ \p ->
@@ -349,7 +354,8 @@ releaseResource' r =
 
 -- | Preempt a process with the lowest priority that acquires yet the resource
 -- and decrease the count of available resource by 1. 
-decResourceCount' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
+decResourceCount' :: Resource IO -> Event IO ()
+-- decResourceCount' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
 {-# INLINABLE decResourceCount' #-}
 decResourceCount' r =
   Event $ \p ->
@@ -372,7 +378,8 @@ decResourceCount' r =
      invokeEvent p $ updateResourceCount r (-1)
 
 -- | Update the resource count and its statistics.
-updateResourceCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
+updateResourceCount :: Resource IO -> Int -> Event IO ()
+-- updateResourceCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
 {-# INLINABLE updateResourceCount #-}
 updateResourceCount r delta =
   Event $ \p ->
@@ -386,7 +393,8 @@ updateResourceCount r delta =
        triggerSignal (resourceCountSource r) a'
 
 -- | Update the resource queue length and its statistics.
-updateResourceQueueCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
+updateResourceQueueCount :: Resource IO -> Int -> Event IO ()
+-- updateResourceQueueCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
 {-# INLINABLE updateResourceQueueCount #-}
 updateResourceQueueCount r delta =
   Event $ \p ->
@@ -400,7 +408,8 @@ updateResourceQueueCount r delta =
        triggerSignal (resourceQueueCountSource r) a'
 
 -- | Update the resource utilisation count and its statistics.
-updateResourceUtilisationCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
+updateResourceUtilisationCount :: Resource IO -> Int -> Event IO ()
+-- updateResourceUtilisationCount :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Int -> Event m ()
 {-# INLINABLE updateResourceUtilisationCount #-}
 updateResourceUtilisationCount r delta =
   Event $ \p ->
@@ -414,7 +423,8 @@ updateResourceUtilisationCount r delta =
        triggerSignal (resourceUtilisationCountSource r) a'
 
 -- | Update the resource wait time and its statistics.
-updateResourceWaitTime :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Double -> Event m ()
+updateResourceWaitTime :: Resource IO -> Double -> Event IO ()
+-- updateResourceWaitTime :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Double -> Event m ()
 {-# INLINABLE updateResourceWaitTime #-}
 updateResourceWaitTime r delta =
   Event $ \p ->

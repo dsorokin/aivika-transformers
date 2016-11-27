@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.IO.Resource.Preemption.Base
@@ -9,8 +9,8 @@
 -- Stability  : experimental
 -- Tested with: GHC 8.0.1
 --
--- This module defines the optimised preemptible resource, where
--- the 'MonadIO'-based monad can be an instance of 'MonadResource'.
+-- This module defines an optimised preemptible resource, where
+-- the 'IO' monad is an instance of 'MonadResource'.
 --
 module Simulation.Aivika.IO.Resource.Preemption.Base () where
 
@@ -23,7 +23,6 @@ import Data.IORef
 import Simulation.Aivika.Trans.Exception
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.DES
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Event
@@ -35,17 +34,18 @@ import Simulation.Aivika.IO.DES
 
 import qualified Simulation.Aivika.PriorityQueue as PQ
 
--- | The 'MonadIO' based monad is an instance of 'MonadResource'.
-instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
+-- | The 'IO' monad is an instance of 'MonadResource'.
+instance MonadResource IO where
+-- instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m) => MonadResource m where
 
   {-# SPECIALISE instance MonadResource IO #-}
 
   -- | A template-based implementation of the preemptible resource.
-  data Resource m = 
+  data Resource IO = 
     Resource { resourceMaxCount0 :: Maybe Int,
                resourceCountRef :: IORef Int,
-               resourceActingQueue :: PQ.PriorityQueue (ResourceActingItem m),
-               resourceWaitQueue :: PQ.PriorityQueue (ResourceAwaitingItem m) }
+               resourceActingQueue :: PQ.PriorityQueue (ResourceActingItem IO),
+               resourceWaitQueue :: PQ.PriorityQueue (ResourceAwaitingItem IO) }
 
   {-# INLINABLE newResource #-}
   newResource count =
@@ -189,17 +189,20 @@ data ResourcePreemptedItem m =
 type ResourceAwaitingItem m =
   Either (ResourceRequestingItem m) (ResourcePreemptedItem m)
 
-instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (Resource m) where
+instance Eq (Resource IO) where
+-- instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (Resource m) where
 
   {-# INLINABLE (==) #-}
   x == y = resourceCountRef x == resourceCountRef y  -- unique references
 
-instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (ResourceActingItem m) where
+instance Eq (ResourceActingItem IO) where
+-- instance (MonadDES m, MonadIO m, MonadTemplate m) => Eq (ResourceActingItem m) where
 
   {-# INLINABLE (==) #-}
   x == y = actingItemId x == actingItemId y
 
-releaseResource' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
+releaseResource' :: Resource IO -> Event IO ()
+-- releaseResource' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
 {-# INLINABLE releaseResource' #-}
 releaseResource' r =
   Event $ \p ->
@@ -236,7 +239,8 @@ releaseResource' r =
                           do liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
                              invokeEvent p $ processPreemptionEnd pid
 
-decResourceCount' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
+decResourceCount' :: Resource IO -> Event IO ()
+-- decResourceCount' :: (MonadDES m, MonadIO m, MonadTemplate m) => Resource m -> Event m ()
 {-# INLINABLE decResourceCount' #-}
 decResourceCount' r =
   Event $ \p ->

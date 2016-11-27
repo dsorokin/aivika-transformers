@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module     : Simulation.Aivika.IO.Generator
@@ -10,7 +10,7 @@
 -- Tested with: GHC 8.0.1
 --
 -- Here is defined a random number generator, where
--- the 'MonadIO'-based monad can be an instance of 'MonadGenerator'.
+-- the 'IO' monad is an instance of 'MonadGenerator'.
 --
 module Simulation.Aivika.IO.Generator () where
 
@@ -23,16 +23,16 @@ import Data.IORef
 
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Generator.Primitive
-import Simulation.Aivika.Trans.Template
 
-instance (Functor m, Monad m, MonadIO m, MonadTemplate m) => MonadGenerator m where
+instance MonadGenerator IO where
+-- instance (Functor m, Monad m, MonadIO m, MonadTemplate m) => MonadGenerator m where
 
   {-# SPECIALISE instance MonadGenerator IO #-}
 
-  data Generator m =
-    Generator { generator01 :: m Double,
+  data Generator IO =
+    Generator { generator01 :: IO Double,
                 -- ^ the generator of uniform numbers from 0 to 1
-                generatorNormal01 :: m Double
+                generatorNormal01 :: IO Double
                 -- ^ the generator of normal numbers with mean 0 and variance 1
               }
 

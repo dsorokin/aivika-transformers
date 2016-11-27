@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, FunctionalDependencies, UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses #-}
 
 -- |
 -- Module     : Simulation.Aivika.IO.QueueStrategy
@@ -10,7 +10,7 @@
 -- Tested with: GHC 8.0.1
 --
 -- This module defines some queue strategy instances
--- for the 'MonadIO'-based computations.
+-- for the 'IO' computation.
 --
 module Simulation.Aivika.IO.QueueStrategy () where
 
@@ -22,7 +22,6 @@ import Simulation.Aivika.Trans.Parameter.Random
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Event
 import Simulation.Aivika.Trans.QueueStrategy
-import Simulation.Aivika.Trans.Template
 
 import Simulation.Aivika.IO.Comp
 
@@ -31,13 +30,14 @@ import qualified Simulation.Aivika.PriorityQueue as PQ
 import qualified Simulation.Aivika.Vector as V
 
 -- | An implementation of the 'FCFS' queue strategy.
-instance (Monad m, MonadComp m, MonadIO m, MonadTemplate m)
-         => QueueStrategy m FCFS where
+instance QueueStrategy IO FCFS where
+-- instance (Monad m, MonadComp m, MonadIO m, MonadTemplate m)
+--          => QueueStrategy m FCFS where
 
   {-# SPECIALISE instance QueueStrategy IO FCFS #-}
 
   -- | A queue used by the 'FCFS' strategy.
-  newtype StrategyQueue m FCFS a = FCFSQueue (LL.DoubleLinkedList a)
+  newtype StrategyQueue IO FCFS a = FCFSQueue (LL.DoubleLinkedList a)
 
   {-# INLINABLE newStrategyQueue #-}
   newStrategyQueue s =
@@ -49,8 +49,9 @@ instance (Monad m, MonadComp m, MonadIO m, MonadTemplate m)
     liftIO $ LL.listNull q
 
 -- | An implementation of the 'FCFS' queue strategy.
-instance (QueueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
-         => DequeueStrategy m FCFS where
+instance DequeueStrategy IO FCFS where
+-- instance (QueueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DequeueStrategy m FCFS where
 
   {-# SPECIALISE instance DequeueStrategy IO FCFS #-}
 
@@ -62,8 +63,9 @@ instance (QueueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
        return i
 
 -- | An implementation of the 'FCFS' queue strategy.
-instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
-         => EnqueueStrategy m FCFS where
+instance EnqueueStrategy IO FCFS where
+-- instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
+--          => EnqueueStrategy m FCFS where
 
   {-# SPECIALISE instance EnqueueStrategy IO FCFS #-}
 
@@ -72,8 +74,9 @@ instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
     liftIO $ LL.listAddLast q i
 
 -- | An implementation of the 'FCFS' queue strategy.
-instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
-         => DeletingQueueStrategy m FCFS where
+instance DeletingQueueStrategy IO FCFS where
+-- instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DeletingQueueStrategy m FCFS where
 
   {-# SPECIALISE instance DeletingQueueStrategy IO FCFS #-}
 
@@ -86,13 +89,14 @@ instance (DequeueStrategy m FCFS, MonadComp m, MonadIO m, MonadTemplate m)
     liftIO $ LL.listContainsBy q p
 
 -- | An implementation of the 'LCFS' queue strategy.
-instance (MonadComp m, MonadIO m, MonadTemplate m)
-         => QueueStrategy m LCFS where
+instance QueueStrategy IO LCFS where
+-- instance (MonadComp m, MonadIO m, MonadTemplate m)
+--          => QueueStrategy m LCFS where
 
   {-# SPECIALISE instance QueueStrategy IO LCFS #-}
 
   -- | A queue used by the 'LCFS' strategy.
-  newtype StrategyQueue m LCFS a = LCFSQueue (LL.DoubleLinkedList a)
+  newtype StrategyQueue IO LCFS a = LCFSQueue (LL.DoubleLinkedList a)
 
   {-# INLINABLE newStrategyQueue #-}
   newStrategyQueue s =
@@ -104,8 +108,9 @@ instance (MonadComp m, MonadIO m, MonadTemplate m)
     liftIO $ LL.listNull q
 
 -- | An implementation of the 'LCFS' queue strategy.
-instance (QueueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
-         => DequeueStrategy m LCFS where
+instance DequeueStrategy IO LCFS where
+-- instance (QueueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DequeueStrategy m LCFS where
 
   {-# SPECIALISE instance DequeueStrategy IO LCFS #-}
 
@@ -117,8 +122,9 @@ instance (QueueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
        return i
 
 -- | An implementation of the 'LCFS' queue strategy.
-instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
-         => EnqueueStrategy m LCFS where
+instance EnqueueStrategy IO LCFS where
+-- instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
+--          => EnqueueStrategy m LCFS where
 
   {-# SPECIALISE instance EnqueueStrategy IO LCFS #-}
 
@@ -127,8 +133,9 @@ instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
     liftIO $ LL.listInsertFirst q i
 
 -- | An implementation of the 'LCFS' queue strategy.
-instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
-         => DeletingQueueStrategy m LCFS where
+instance DeletingQueueStrategy IO LCFS where
+-- instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DeletingQueueStrategy m LCFS where
 
   {-# SPECIALISE instance DeletingQueueStrategy IO LCFS #-}
 
@@ -140,14 +147,15 @@ instance (DequeueStrategy m LCFS, MonadComp m, MonadIO m, MonadTemplate m)
   strategyQueueContainsBy (LCFSQueue q) p =
     liftIO $ LL.listContainsBy q p
 
--- | A template-based implementation of the 'StaticPriorities' queue strategy.
-instance (MonadComp m, MonadIO m, MonadTemplate m)
-         => QueueStrategy m StaticPriorities where
+-- | An implementation of the 'StaticPriorities' queue strategy.
+instance QueueStrategy IO StaticPriorities where
+-- instance (MonadComp m, MonadIO m, MonadTemplate m)
+--          => QueueStrategy m StaticPriorities where
 
   {-# SPECIALISE instance QueueStrategy IO StaticPriorities #-}
 
   -- | A queue used by the 'StaticPriorities' strategy.
-  newtype StrategyQueue m StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue a)
+  newtype StrategyQueue IO StaticPriorities a = StaticPriorityQueue (PQ.PriorityQueue a)
 
   {-# INLINABLE newStrategyQueue #-}
   newStrategyQueue s =
@@ -158,9 +166,10 @@ instance (MonadComp m, MonadIO m, MonadTemplate m)
   strategyQueueNull (StaticPriorityQueue q) =
     liftIO $ PQ.queueNull q
 
--- | A template-based implementation of the 'StaticPriorities' queue strategy.
-instance (QueueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
-         => DequeueStrategy m StaticPriorities where
+-- | An implementation of the 'StaticPriorities' queue strategy.
+instance DequeueStrategy IO StaticPriorities where
+-- instance (QueueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DequeueStrategy m StaticPriorities where
 
   {-# SPECIALISE instance DequeueStrategy IO StaticPriorities #-}
 
@@ -171,9 +180,10 @@ instance (QueueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplat
        PQ.dequeue q
        return i
 
--- | A template-based implementation of the 'StaticPriorities' queue strategy.
-instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
-         => PriorityQueueStrategy m StaticPriorities Double where
+-- | An implementation of the 'StaticPriorities' queue strategy.
+instance PriorityQueueStrategy IO StaticPriorities Double where
+-- instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
+--          => PriorityQueueStrategy m StaticPriorities Double where
 
   {-# SPECIALISE instance PriorityQueueStrategy IO StaticPriorities Double #-}
 
@@ -182,8 +192,9 @@ instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTempl
     liftIO $ PQ.enqueue q p i
 
 -- | An implementation of the 'StaticPriorities' queue strategy.
-instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
-         => DeletingQueueStrategy m StaticPriorities where
+instance DeletingQueueStrategy IO StaticPriorities where
+-- instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DeletingQueueStrategy m StaticPriorities where
 
   {-# SPECIALISE instance DeletingQueueStrategy IO StaticPriorities #-}
 
@@ -195,14 +206,15 @@ instance (DequeueStrategy m StaticPriorities, MonadComp m, MonadIO m, MonadTempl
   strategyQueueContainsBy (StaticPriorityQueue q) p =
     liftIO $ PQ.queueContainsBy q p
 
--- | A template-based implementation of the 'SIRO' queue strategy.
-instance (MonadComp m, MonadIO m, MonadTemplate m)
-         => QueueStrategy m SIRO where
+-- | An implementation of the 'SIRO' queue strategy.
+instance QueueStrategy IO SIRO where
+-- instance (MonadComp m, MonadIO m, MonadTemplate m)
+--          => QueueStrategy m SIRO where
 
   {-# SPECIALISE instance QueueStrategy IO SIRO #-}
 
   -- | A queue used by the 'SIRO' strategy.
-  newtype StrategyQueue m SIRO a = SIROQueue (V.Vector a)
+  newtype StrategyQueue IO SIRO a = SIROQueue (V.Vector a)
   
   {-# INLINABLE newStrategyQueue #-}
   newStrategyQueue s =
@@ -215,9 +227,10 @@ instance (MonadComp m, MonadIO m, MonadTemplate m)
     do n <- V.vectorCount q
        return (n == 0)
 
--- | A template-based implementation of the 'SIRO' queue strategy.
-instance (QueueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
-         => DequeueStrategy m SIRO where
+-- | An implementation of the 'SIRO' queue strategy.
+instance DequeueStrategy IO SIRO where
+-- instance (QueueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DequeueStrategy m SIRO where
 
   {-# SPECIALISE instance DequeueStrategy IO SIRO #-}
 
@@ -229,9 +242,10 @@ instance (QueueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
        liftIO $ V.vectorDeleteAt q i
        return x
 
--- | A template-based implementation of the 'SIRO' queue strategy.
-instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
-         => EnqueueStrategy m SIRO where
+-- | An implementation of the 'SIRO' queue strategy.
+instance EnqueueStrategy IO SIRO where
+-- instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
+--          => EnqueueStrategy m SIRO where
 
   {-# SPECIALISE instance EnqueueStrategy IO SIRO #-}
 
@@ -240,8 +254,9 @@ instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
     liftIO $ V.appendVector q i
 
 -- | An implementation of the 'SIRO' queue strategy.
-instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
-         => DeletingQueueStrategy m SIRO where
+instance DeletingQueueStrategy IO SIRO where
+-- instance (DequeueStrategy m SIRO, MonadComp m, MonadIO m, MonadTemplate m)
+--          => DeletingQueueStrategy m SIRO where
 
   {-# SPECIALISE instance DeletingQueueStrategy IO SIRO #-}
 

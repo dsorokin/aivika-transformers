@@ -1,5 +1,5 @@
 
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.IO.Dynamics.Memo.Unboxed
@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 8.0.1
 --
--- The 'MonadIO'-based monad can be an instance of the 'MonadMemo' type class.
+-- The 'IO' monad can be an instance of the 'MonadMemo' type class.
 --
 
 module Simulation.Aivika.IO.Dynamics.Memo.Unboxed () where
@@ -27,11 +27,11 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo.Unboxed
 import Simulation.Aivika.Trans.Dynamics.Extra
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Array
 
--- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
-instance (Monad m, MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e where
+-- | The 'IO' based monad can be an instance of the 'MonadMemo' type class.
+instance MArray IOUArray e IO => MonadMemo IO e where
+-- instance (Monad m, MonadIO m, MonadTemplate m, MArray IOUArray e IO) => MonadMemo m e where
 
   {-# SPECIALISE instance MonadMemo IO Double #-}
   {-# SPECIALISE instance MonadMemo IO Float #-}

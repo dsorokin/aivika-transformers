@@ -9,8 +9,8 @@
 -- Stability  : experimental
 -- Tested with: GHC 8.0.1
 --
--- The module defines a template-based event queue, where
--- the 'MonadIO'-based monad can be an instance of 'EventQueueing' and 'EventIOQueueing'.
+-- The module defines an event queue, where the 'IO' monad is an instance of
+-- 'EventQueueing' and 'EventIOQueueing'.
 --
 module Simulation.Aivika.IO.Event () where
 
@@ -24,17 +24,17 @@ import qualified Simulation.Aivika.PriorityQueue as PQ
 import Simulation.Aivika.Trans.Ref.Base
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Comp
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Event
 
--- | A template-based implementation of the 'EventQueueing' type class.
-instance (Monad m, MonadIO m, MonadEventQueueTemplate m) => EventQueueing m where
+-- | An implementation of the 'EventQueueing' type class.
+instance EventQueueing IO where
+-- instance (Monad m, MonadIO m, MonadEventQueueTemplate m) => EventQueueing m where
 
   {-# SPECIALISE instance EventQueueing IO #-}
 
-  data EventQueue m =
-    EventQueue { queuePQ :: PQ.PriorityQueue (Point m -> m ()),
+  data EventQueue IO =
+    EventQueue { queuePQ :: PQ.PriorityQueue (Point IO -> IO ()),
                  -- ^ the underlying priority queue
                  queueBusy :: IORef Bool,
                  -- ^ whether the queue is currently processing events
@@ -70,7 +70,8 @@ instance (Monad m, MonadIO m, MonadEventQueueTemplate m) => EventQueueing m wher
     liftIO . PQ.queueCount . queuePQ . runEventQueue . pointRun
 
 -- | Process the pending events.
-processPendingEventsCore :: (MonadIO m, MonadEventQueueTemplate m) => Bool -> Dynamics m ()
+processPendingEventsCore :: Bool -> Dynamics IO ()
+-- processPendingEventsCore :: (MonadIO m, MonadEventQueueTemplate m) => Bool -> Dynamics m ()
 {-# INLINE processPendingEventsCore #-}
 processPendingEventsCore includingCurrentEvents = Dynamics r where
   r p =
@@ -105,7 +106,8 @@ processPendingEventsCore includingCurrentEvents = Dynamics r where
                  call q p
 
 -- | Process the pending events synchronously, i.e. without past.
-processPendingEvents :: (MonadIO m, MonadEventQueueTemplate m) => Bool -> Dynamics m ()
+processPendingEvents :: Bool -> Dynamics IO ()
+-- processPendingEvents :: (MonadIO m, MonadEventQueueTemplate m) => Bool -> Dynamics m ()
 {-# INLINE processPendingEvents #-}
 processPendingEvents includingCurrentEvents = Dynamics r where
   r p =
@@ -120,34 +122,42 @@ processPendingEvents includingCurrentEvents = Dynamics r where
   m = processPendingEventsCore includingCurrentEvents
 
 -- | A memoized value.
-processEventsIncludingCurrent :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
+processEventsIncludingCurrent :: Dynamics IO ()
+-- processEventsIncludingCurrent :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
 {-# INLINE processEventsIncludingCurrent #-}
 processEventsIncludingCurrent = processPendingEvents True
 
 -- | A memoized value.
-processEventsIncludingEarlier :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
+processEventsIncludingEarlier :: Dynamics IO ()
+-- processEventsIncludingEarlier :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
 {-# INLINE processEventsIncludingEarlier #-}
 processEventsIncludingEarlier = processPendingEvents False
 
 -- | A memoized value.
-processEventsIncludingCurrentCore :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
+processEventsIncludingCurrentCore :: Dynamics IO ()
+-- processEventsIncludingCurrentCore :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
 {-# INLINE processEventsIncludingCurrentCore #-}
 processEventsIncludingCurrentCore = processPendingEventsCore True
 
 -- | A memoized value.
-processEventsIncludingEarlierCore :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
+processEventsIncludingEarlierCore :: Dynamics IO ()
+-- processEventsIncludingEarlierCore :: (MonadIO m, MonadEventQueueTemplate m) => Dynamics m ()
 {-# INLINE processEventsIncludingEarlierCore #-}
 processEventsIncludingEarlierCore = processPendingEventsCore True
 
 -- | Process the events.
-processEvents :: (MonadIO m, MonadEventQueueTemplate m) => EventProcessing -> Dynamics m ()
+processEvents :: EventProcessing -> Dynamics IO ()
+-- processEvents :: (MonadIO m, MonadEventQueueTemplate m) => EventProcessing -> Dynamics m ()
 {-# INLINABLE processEvents #-}
 processEvents CurrentEvents = processEventsIncludingCurrent
 processEvents EarlierEvents = processEventsIncludingEarlier
 processEvents CurrentEventsOrFromPast = processEventsIncludingCurrentCore
 processEvents EarlierEventsOrFromPast = processEventsIncludingEarlierCore
 
--- | A template-based implementation of the 'EventIOQueueing' type class.
-instance (Monad m, MonadIO m, MonadEventQueueTemplate m, MonadDES m) => EventIOQueueing m where
+-- | An implementation of the 'EventIOQueueing' type class.
+instance EventIOQueueing IO where
+-- instance (Monad m, MonadIO m, MonadEventQueueTemplate m, MonadDES m) => EventIOQueueing m where
+
+  {-# SPECIALISE instance EventIOQueueing IO #-}
 
   enqueueEventIO = enqueueEvent

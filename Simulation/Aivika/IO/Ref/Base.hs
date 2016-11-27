@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeFamilies, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module     : Simulation.Aivika.IO.Ref.Base
@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 8.0.1
 --
--- The 'MonadIO'-based monad can be an instance of 'MonadRef'.
+-- The 'IO' monad in an instance of 'MonadRef'.
 --
 module Simulation.Aivika.IO.Ref.Base () where
 
@@ -20,15 +20,15 @@ import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Ref.Base
-import Simulation.Aivika.Trans.Template
 
--- | The 'MonadIO' based monad is an instance of 'MonadRef'.
-instance (Monad m, MonadIO m, MonadTemplate m) => MonadRef m where
+-- | 'IO' is an instance of 'MonadRef'.
+instance MonadRef IO where
+-- instance (Monad m, MonadIO m, MonadTemplate m) => MonadRef m where
 
   {-# SPECIALISE instance MonadRef IO #-}
 
   -- | A type safe wrapper for the 'IORef' reference.
-  newtype Ref m a = Ref { refValue :: IORef a }
+  newtype Ref IO a = Ref { refValue :: IORef a }
 
   {-# INLINE newRef #-}
   newRef a =
@@ -53,11 +53,12 @@ instance (Monad m, MonadIO m, MonadTemplate m) => MonadRef m where
   {-# INLINE equalRef #-}
   equalRef (Ref r1) (Ref r2) = (r1 == r2)
 
--- | The 'MonadIO' based monad is an instance of 'MonadRef0'.
-instance (MonadIO m, MonadTemplate m) => MonadRef0 m where
+-- | 'IO' is an instance of 'MonadRef0'.
+instance MonadRef0 IO where
+-- instance (MonadIO m, MonadTemplate m) => MonadRef0 m where
 
   {-# SPECIALISE instance MonadRef0 IO #-}
-
+  
   {-# INLINE newRef0 #-}
   newRef0 a =
     do x <- liftIO $ newIORef a

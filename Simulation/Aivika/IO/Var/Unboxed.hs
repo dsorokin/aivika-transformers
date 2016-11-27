@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 8.0.1
 --
--- The 'MonadIO'-based monad can be an instance 'MonadVar'.
+-- The 'IO' monad can be an instance of 'MonadVar'.
 --
 module Simulation.Aivika.IO.Var.Unboxed () where
 
@@ -24,7 +24,6 @@ import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Signal
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Var.Unboxed
 
 import Simulation.Aivika.IO.DES
@@ -32,19 +31,20 @@ import Simulation.Aivika.IO.DES
 import Simulation.Aivika.Unboxed
 import qualified Simulation.Aivika.Vector.Unboxed as UV
 
--- | The 'MonadIO' based monad is an instance of 'MonadVar'.
-instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m, Unboxed a) => MonadVar m a where
+-- | The 'IO' monad can be an instance of 'MonadVar'.
+instance Unboxed a => MonadVar IO a where
+-- instance (Monad m, MonadDES m, MonadIO m, MonadTemplate m, Unboxed a) => MonadVar m a where
 
   {-# SPECIALISE instance MonadVar IO Double #-}
   {-# SPECIALISE instance MonadVar IO Float #-}
   {-# SPECIALISE instance MonadVar IO Int #-}
 
   -- | A template-based implementation of the variable.
-  data Var m a = 
+  data Var IO a = 
     Var { varXS    :: UV.Vector Double,
           varMS    :: UV.Vector a,
           varYS    :: UV.Vector a,
-          varChangedSource :: SignalSource m a }
+          varChangedSource :: SignalSource IO a }
      
   {-# INLINABLE newVar #-}
   newVar a =

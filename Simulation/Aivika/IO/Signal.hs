@@ -29,7 +29,6 @@ import Control.Monad.Trans
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Event
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Signal
 
 import Simulation.Aivika.IO.DES
@@ -45,16 +44,18 @@ data SignalHistory m a =
                   signalHistoryValues :: V.Vector a }
 
 -- | Create a history of the signal values.
-newSignalHistory :: (MonadDES m, MonadIO m, MonadTemplate m)
-                    => Signal m a -> Event m (SignalHistory m a)
+newSignalHistory :: Signal IO a -> Event IO (SignalHistory IO a)
+-- newSignalHistory :: (MonadDES m, MonadIO m, MonadTemplate m)
+--                     => Signal m a -> Event m (SignalHistory m a)
 {-# INLINABLE newSignalHistory #-}
 newSignalHistory =
   newSignalHistoryStartingWith Nothing
 
 -- | Create a history of the signal values starting with
 -- the optional initial value.
-newSignalHistoryStartingWith :: (MonadDES m, MonadIO m, MonadTemplate m)
-                                => Maybe a -> Signal m a -> Event m (SignalHistory m a)
+newSignalHistoryStartingWith :: Maybe a -> Signal IO a -> Event IO (SignalHistory IO a)
+-- newSignalHistoryStartingWith :: (MonadDES m, MonadIO m, MonadTemplate m)
+--                                 => Maybe a -> Signal m a -> Event m (SignalHistory m a)
 {-# INLINABLE newSignalHistoryStartingWith #-}
 newSignalHistoryStartingWith init signal =
   Event $ \p ->
@@ -77,8 +78,9 @@ newSignalHistoryStartingWith init signal =
                             signalHistoryValues = xs }
        
 -- | Read the history of signal values.
-readSignalHistory :: (MonadDES m, MonadIO m, MonadTemplate m)
-                     => SignalHistory m a -> Event m (Array Int Double, Array Int a)
+readSignalHistory :: SignalHistory IO a -> Event IO (Array Int Double, Array Int a)
+-- readSignalHistory :: (MonadDES m, MonadIO m, MonadTemplate m)
+--                      => SignalHistory m a -> Event m (Array Int Double, Array Int a)
 {-# INLINABLE readSignalHistory #-}
 readSignalHistory history =
   Event $ \p ->

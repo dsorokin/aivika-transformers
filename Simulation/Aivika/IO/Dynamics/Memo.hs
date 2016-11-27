@@ -9,7 +9,7 @@
 -- Stability  : experimental
 -- Tested with: GHC 8.0.1
 --
--- The 'MonadIO'-based monad can be an instance of the 'MonadMemo' type class.
+-- The 'IO' monad is an instance of the 'MonadMemo' type class.
 --
 
 module Simulation.Aivika.IO.Dynamics.Memo () where
@@ -27,11 +27,11 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Dynamics.Memo
 import Simulation.Aivika.Trans.Dynamics.Extra
-import Simulation.Aivika.Trans.Template
 import Simulation.Aivika.Trans.Array
 
--- | The 'MonadIO' based monad is an instance of the 'MonadMemo' type class.
-instance (Monad m, MonadIO m, MonadTemplate m) => MonadMemo m where
+-- | The 'IO' monad is an instance of the 'MonadMemo' type class.
+instance MonadMemo IO where
+-- instance (Monad m, MonadIO m, MonadTemplate m) => MonadMemo m where
 
   {-# SPECIALISE instance MonadMemo IO #-}
 

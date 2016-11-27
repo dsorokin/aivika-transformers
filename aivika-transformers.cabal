@@ -108,7 +108,6 @@ library
                      Simulation.Aivika.Trans.SystemDynamics
                      Simulation.Aivika.Trans.Table
                      Simulation.Aivika.Trans.Task
-                     Simulation.Aivika.Trans.Template
                      Simulation.Aivika.Trans.Transform
                      Simulation.Aivika.Trans.Transform.Extra
                      Simulation.Aivika.Trans.Transform.Memo
