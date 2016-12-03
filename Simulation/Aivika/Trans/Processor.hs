@@ -57,6 +57,8 @@ module Simulation.Aivika.Trans.Processor
 import qualified Control.Category as C
 import Control.Arrow
 
+import Data.Monoid
+
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
