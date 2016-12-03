@@ -486,9 +486,8 @@ prefetchProcessor = Processor prefetchStream
 -- The former is passive, while the latter is active.
 --
 -- The resulting processor may be a root of space leak as it uses an internal queue to store
--- the values received from the input signal.
---
--- Consider using 'queuedChannelProcessor' that allows specifying the bounded queue in case of need.
+-- the values received from the input signal. Consider using 'queuedChannelProcessor' that
+-- allows specifying the bounded queue in case of need.
 channelProcessor :: MonadDES m => Channel m a b -> Processor m a b
 {-# INLINABLE channelProcessor #-}
 channelProcessor f =
@@ -515,9 +514,8 @@ channelProcessor f =
 -- The former is passive, while the latter is active.
 --
 -- The resulting channel may be a root of space leak as it uses an internal queue to store
--- the values received from the input stream.
---
--- Consider using 'queuedProcessorChannel' that allows specifying the bounded queue in case of need.
+-- the values received from the input stream. Consider using 'queuedProcessorChannel' that
+-- allows specifying the bounded queue in case of need.
 processorChannel :: MonadDES m => Processor m a b -> Channel m a b
 {-# INLINABLE processorChannel #-}
 processorChannel (Processor f) =
