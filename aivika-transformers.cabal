@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         4.6.1
+version:         4.7
 synopsis:        Transformers for the Aivika simulation library
 description:
     This package is a generalization of the aivika [1] simulation library
@@ -55,6 +55,7 @@ library
                      Simulation.Aivika.Trans.Arrival
                      Simulation.Aivika.Trans.Circuit
                      Simulation.Aivika.Trans.Comp
+                     Simulation.Aivika.Trans.Composite
                      Simulation.Aivika.Trans.Cont
                      Simulation.Aivika.Trans.DoubleLinkedList
                      Simulation.Aivika.Trans.DES

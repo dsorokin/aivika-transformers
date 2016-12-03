@@ -1,4 +1,9 @@
 
+Version 4.7
+-----
+
+* Added the Composite monad transformer.
+
 Version 4.6
 -----
 

@@ -18,6 +18,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Arrival,
         module Simulation.Aivika.Trans.Circuit,
         module Simulation.Aivika.Trans.Comp,
+        module Simulation.Aivika.Trans.Composite,
         module Simulation.Aivika.Trans.Cont,
         module Simulation.Aivika.Trans.DES,
         module Simulation.Aivika.Trans.Dynamics,
@@ -68,6 +69,7 @@ import Simulation.Aivika.Trans.Agent
 import Simulation.Aivika.Trans.Arrival
 import Simulation.Aivika.Trans.Circuit
 import Simulation.Aivika.Trans.Comp
+import Simulation.Aivika.Trans.Composite
 import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Dynamics
