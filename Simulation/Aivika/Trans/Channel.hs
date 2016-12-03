@@ -15,7 +15,9 @@ module Simulation.Aivika.Trans.Channel
         Channel(..),
         -- * Delay Channel
         delayChannel,
-        delayChannelM) where
+        delayChannelM,
+        -- * Debugging
+        traceChannel) where
 
 import qualified Control.Category as C
 import Control.Monad
@@ -61,3 +63,13 @@ delayChannelM :: MonadDES m
 {-# INLINABLE delayChannelM #-}
 delayChannelM delay =
   Channel $ \a -> return $ delaySignalM delay a
+                                 
+-- | Show the debug message with the current simulation time,
+-- when emitting the output signal.
+traceChannel :: MonadDES m => String -> Channel m a b -> Channel m a b
+{-# INLINABLE traceChannel #-}
+traceChannel message (Channel f) =
+  Channel $ \a ->
+  do b <- f a
+     return $
+       traceSignal message b
