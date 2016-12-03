@@ -16,6 +16,8 @@ module Simulation.Aivika.Trans.Channel
         -- * Delay Channel
         delayChannel,
         delayChannelM,
+        -- * Sinking Signal
+        sinkSignal,
         -- * Debugging
         traceChannel) where
 
@@ -63,6 +65,18 @@ delayChannelM :: MonadDES m
 {-# INLINABLE delayChannelM #-}
 delayChannelM delay =
   Channel $ \a -> return $ delaySignalM delay a
+
+-- | Sink the signal. It returns a computation that subscribes to
+-- the signal and then ignores the received data. The resulting
+-- computation can be a moving force to simulate the whole system of
+-- the interconnected signals and channels.
+sinkSignal :: MonadDES m => Signal m a -> Composite m ()
+{-# INLINABLE sinkSignal #-}
+sinkSignal a =
+  do h <- liftEvent $
+          handleSignal a $
+          const $ return ()
+     disposableComposite h
                                  
 -- | Show the debug message with the current simulation time,
 -- when emitting the output signal.
