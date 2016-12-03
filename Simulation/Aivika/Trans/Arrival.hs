@@ -18,6 +18,8 @@ module Simulation.Aivika.Trans.Arrival
         ArrivalTimer,
         newArrivalTimer,
         arrivalTimerProcessor,
+        arrivalTimerSignal,
+        arrivalTimerChannel,
         arrivalProcessingTime,
         arrivalProcessingTimeChanged,
         arrivalProcessingTimeChanged_) where
@@ -29,11 +31,13 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Event
+import Simulation.Aivika.Trans.Composite
 import Simulation.Aivika.Trans.Processor
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Signal
+import Simulation.Aivika.Trans.Channel
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Arrival (Arrival(..))
 
@@ -82,3 +86,28 @@ arrivalTimerProcessor timer =
                 addSamplingStats (t - arrivalTime a)
               triggerSignal (arrivalProcessingTimeChangedSource timer) ()
          return (a, Cons $ loop xs)
+
+-- | Return a signal that actually measures how much time has passed from
+-- the time of arriving the events.
+--
+-- Note that the statistics is counted each time you subscribe to the output signal.
+-- For example, if you subscribe twice then the statistics counting is duplicated.
+-- Ideally, you should subscribe to the output signal only once.
+arrivalTimerSignal :: MonadDES m => ArrivalTimer m -> Signal m (Arrival a) -> Signal m (Arrival a)
+{-# INLINABLE arrivalTimerSignal #-}
+arrivalTimerSignal timer sa =
+  Signal { handleSignal = \h ->
+            handleSignal sa $ \a ->
+            do t <- liftDynamics time
+               modifyRef (arrivalProcessingTimeRef timer) $
+                 addSamplingStats (t - arrivalTime a)
+               h a
+         }
+
+-- | Like 'arrivalTimerSignal' but measures how much time has passed from
+-- the time of arriving the events in the channel.
+arrivalTimerChannel :: MonadDES m => ArrivalTimer m -> Channel m (Arrival a) (Arrival a)
+{-# INLINABLE arrivalTimerChannel #-}
+arrivalTimerChannel timer =
+  Channel $ \sa ->
+  return $ arrivalTimerSignal timer sa
