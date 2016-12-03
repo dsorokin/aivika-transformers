@@ -46,9 +46,9 @@ module Simulation.Aivika.Trans.Processor
         joinProcessor,
         -- * Failover
         failoverProcessor,
-        -- * Integrating with Signals
-        signalProcessor,
-        processorSignaling,
+        -- * Integrating with Signals and Channels
+        channelProcessor,
+        processorChannel,
         -- * Debugging
         traceProcessor) where
 
@@ -59,11 +59,13 @@ import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Event
+import Simulation.Aivika.Trans.Composite
 import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Stream
 import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Signal
+import Simulation.Aivika.Trans.Channel
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | Represents a processor of simulation data.
@@ -471,40 +473,43 @@ prefetchProcessor :: MonadDES m => Processor m a a
 {-# INLINABLE prefetchProcessor #-}
 prefetchProcessor = Processor prefetchStream
 
--- | Convert the specified signal transform to a processor.
+-- | Convert the specified signal transform, i.e. the channel, to a processor.
 --
 -- The processor may return data with delay as the values are requested by demand.
 -- Consider using the 'arrivalSignal' function to provide with the information
 -- about the time points at which the signal was actually triggered.
 --
 -- The point is that the 'Stream' used in the 'Processor' is requested outside, 
--- while the 'Signal' is triggered inside. They are different by nature. 
+-- while the 'Signal' used in the 'Channel' is triggered inside. They are different by nature. 
 -- The former is passive, while the latter is active.
---
--- Cancel the processor's process to unsubscribe from the signals provided.
-signalProcessor :: MonadDES m => (Signal m a -> Signal m b) -> Processor m a b
-{-# INLINABLE signalProcessor #-}
-signalProcessor f =
+channelProcessor :: MonadDES m => Channel m a b -> Processor m a b
+{-# INLINABLE channelProcessor #-}
+channelProcessor f =
   Processor $ \xs ->
   Cons $
-  do sa <- streamSignal xs
-     sb <- signalStream (f sa)
-     runStream sb
+  do let composite =
+           do sa <- streamSignal xs
+              sb <- runChannel f sa
+              signalStream sb
+     (ys, h) <- liftEvent $
+                runComposite composite mempty
+     whenCancellingProcess $
+       disposeEvent h
+     runStream ys
 
--- | Convert the specified processor to a signal transform. 
+-- | Convert the specified processor to a signal transform, i.e. the channel. 
 --
 -- The processor may return data with delay as the values are requested by demand.
 -- Consider using the 'arrivalSignal' function to provide with the information
 -- about the time points at which the signal was actually triggered.
 --
 -- The point is that the 'Stream' used in the 'Processor' is requested outside, 
--- while the 'Signal' is triggered inside. They are different by nature.
+-- while the 'Signal' used in 'Channel' is triggered inside. They are different by nature.
 -- The former is passive, while the latter is active.
---
--- Cancel the returned process to unsubscribe from the signal specified.
-processorSignaling :: MonadDES m => Processor m a b -> Signal m a -> Process m (Signal m b)
-{-# INLINABLE processorSignaling #-}
-processorSignaling (Processor f) sa =
+processorChannel :: MonadDES m => Processor m a b -> Channel m a b
+{-# INLINABLE processorChannel #-}
+processorChannel (Processor f) =
+  Channel $ \sa ->
   do xs <- signalStream sa
      let ys = f xs
      streamSignal ys

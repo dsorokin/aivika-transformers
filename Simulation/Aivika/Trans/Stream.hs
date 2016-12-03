@@ -95,6 +95,7 @@ import Simulation.Aivika.Trans.Parameter
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Dynamics
 import Simulation.Aivika.Trans.Event
+import Simulation.Aivika.Trans.Composite
 import Simulation.Aivika.Trans.Cont
 import Simulation.Aivika.Trans.Process
 import Simulation.Aivika.Trans.Signal
@@ -613,29 +614,29 @@ prefetchStream s = Cons z where
 -- The resulting stream may be a root of space leak as it uses an internal queue to store
 -- the values received from the signal. The oldest value is dequeued each time we request
 -- the stream and it is returned within the computation.
---
--- Cancel the stream's process to unsubscribe from the specified signal.
-signalStream :: MonadDES m => Signal m a -> Process m (Stream m a)
+signalStream :: MonadDES m => Signal m a -> Composite m (Stream m a)
 {-# INLINABLE signalStream #-}
 signalStream s =
   do q <- liftSimulation newFCFSQueue
      h <- liftEvent $
-          handleSignal s $ 
-          enqueue q
-     whenCancellingProcess $ disposeEvent h
+          handleSignal s $ enqueue q
+     disposableComposite h
      return $ repeatProcess $ dequeue q
 
 -- | Return a computation of the signal that triggers values from the specified stream,
 -- each time the next value of the stream is received within the underlying 'Process' 
 -- computation.
---
--- Cancel the returned process to stop reading from the specified stream. 
-streamSignal :: MonadDES m => Stream m a -> Process m (Signal m a)
+streamSignal :: MonadDES m => Stream m a -> Composite m (Signal m a)
 {-# INLINABLE streamSignal #-}
 streamSignal z =
   do s <- liftSimulation newSignalSource
-     spawnProcess $
+     pid <- liftSimulation newProcessId
+     liftEvent $
+       runProcessUsingId pid $
        consumeStream (liftEvent . triggerSignal s) z
+     disposableComposite $
+       DisposableEvent $
+       cancelProcessWithId pid
      return $ publishSignal s
 
 -- | Transform a stream so that the resulting stream returns a sequence of arrivals
