@@ -1,0 +1,34 @@
+
+import Control.Monad
+import Control.Monad.Trans
+
+import Simulation.Aivika.Trans
+import Simulation.Aivika.IO
+
+type DES = IO
+
+specs = Specs 0 10 0.01 RungeKutta4 SimpleGenerator
+
+model :: Simulation DES (Results DES)
+model =
+  do x <- runCompositeInStartTime_ $
+          newRandomExponentialSignal 0.5
+
+     timer <- newArrivalTimer
+
+     let y = traceSignal "Y" $
+             arrivalTimerSignal timer $
+             delaySignal 1 $
+             traceSignal "X" x
+
+     runCompositeInStartTime_ $
+       sinkSignal y
+
+     return $
+       results
+       [resultSource "timer" "the arrival timer (EX ~ 0.5)" timer]
+
+main =
+  printSimulationResultsInStopTime
+  printResultSourceInRussian
+  model specs
