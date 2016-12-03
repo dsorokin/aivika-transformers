@@ -101,6 +101,7 @@ library
                      Simulation.Aivika.Trans.Server
                      Simulation.Aivika.Trans.Server.Random
                      Simulation.Aivika.Trans.Signal
+                     Simulation.Aivika.Trans.Signal.Random
                      Simulation.Aivika.Trans.Simulation
                      Simulation.Aivika.Trans.Specs
                      Simulation.Aivika.Trans.Statistics

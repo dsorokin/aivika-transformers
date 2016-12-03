@@ -52,6 +52,7 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Server,
         module Simulation.Aivika.Trans.Server.Random,
         module Simulation.Aivika.Trans.Signal,
+        module Simulation.Aivika.Trans.Signal.Random,
         module Simulation.Aivika.Trans.Simulation,
         module Simulation.Aivika.Trans.Specs,
         module Simulation.Aivika.Trans.Statistics,
@@ -104,6 +105,7 @@ import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Server.Random
 import Simulation.Aivika.Trans.Signal
+import Simulation.Aivika.Trans.Signal.Random
 import Simulation.Aivika.Trans.Simulation
 import Simulation.Aivika.Trans.Specs
 import Simulation.Aivika.Trans.Statistics
