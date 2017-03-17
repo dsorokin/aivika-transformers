@@ -212,6 +212,7 @@ instance MonadResource IO where
                              then do liftIO $ PQ.dequeue (resourceActingQueue r)
                                      liftIO $ PQ.enqueue (resourceActingQueue r) (- priority) $ ResourceActingItem priority pid
                                      liftIO $ PQ.enqueue (resourceWaitQueue r) p0 (Right $ ResourcePreemptedItem p0 t pid0)
+                                     invokeEvent p $ updateResourceWaitTime r 0
                                      invokeEvent p $ updateResourceQueueCount r 1
                                      invokeEvent p $ processPreemptionBegin pid0
                                      invokeEvent p $ resumeCont c ()
