@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Generator
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -85,6 +85,9 @@ class (Functor m, Monad m) => MonadGenerator m where
   -- | Generate a random value from the specified discrete distribution.
   generateDiscrete :: forall a. Generator m -> DiscretePDF a -> m a
 
+  -- | Generate a sequence number which can be considered quite unique.
+  generateSequenceNo :: Generator m -> m Int
+              
   -- | Create a new random number generator.
   newGenerator :: GeneratorType m -> m (Generator m)
 

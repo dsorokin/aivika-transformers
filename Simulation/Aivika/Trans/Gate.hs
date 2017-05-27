@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Gate
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -16,6 +16,7 @@ module Simulation.Aivika.Trans.Gate
         newGateClosed,
         openGate,
         closeGate,
+        invertGate,
         gateOpened,
         gateClosed,
         awaitGateOpened,
@@ -62,6 +63,12 @@ closeGate :: MonadDES m => Gate m -> Event m ()
 {-# INLINE closeGate #-}
 closeGate gate =
   writeRef (gateRef gate) False
+
+-- | Invert the gate.
+invertGate :: MonadDES m => Gate m -> Event m ()
+{-# INLINABLE invertGate #-}
+invertGate gate =
+  modifyRef (gateRef gate) not
 
 -- | Test whether the gate is open.
 gateOpened :: MonadDES m => Gate m -> Event m Bool

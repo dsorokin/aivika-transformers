@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Operation
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -22,6 +22,8 @@ module Simulation.Aivika.Trans.Operation
         operationPreemptionTime,
         operationUtilisationFactor,
         operationPreemptionFactor,
+        -- * Statistics Reset
+        resetOperation,
         -- * Summary
         operationSummary,
         -- * Derived Signals for Properties
@@ -72,7 +74,7 @@ data Operation m a b =
               -- ^ Provide @b@ by specified @a@.
               operationProcessPreemptible :: Bool,
               -- ^ Whether the process is preemptible.
-              operationStartTime :: Double,
+              operationStartTimeRef :: Ref m Double,
               -- ^ The start time of creating the operation.
               operationLastTimeRef :: Ref m Double,
               -- ^ The last time of utilising the operation activity.
@@ -116,6 +118,7 @@ newPreemptibleOperation :: MonadDES m
 {-# INLINABLE newPreemptibleOperation #-}
 newPreemptibleOperation preemptible provide =
   do t0 <- liftDynamics time
+     r' <- liftSimulation $ newRef t0
      r0 <- liftSimulation $ newRef t0
      r1 <- liftSimulation $ newRef 0
      r2 <- liftSimulation $ newRef 0
@@ -127,7 +130,7 @@ newPreemptibleOperation preemptible provide =
      s4 <- liftSimulation newSignalSource
      return Operation { operationInitProcess = provide,
                         operationProcessPreemptible = preemptible,
-                        operationStartTime = t0,
+                        operationStartTimeRef = r',
                         operationLastTimeRef = r0,
                         operationTotalUtilisationTimeRef = r1,
                         operationTotalPreemptionTimeRef = r2,
@@ -300,7 +303,7 @@ operationUtilisationFactor :: MonadDES m => Operation m a b -> Event m Double
 {-# INLINABLE operationUtilisationFactor #-}
 operationUtilisationFactor op =
   Event $ \p ->
-  do let t0 = operationStartTime op
+  do t0 <- invokeEvent p $ readRef (operationStartTimeRef op)
      t1 <- invokeEvent p $ readRef (operationLastTimeRef op)
      x  <- invokeEvent p $ readRef (operationTotalUtilisationTimeRef op)
      return (x / (t1 - t0))
@@ -330,7 +333,7 @@ operationPreemptionFactor :: MonadDES m => Operation m a b -> Event m Double
 {-# INLINABLE operationPreemptionFactor #-}
 operationPreemptionFactor op =
   Event $ \p ->
-  do let t0 = operationStartTime op
+  do t0 <- invokeEvent p $ readRef (operationStartTimeRef op)
      t1 <- invokeEvent p $ readRef (operationLastTimeRef op)
      x  <- invokeEvent p $ readRef (operationTotalPreemptionTimeRef op)
      return (x / (t1 - t0))
@@ -382,7 +385,7 @@ operationSummary :: MonadDES m => Operation m a b -> Int -> Event m ShowS
 {-# INLINABLE operationSummary #-}
 operationSummary op indent =
   Event $ \p ->
-  do let t0 = operationStartTime op
+  do t0  <- invokeEvent p $ readRef (operationStartTimeRef op)
      t1  <- invokeEvent p $ readRef (operationLastTimeRef op)
      tx1 <- invokeEvent p $ readRef (operationTotalUtilisationTimeRef op)
      tx2 <- invokeEvent p $ readRef (operationTotalPreemptionTimeRef op)
@@ -411,3 +414,15 @@ operationSummary op indent =
        showString tab .
        showString "preemption time:\n\n" .
        samplingStatsSummary xs2 (2 + indent)
+
+-- | Reset the statistics.
+resetOperation :: MonadDES m => Operation m a b -> Event m ()
+{-# INLINABLE resetOperation #-}
+resetOperation op =
+  do t0 <- liftDynamics time
+     writeRef (operationStartTimeRef op) t0
+     writeRef (operationLastTimeRef op) t0
+     writeRef (operationTotalUtilisationTimeRef op) 0
+     writeRef (operationTotalPreemptionTimeRef op) 0
+     writeRef (operationUtilisationTimeRef op) emptySamplingStats
+     writeRef (operationPreemptionTimeRef op) emptySamplingStats

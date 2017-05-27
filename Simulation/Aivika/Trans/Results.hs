@@ -1,9 +1,9 @@
 
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances, ExistentialQuantification, MultiParamTypeClasses, FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances, ExistentialQuantification, MultiParamTypeClasses, FunctionalDependencies, OverlappingInstances #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Results
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -1888,70 +1888,175 @@ timeResultSource = resultSource' "t" TimeId time
 intSubscript :: Int -> ResultName
 intSubscript i = "[" ++ show i ++ "]"
 
-instance ResultComputing t m => ResultProvider (t m Double) m where
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (Parameter m a) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m [Double]) m where
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (Simulation m a) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (SamplingStats Double)) m where
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (Dynamics m a) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (TimingStats Double)) m where
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (Event m a) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (SamplingCounter Double)) m where
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (Ref m a) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ computeResultValue name i m
+
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (B.Ref m a) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ computeResultValue name i m
+
+instance {-# OVERLAPPABLE #-} (MonadDES m, MonadVar m, ResultItemable (ResultValue a)) => ResultProvider (Var m a) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ computeResultValue name i m
+
+instance {-# OVERLAPPABLE #-} (MonadDES m, ResultItemable (ResultValue a)) => ResultProvider (Signalable m a) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Parameter m (SamplingCounter a)) m where
 
   resultSource' name i m =
     samplingCounterResultSource $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (TimingCounter Double)) m where
-
-  resultSource' name i m =
-    timingCounterResultSource $ computeResultValue name i m
-
-instance ResultComputing t m => ResultProvider (t m Int) m where
-
-  resultSource' name i m =
-    ResultItemSource $ ResultItem $ computeResultValue name i m
-
-instance ResultComputing t m => ResultProvider (t m [Int]) m where
-
-  resultSource' name i m =
-    ResultItemSource $ ResultItem $ computeResultValue name i m
-
-instance ResultComputing t m => ResultProvider (t m (SamplingStats Int)) m where
-
-  resultSource' name i m =
-    ResultItemSource $ ResultItem $ computeResultValue name i m
-
-instance ResultComputing t m => ResultProvider (t m (TimingStats Int)) m where
-
-  resultSource' name i m =
-    ResultItemSource $ ResultItem $ computeResultValue name i m
-
-instance ResultComputing t m => ResultProvider (t m (SamplingCounter Int)) m where
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Simulation m (SamplingCounter a)) m where
 
   resultSource' name i m =
     samplingCounterResultSource $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (TimingCounter Int)) m where
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Dynamics m (SamplingCounter a)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Event m (SamplingCounter a)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Ref m (SamplingCounter a)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (B.Ref m (SamplingCounter a)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              MonadVar m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Var m (SamplingCounter a)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (SamplingStats a)))
+                             => ResultProvider (Signalable m (SamplingCounter a)) m where
+
+  resultSource' name i m =
+    samplingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Parameter m (TimingCounter a)) m where
 
   resultSource' name i m =
     timingCounterResultSource $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m String) m where
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Simulation m (TimingCounter a)) m where
 
   resultSource' name i m =
-    ResultItemSource $ ResultItem $ computeResultValue name i m
+    timingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Dynamics m (TimingCounter a)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Event m (TimingCounter a)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Ref m (TimingCounter a)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (B.Ref m (TimingCounter a)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              MonadVar m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Var m (TimingCounter a)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m,
+                              ResultItemable (ResultValue a),
+                              ResultItemable (ResultValue (TimingStats a)))
+                             => ResultProvider (Signalable m (TimingCounter a)) m where
+
+  resultSource' name i m =
+    timingCounterResultSource $ computeResultValue name i m
 
 instance ResultProvider p m => ResultProvider [p] m where
 
@@ -2037,22 +2142,82 @@ instance ResultProvider p m => ResultProvider (ResultVectorWithSubscript p) m wh
         in resultSource' name' (VectorItemId y) x
       items' = V.map resultSourceSummary items
 
-instance (Ix i, Show i, ResultComputing t m) => ResultProvider (t m (A.Array i Double)) m where
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Parameter m (A.Array i e)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
 
-instance (Ix i, Show i, ResultComputing t m) => ResultProvider (t m (A.Array i Int)) m where
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Simulation m (A.Array i e)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (V.Vector Double)) m where
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Dynamics m (A.Array i e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Event m (A.Array i e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Ref m (A.Array i e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (B.Ref m (A.Array i e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, MonadVar m, ResultItemable (ResultValue [e])) => ResultProvider (Var m (A.Array i e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (Ix i, Show i, MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Signalable m (A.Array i e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue A.elems $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Parameter m (V.Vector e)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
 
-instance ResultComputing t m => ResultProvider (t m (V.Vector Int)) m where
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Simulation m (V.Vector e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Dynamics m (V.Vector e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Event m (V.Vector e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Ref m (V.Vector e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (B.Ref m (V.Vector e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, MonadVar m, ResultItemable (ResultValue [e])) => ResultProvider (Var m (V.Vector e)) m where
+
+  resultSource' name i m =
+    ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m
+
+instance {-# OVERLAPPING #-} (MonadDES m, ResultItemable (ResultValue [e])) => ResultProvider (Signalable m (V.Vector e)) m where
 
   resultSource' name i m =
     ResultItemSource $ ResultItem $ mapResultValue V.toList $ computeResultValue name i m

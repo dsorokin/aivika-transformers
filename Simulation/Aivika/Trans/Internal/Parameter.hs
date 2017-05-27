@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Parameter
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -57,6 +57,7 @@ import Simulation.Aivika.Trans.Comp
 import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Types
 import Simulation.Aivika.Trans.Internal.Specs
+import {-# SOURCE #-} Simulation.Aivika.Trans.Concurrent.MVar
 
 instance Monad m => Monad (Parameter m) where
 
@@ -284,23 +285,23 @@ instance MonadFix m => MonadFix (Parameter m) where
 -- within a simulation run. However, the value will be recalculated for other
 -- simulation runs. Also it is thread-safe when different simulation runs
 -- are executed in parallel on physically different operating system threads.
-memoParameter :: Parameter IO a -> IO (Parameter IO a)
+memoParameter :: (MonadComp m, MonadIO m) => Parameter m a -> m (Parameter m a)
 memoParameter x = 
-  do lock <- newMVar ()
-     dict <- newIORef M.empty
+  do lock <- liftIO $ newMVar ()
+     dict <- liftIO $ newIORef M.empty
      return $ Parameter $ \r ->
        do let i = runIndex r
-          m <- readIORef dict
+          m <- liftIO $ readIORef dict
           if M.member i m
             then do let Just v = M.lookup i m
                     return v
-            else withMVar lock $ 
-                 \() -> do { m <- readIORef dict;
+            else withMVarComp lock $ 
+                 \() -> do { m <- liftIO $ readIORef dict;
                              if M.member i m
                              then do let Just v = M.lookup i m
                                      return v
                              else do v <- invokeParameter r x
-                                     writeIORef dict $ M.insert i v m
+                                     liftIO $ writeIORef dict $ M.insert i v m
                                      return v }
 
 -- | Return a parameter which value is taken consequently from the specified table

@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.IO.Generator
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -32,8 +32,10 @@ instance MonadGenerator IO where
   data Generator IO =
     Generator { generator01 :: IO Double,
                 -- ^ the generator of uniform numbers from 0 to 1
-                generatorNormal01 :: IO Double
+                generatorNormal01 :: IO Double,
                 -- ^ the generator of normal numbers with mean 0 and variance 1
+                generatorSequenceNo :: IO Int
+                -- ^ the generator of sequence numbers
               }
 
   {-# INLINE generateUniform #-}
@@ -75,6 +77,9 @@ instance MonadGenerator IO where
   {-# INLINE generateDiscrete #-}
   generateDiscrete = generateDiscrete01 . generator01
 
+  {-# INLINE generateSequenceNo #-}
+  generateSequenceNo = generatorSequenceNo 
+
   {-# INLINABLE newGenerator #-}
   newGenerator tp =
     case tp of
@@ -99,8 +104,11 @@ instance MonadGenerator IO where
   {-# INLINABLE newRandomGenerator01 #-}
   newRandomGenerator01 g01 =
     do gNormal01 <- newNormalGenerator01 g01
+       gSeqNoRef <- newIORef 0
+       let gSeqNo = do { x <- readIORef gSeqNoRef; modifyIORef' gSeqNoRef (+1); return x }
        return Generator { generator01 = g01,
-                          generatorNormal01 = gNormal01 }
+                          generatorNormal01 = gNormal01,
+                          generatorSequenceNo = gSeqNo }
 
 -- | Create a normal random number generator with mean 0 and variance 1
 -- by the specified generator of uniform random numbers from 0 to 1.

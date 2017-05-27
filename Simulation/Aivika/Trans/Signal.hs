@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Signal
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -17,6 +17,7 @@ module Simulation.Aivika.Trans.Signal
        (-- * Handling and Triggering Signal
         Signal(..),
         handleSignal_,
+        handleSignalComposite,
         SignalSource,
         newSignalSource,
         newSignalSource0,
@@ -40,6 +41,12 @@ module Simulation.Aivika.Trans.Signal
         -- * Delaying Signal
         delaySignal,
         delaySignalM,
+        -- * Signal History
+        SignalHistory,
+        signalHistorySignal,
+        newSignalHistory,
+        newSignalHistoryStartingWith,
+        readSignalHistory,
         -- * Creating Signal in Time Points
         newSignalInTimes,
         newSignalInIntegTimes,
@@ -56,7 +63,6 @@ module Simulation.Aivika.Trans.Signal
 import Data.Monoid
 import Data.List
 import Data.Array
-import Data.Array.MArray.Safe
 
 import Control.Monad
 import Control.Monad.Trans
@@ -66,7 +72,10 @@ import Simulation.Aivika.Trans.DES
 import Simulation.Aivika.Trans.Internal.Specs
 import Simulation.Aivika.Trans.Internal.Parameter
 import Simulation.Aivika.Trans.Internal.Simulation
+import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
+import Simulation.Aivika.Trans.Composite
+import qualified Simulation.Aivika.Trans.Vector as V
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | The signal source that can publish its signal.
@@ -109,6 +118,13 @@ handleSignal_ :: MonadDES m => Signal m a -> (a -> Event m ()) -> Event m ()
 handleSignal_ signal h = 
   do x <- handleSignal signal h
      return ()
+
+-- | Like 'handleSignal' but within the 'Composite' computation.
+handleSignalComposite :: MonadDES m => Signal m a -> (a -> Event m ()) -> Composite m ()
+{-# INLINABLE handleSignalComposite #-}
+handleSignalComposite signal h =
+  do x <- liftEvent $ handleSignal signal h
+     disposableComposite x
      
 -- | Create a new signal source.
 newSignalSource :: MonadDES m => Simulation m (SignalSource m a)
@@ -307,7 +323,50 @@ emptySignal :: MonadDES m => Signal m a
 {-# INLINABLE emptySignal #-}
 emptySignal =
   Signal { handleSignal = \h -> return mempty }
-     
+
+-- | Represents the history of the signal values.
+data SignalHistory m a =
+  SignalHistory { signalHistorySignal :: Signal m a,  
+                  -- ^ The signal for which the history is created.
+                  signalHistoryTimes  :: V.Vector m Double,
+                  signalHistoryValues :: V.Vector m a }
+
+-- | Create a history of the signal values.
+newSignalHistory :: MonadDES m => Signal m a -> Composite m (SignalHistory m a)
+{-# INLINABLE newSignalHistory #-}
+newSignalHistory =
+  newSignalHistoryStartingWith Nothing
+
+-- | Create a history of the signal values starting with
+-- the optional initial value.
+newSignalHistoryStartingWith :: MonadDES m => Maybe a -> Signal m a -> Composite m (SignalHistory m a)
+{-# INLINABLE newSignalHistoryStartingWith #-}
+newSignalHistoryStartingWith init signal =
+  do ts <- liftSimulation V.newVector
+     xs <- liftSimulation V.newVector
+     case init of
+       Nothing -> return ()
+       Just a ->
+         liftEvent $
+         do t <- liftDynamics time
+            V.appendVector ts t
+            V.appendVector xs a
+     handleSignalComposite signal $ \a ->
+       do t <- liftDynamics time
+          V.appendVector ts t
+          V.appendVector xs a
+     return SignalHistory { signalHistorySignal = signal,
+                            signalHistoryTimes  = ts,
+                            signalHistoryValues = xs }
+       
+-- | Read the history of signal values.
+readSignalHistory :: MonadDES m => SignalHistory m a -> Event m (Array Int Double, Array Int a)
+{-# INLINABLE readSignalHistory #-}
+readSignalHistory history =
+  do xs <- V.freezeVector (signalHistoryTimes history)
+     ys <- V.freezeVector (signalHistoryValues history)
+     return (xs, ys)     
+
 -- | Trigger the signal with the current time.
 triggerSignalWithCurrentTime :: MonadDES m => SignalSource m Double -> Event m ()
 {-# INLINABLE triggerSignalWithCurrentTime #-}

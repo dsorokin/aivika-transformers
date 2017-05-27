@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Process
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -48,9 +48,12 @@ module Simulation.Aivika.Trans.Internal.Process
         holdProcess,
         interruptProcess,
         processInterrupted,
+        processInterruptionTime,
         passivateProcess,
+        passivateProcessBefore,
         processPassive,
         reactivateProcess,
+        reactivateProcessImmediately,
         cancelProcessWithId,
         cancelProcess,
         processCancelled,
@@ -87,6 +90,8 @@ module Simulation.Aivika.Trans.Internal.Process
         neverProcess,
         -- * Retrying Computation
         retryProcess,
+        -- * GoTo Statement
+        transferProcess,
         -- * Debugging
         traceProcess) where
 
@@ -179,6 +184,21 @@ processInterrupted pid =
   Event $ \p ->
   invokeEvent p $ readRef (processInterruptRef pid)
 
+-- | Return the expected interruption time after finishing the 'holdProcess' computation,
+-- which value may change if the corresponding process is preempted.
+processInterruptionTime :: MonadDES m => ProcessId m -> Event m (Maybe Double)
+{-# INLINABLE processInterruptionTime #-}
+processInterruptionTime pid =
+  Event $ \p ->
+  do let x = processInterruptCont pid
+     a <- invokeEvent p $ readRef x
+     case a of
+       Just c  ->
+         do t <- invokeEvent p $ readRef (processInterruptTime pid)
+            return (Just t)
+       Nothing ->
+         return Nothing
+
 -- | Define a reaction when the process with the specified identifier is preempted.
 processPreempted :: MonadDES m => ProcessId m -> Event m ()
 {-# INLINABLE processPreempted #-}
@@ -224,6 +244,21 @@ passivateProcess =
        Nothing -> invokeEvent p $ writeRef x $ Just c
        Just _  -> error "Cannot passivate the process twice: passivateProcess"
 
+-- | Passivate the process before performing some action.
+passivateProcessBefore :: MonadDES m => Event m () -> Process m ()
+{-# INLINABLE passivateProcessBefore #-}
+passivateProcessBefore m =
+  Process $ \pid ->
+  Cont $ \c ->
+  Event $ \p ->
+  do let x = processReactCont pid
+     a <- invokeEvent p $ readRef x
+     case a of
+       Nothing ->
+         do invokeEvent p $ writeRef x $ Just c
+            invokeEvent p m
+       Just _  -> error "Cannot passivate the process twice: passivateProcessBefore"
+
 -- | Test whether the process with the specified identifier is passivated.
 processPassive :: MonadDES m => ProcessId m -> Event m Bool
 {-# INLINABLE processPassive #-}
@@ -246,6 +281,20 @@ reactivateProcess pid =
        Just c ->
          do invokeEvent p $ writeRef x Nothing
             invokeEvent p $ enqueueEvent (pointTime p) $ resumeCont c ()
+
+-- | Reactivate a process with the specified identifier immediately.
+reactivateProcessImmediately :: MonadDES m => ProcessId m -> Event m ()
+{-# INLINABLE reactivateProcessImmediately #-}
+reactivateProcessImmediately pid =
+  Event $ \p ->
+  do let x = processReactCont pid
+     a <- invokeEvent p $ readRef x
+     case a of
+       Nothing -> 
+         return ()
+       Just c ->
+         do invokeEvent p $ writeRef x Nothing
+            invokeEvent p $ resumeCont c ()
 
 -- | Prepare the processes identifier for running.
 processIdPrepare :: MonadDES m => ProcessId m -> Event m ()
@@ -768,7 +817,15 @@ neverProcess =
 -- | Retry the current computation as possible, using the specified argument
 -- as a 'SimulationRetry' exception message in case of failure.
 retryProcess :: MonadDES m => String -> Process m a
+{-# INLINABLE retryProcess #-}
 retryProcess = liftEvent . retryEvent
+
+-- | Like the GoTo statement it transfers the direction of computation,
+-- but raises an exception when used within 'catchProcess' or 'finallyProcess'.
+transferProcess :: MonadDES m => Process m () -> Process m a
+{-# INLINABLE transferProcess #-}
+transferProcess (Process m) =
+  Process $ \pid -> transferCont (m pid)
 
 -- | Show the debug message with the current simulation time.
 traceProcess :: MonadDES m => String -> Process m a -> Process m a

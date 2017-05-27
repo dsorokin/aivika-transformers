@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Arrival
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -22,7 +22,8 @@ module Simulation.Aivika.Trans.Arrival
         arrivalTimerChannel,
         arrivalProcessingTime,
         arrivalProcessingTimeChanged,
-        arrivalProcessingTimeChanged_) where
+        arrivalProcessingTimeChanged_,
+        resetArrivalTimer) where
 
 import Control.Monad
 import Control.Monad.Trans
@@ -111,3 +112,10 @@ arrivalTimerChannel :: MonadDES m => ArrivalTimer m -> Channel m (Arrival a) (Ar
 arrivalTimerChannel timer =
   Channel $ \sa ->
   return $ arrivalTimerSignal timer sa
+
+-- | Reset the statistics.
+resetArrivalTimer :: MonadDES m => ArrivalTimer m -> Event m ()
+{-# INLINABLE resetArrivalTimer #-}
+resetArrivalTimer timer =
+  do writeRef (arrivalProcessingTimeRef timer) emptySamplingStats
+     triggerSignal (arrivalProcessingTimeChangedSource timer) ()

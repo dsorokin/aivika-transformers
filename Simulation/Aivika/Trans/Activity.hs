@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Activity
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -30,6 +30,8 @@ module Simulation.Aivika.Trans.Activity
         activityUtilisationFactor,
         activityIdleFactor,
         activityPreemptionFactor,
+        -- * Statistics Reset
+        resetActivity,
         -- * Summary
         activitySummary,
         -- * Derived Signals for Properties
@@ -609,3 +611,15 @@ activitySummary act indent =
        showString tab .
        showString "preemption time:\n\n" .
        samplingStatsSummary xs3 (2 + indent)
+
+-- | Reset the statistics.
+resetActivity :: MonadDES m => Activity m s a b -> Event m ()
+{-# INLINABLE resetActivity #-}
+resetActivity act =
+  do writeRef (activityTotalUtilisationTimeRef act) 0
+     writeRef (activityTotalIdleTimeRef act) 0
+     writeRef (activityTotalPreemptionTimeRef act) 0
+     writeRef (activityUtilisationTimeRef act) mempty
+     writeRef (activityIdleTimeRef act) mempty
+     writeRef (activityPreemptionTimeRef act) mempty
+  

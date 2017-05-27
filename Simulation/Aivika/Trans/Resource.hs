@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Resource
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -55,6 +55,8 @@ module Simulation.Aivika.Trans.Resource
         -- * Altering Resource
         incResourceCount,
         decResourceCount,
+        -- * Statistics Reset
+        resetResource,
         -- * Signals
         resourceCountChanged,
         resourceCountChanged_,
@@ -637,5 +639,25 @@ updateResourceWaitTime r delta =
      invokeEvent p $
        modifyRef (resourceWaitTimeRef r) $
        addSamplingStats delta
+     invokeEvent p $
+       triggerSignal (resourceWaitTimeSource r) ()
+
+-- | Reset the statistics.
+resetResource :: MonadDES m => Resource m s -> Event m ()
+{-# INLINABLE resetResource #-}
+resetResource r =
+  Event $ \p ->
+  do let t = pointTime p
+     count <- invokeEvent p $ readRef (resourceCountRef r)
+     invokeEvent p $ writeRef (resourceCountStatsRef r) $
+       returnTimingStats t count
+     utilCount <- invokeEvent p $ readRef (resourceUtilisationCountRef r)
+     invokeEvent p $ writeRef (resourceUtilisationCountStatsRef r) $
+       returnTimingStats t utilCount
+     queueCount <- invokeEvent p $ readRef (resourceQueueCountRef r)
+     invokeEvent p $ writeRef (resourceQueueCountStatsRef r) $
+       returnTimingStats t queueCount
+     invokeEvent p $ writeRef (resourceTotalWaitTimeRef r) 0
+     invokeEvent p $ writeRef (resourceWaitTimeRef r) emptySamplingStats
      invokeEvent p $
        triggerSignal (resourceWaitTimeSource r) ()

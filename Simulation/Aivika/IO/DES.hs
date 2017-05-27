@@ -1,7 +1,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.IO.DES
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -15,7 +15,8 @@ module Simulation.Aivika.IO.DES () where
 import Control.Monad.Trans
 
 import Simulation.Aivika.IO.Comp
-import Simulation.Aivika.IO.Ref.Base
+import qualified Simulation.Aivika.IO.Ref.Base.Strict as StrictRef
+import qualified Simulation.Aivika.IO.Ref.Base.Lazy as LazyRef
 import Simulation.Aivika.IO.Event
 
 import Simulation.Aivika.Trans.Comp

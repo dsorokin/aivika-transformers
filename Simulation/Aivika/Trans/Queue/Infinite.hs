@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Queue.Infinite
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -52,6 +52,8 @@ module Simulation.Aivika.Trans.Queue.Infinite
         queueContains,
         queueContainsBy,
         clearQueue,
+        -- * Statistics Reset
+        resetQueue,
         -- * Summary
         queueSummary,
         -- * Derived Signals for Properties
@@ -838,3 +840,18 @@ queueSummary q indent =
        showString tab .
        showString "the dequeue wait time (when was requested for dequeueing -> when was dequeued) = \n\n" .
        samplingStatsSummary dequeueWaitTime (2 + indent)
+
+-- | Reset the statistics.
+resetQueue :: MonadDES m => Queue m sm so a -> Event m ()
+{-# INLINABLE resetQueue #-}
+resetQueue q =
+  Event $ \p ->
+  do let t = pointTime p
+     queueCount <- invokeEvent p $ readRef (queueCountRef q)
+     invokeEvent p $ writeRef (queueCountStatsRef q) $
+       returnTimingStats t queueCount
+     invokeEvent p $ writeRef (enqueueStoreCountRef q) 0
+     invokeEvent p $ writeRef (dequeueCountRef q) 0
+     invokeEvent p $ writeRef (dequeueExtractCountRef q) 0
+     invokeEvent p $ writeRef (queueWaitTimeRef q) mempty
+     invokeEvent p $ writeRef (dequeueWaitTimeRef q) mempty

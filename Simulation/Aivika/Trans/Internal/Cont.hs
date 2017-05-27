@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Cont
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -51,6 +51,7 @@ module Simulation.Aivika.Trans.Internal.Cont
         substituteCont,
         contCanceled,
         contAwait,
+        transferCont,
         traceCont) where
 
 import Data.Array
@@ -903,6 +904,27 @@ contAwait signal =
                                   Just c  ->
                                     invokeEvent p $ reenterCont c a
      invokeEvent p $ writeRef rh $ Just h          
+
+-- | Like the GoTo statement it transfers the direction of computation,
+-- but raises an exception when used within 'catchCont' or 'finallyCont'.
+transferCont :: MonadDES m => Cont m () -> Cont m a
+{-# INLINABLE transferCont #-}
+transferCont x =
+  Cont $ \c ->
+  Event $ \p ->
+  do let worker =
+           do let cid   = contId $ contAux c
+                  cont  = return
+                  econt = throwEvent
+                  ccont = return
+              when (contCatchFlag $ contAux c) $
+                error "Cannot be combined with the exception handling: unsafeTransferCont"
+              invokeEvent p $
+                runCont x cont econt ccont cid False
+     z <- invokeEvent p $ contCanceled c
+     if z
+       then invokeEvent p $ cancelCont c
+       else worker
 
 -- | Show the debug message with the current simulation time.
 traceCont :: MonadDES m => String -> Cont m a -> Cont m a

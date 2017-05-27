@@ -3,7 +3,7 @@
 
 -- |
 -- Module     : Simulation.Aivika.IO.Resource.Preemption
--- Copyright  : Copyright (c) 2009-2016, David Sorokin <david.sorokin@gmail.com>
+-- Copyright  : Copyright (c) 2009-2017, David Sorokin <david.sorokin@gmail.com>
 -- License    : BSD3
 -- Maintainer : David Sorokin <david.sorokin@gmail.com>
 -- Stability  : experimental
@@ -269,6 +269,24 @@ instance MonadResource IO where
     | n < 0  = decResourceCount r (- n)
     | n > 0  = incResourceCount r n
     | n == 0 = return ()
+
+  {-# INLINABLE resetResource #-}
+  resetResource r =
+    Event $ \p ->
+    do let t = pointTime p
+       count <- readIORef (resourceCountRef r)
+       writeIORef (resourceCountStatsRef r) $
+         returnTimingStats t count
+       utilCount <- readIORef (resourceUtilisationCountRef r)
+       writeIORef (resourceUtilisationCountStatsRef r) $
+         returnTimingStats t utilCount
+       queueCount <- readIORef (resourceQueueCountRef r)
+       writeIORef (resourceQueueCountStatsRef r) $
+         returnTimingStats t queueCount
+       writeIORef (resourceTotalWaitTimeRef r) 0
+       writeIORef (resourceWaitTimeRef r) emptySamplingStats
+       invokeEvent p $
+         triggerSignal (resourceWaitTimeSource r) ()
 
 -- | Identifies an acting item that acquired the resource.
 data ResourceActingItem m =
