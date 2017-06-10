@@ -75,7 +75,6 @@ import Simulation.Aivika.Trans.Internal.Simulation
 import Simulation.Aivika.Trans.Internal.Dynamics
 import Simulation.Aivika.Trans.Internal.Event
 import Simulation.Aivika.Trans.Composite
-import qualified Simulation.Aivika.Trans.Vector as V
 import Simulation.Aivika.Arrival (Arrival(..))
 
 -- | The signal source that can publish its signal.
@@ -328,8 +327,8 @@ emptySignal =
 data SignalHistory m a =
   SignalHistory { signalHistorySignal :: Signal m a,  
                   -- ^ The signal for which the history is created.
-                  signalHistoryTimes  :: V.Vector m Double,
-                  signalHistoryValues :: V.Vector m a }
+                  signalHistoryTimes  :: Ref m [Double],
+                  signalHistoryValues :: Ref m [a] }
 
 -- | Create a history of the signal values.
 newSignalHistory :: MonadDES m => Signal m a -> Composite m (SignalHistory m a)
@@ -342,19 +341,19 @@ newSignalHistory =
 newSignalHistoryStartingWith :: MonadDES m => Maybe a -> Signal m a -> Composite m (SignalHistory m a)
 {-# INLINABLE newSignalHistoryStartingWith #-}
 newSignalHistoryStartingWith init signal =
-  do ts <- liftSimulation V.newVector
-     xs <- liftSimulation V.newVector
+  do ts <- liftSimulation $ newRef []
+     xs <- liftSimulation $ newRef []
      case init of
        Nothing -> return ()
        Just a ->
          liftEvent $
          do t <- liftDynamics time
-            V.appendVector ts t
-            V.appendVector xs a
+            modifyRef ts (t :)
+            modifyRef xs (a :)
      handleSignalComposite signal $ \a ->
        do t <- liftDynamics time
-          V.appendVector ts t
-          V.appendVector xs a
+          modifyRef ts (t :)
+          modifyRef xs (a :)
      return SignalHistory { signalHistorySignal = signal,
                             signalHistoryTimes  = ts,
                             signalHistoryValues = xs }
@@ -363,8 +362,11 @@ newSignalHistoryStartingWith init signal =
 readSignalHistory :: MonadDES m => SignalHistory m a -> Event m (Array Int Double, Array Int a)
 {-# INLINABLE readSignalHistory #-}
 readSignalHistory history =
-  do xs <- V.freezeVector (signalHistoryTimes history)
-     ys <- V.freezeVector (signalHistoryValues history)
+  do xs0 <- readRef (signalHistoryTimes history)
+     ys0 <- readRef (signalHistoryValues history)
+     let n  = length xs0
+         xs = listArray (0, n - 1) (reverse xs0)
+         ys = listArray (0, n - 1) (reverse ys0)
      return (xs, ys)     
 
 -- | Trigger the signal with the current time.
