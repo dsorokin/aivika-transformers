@@ -8,10 +8,10 @@ parallel distributed simulation, package [aivika-distributed](http://hackage.has
 
 Unlike sequential simulation, the distribution simulation is more difficult for implementing
 the simulation experiments by the Monte-Carlo method. Therefore, there are additional packages
-that allow saving the results of distribution simulation in SQL databases
+that allow saving the results of distributed simulation in SQL databases
 and only then the simulation reports are generated. These reports are HTML pages
 with charts, histograms, links to CSV tables, statistics summary and so on.
 
-This method can be used not only for the parallel distribution simulation, but also for other 
+This method can be used not only for the parallel distributed simulation, but also for other 
 simulation models created with help of the generalized version of the Aivika simulation library.
 Please consult the [AivikaSoft](http://www.aivikasoft.com) website for more details.
