@@ -6,7 +6,7 @@ extensive use of monad transformers and type families. It can be applied for nes
 package [aivika-branches](http://hackage.haskell.org/package/aivika-branches), and
 parallel distributed simulation, package [aivika-distributed](http://hackage.haskell.org/package/aivika-distributed).
 
-Unlike sequential simulation, the distribution simulation is more difficult for implementing
+Unlike sequential simulation, the distributed simulation is more difficult for implementing
 the simulation experiments by the Monte-Carlo method. Therefore, there are additional packages
 that allow saving the results of distributed simulation in SQL databases
 and only then the simulation reports are generated. These reports are HTML pages
