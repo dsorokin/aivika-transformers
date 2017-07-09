@@ -36,8 +36,6 @@ module Simulation.Aivika.Trans.Parameter.Random
         randomTrue,
         randomFalse) where
 
-import System.Random
-
 import Control.Monad.Trans
 
 import Simulation.Aivika.Trans.Generator
