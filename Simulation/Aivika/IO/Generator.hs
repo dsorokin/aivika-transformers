@@ -14,12 +14,14 @@
 --
 module Simulation.Aivika.IO.Generator () where
 
+import System.Random
+import qualified System.Random.MWC as MWC
+
 import Control.Monad
 import Control.Monad.Trans
 
-import System.Random
-
 import Data.IORef
+import Data.Vector
 
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Generator.Primitive
@@ -84,9 +86,9 @@ instance MonadGenerator IO where
   newGenerator tp =
     case tp of
       SimpleGenerator ->
-        liftIO newStdGen >>= newRandomGenerator
+        MWC.uniform <$> MWC.withSystemRandom (return :: MWC.GenIO -> IO MWC.GenIO) >>= newRandomGenerator01
       SimpleGeneratorWithSeed x ->
-        newRandomGenerator $ mkStdGen x
+        MWC.uniform <$> MWC.initialize (singleton x) >>= newRandomGenerator01
       CustomGenerator g ->
         g
       CustomGenerator01 g ->

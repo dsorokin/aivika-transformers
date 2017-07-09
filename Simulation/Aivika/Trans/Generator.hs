@@ -17,6 +17,7 @@ module Simulation.Aivika.Trans.Generator
         DiscretePDF(..)) where
 
 import System.Random
+import Data.Word
 
 import Simulation.Aivika.Generator (DiscretePDF)
 
@@ -100,7 +101,7 @@ class (Functor m, Monad m) => MonadGenerator m where
 -- | Defines a type of the random number generator.
 data GeneratorType m = SimpleGenerator
                        -- ^ The simple random number generator.
-                     | SimpleGeneratorWithSeed Int
+                     | SimpleGeneratorWithSeed Word32
                        -- ^ The simple random number generator with the specified seed.
                      | CustomGenerator (m (Generator m))
                        -- ^ The custom random number generator.

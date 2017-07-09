@@ -1,4 +1,9 @@
 
+Version 5.2
+-----
+
+* Using the mwc-random package for generating random numbers by default.
+
 Version 5.1
 -----
 

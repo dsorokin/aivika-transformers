@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         5.1
+version:         5.2
 synopsis:        Transformers for the Aivika simulation library
 description:
     This package is a generalization of the aivika [1] simulation library
@@ -170,8 +170,9 @@ library
                      array >= 0.3.0.0,
                      containers >= 0.4.0.0,
                      random >= 1.0.0.3,
+                     mwc-random >= 0.13.0.0,
                      vector >= 0.10.0.1,
-                     aivika >= 5.1
+                     aivika >= 5.2
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,
