@@ -746,6 +746,10 @@ unzipProcess xy =
 --
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
+--
+-- This is a heavy-weight operation destined for working with arbitrary discontinuous
+-- processes. Please consider using a more light-weight function 'interruptProcess' or else
+-- 'cancelProcessWithId' whenever possible.
 timeoutProcess :: MonadDES m => Double -> Process m a -> Process m (Maybe a)
 {-# INLINABLE timeoutProcess #-}
 timeoutProcess timeout p =
@@ -762,6 +766,10 @@ timeoutProcess timeout p =
 --
 -- A cancellation of the child process doesn't lead to cancelling the parent process.
 -- Then 'Nothing' is returned within the computation.
+--
+-- This is a heavy-weight operation destined for working with arbitrary discontinuous
+-- processes. Please consider using a more light-weight function 'interruptProcess' or else
+-- 'cancelProcessWithId' whenever possible.
 timeoutProcessUsingId :: MonadDES m => Double -> ProcessId m -> Process m a -> Process m (Maybe a)
 {-# INLINABLE timeoutProcessUsingId #-}
 timeoutProcessUsingId timeout pid p =
