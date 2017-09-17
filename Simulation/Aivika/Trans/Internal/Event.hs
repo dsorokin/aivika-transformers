@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, MonoLocalBinds #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Event

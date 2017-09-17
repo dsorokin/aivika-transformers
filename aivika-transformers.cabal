@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         5.2
+version:         5.2.1
 synopsis:        Transformers for the Aivika simulation library
 description:
     This package is a generalization of the aivika [1] simulation library
@@ -185,6 +185,7 @@ library
                         ExistentialQuantification,
                         TypeFamilies,
                         TypeSynonymInstances,
+                        MonoLocalBinds,
                         DeriveDataTypeable,
                         RankNTypes,
                         ConstrainedClassMethods,

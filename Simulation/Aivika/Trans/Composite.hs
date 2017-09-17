@@ -1,5 +1,5 @@
 
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, UndecidableInstances, RecursiveDo #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, UndecidableInstances, RecursiveDo, MonoLocalBinds #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Composite

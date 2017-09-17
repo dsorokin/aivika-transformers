@@ -1,5 +1,5 @@
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, MonoLocalBinds #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Results.IO
