@@ -27,7 +27,7 @@ module Simulation.Aivika.Trans.Internal.Specs
         integPointsStartingFrom,
         integStartPoint,
         integStopPoint,
-        gridTimes,
+        timeGrid,
         pointAt) where
 
 import Simulation.Aivika.Trans.Internal.Types
@@ -178,8 +178,8 @@ integPointsStartingFrom p = points
                            pointPhase = 0 }
 
 -- | Return the indexed time values in the grid by specified size.
-gridTimes :: Specs m -> Int -> [(Int, Double)]
-gridTimes sc n =
+timeGrid :: Specs m -> Int -> [(Int, Double)]
+timeGrid sc n =
   let t0 = spcStartTime sc
       t2 = spcStopTime sc
       n' = max (n - 1) 1
