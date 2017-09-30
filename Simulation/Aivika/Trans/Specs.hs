@@ -20,6 +20,7 @@ module Simulation.Aivika.Trans.Specs
         integPhaseBnds,
         integPhaseHiBnd,
         integPhaseLoBnd,
-        integTimes) where
+        integTimes,
+        gridTimes) where
 
 import Simulation.Aivika.Trans.Internal.Specs
