@@ -46,8 +46,8 @@ module Simulation.Aivika.Trans
         module Simulation.Aivika.Trans.Ref,
         module Simulation.Aivika.Trans.Resource.Base,
         module Simulation.Aivika.Trans.Results,
-        module Simulation.Aivika.Trans.Results.Locale,
         module Simulation.Aivika.Trans.Results.IO,
+        module Simulation.Aivika.Trans.Results.Locale,
         module Simulation.Aivika.Trans.SD,
         module Simulation.Aivika.Trans.Server,
         module Simulation.Aivika.Trans.Server.Random,
@@ -99,8 +99,8 @@ import Simulation.Aivika.Trans.QueueStrategy
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Resource.Base
 import Simulation.Aivika.Trans.Results
-import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.Results.IO
+import Simulation.Aivika.Trans.Results.Locale
 import Simulation.Aivika.Trans.SD
 import Simulation.Aivika.Trans.Server
 import Simulation.Aivika.Trans.Server.Random

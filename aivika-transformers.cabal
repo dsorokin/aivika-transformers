@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         5.2.1
+version:         5.3
 synopsis:        Transformers for the Aivika simulation library
 description:
     This package is a generalization of the aivika [1] simulation library
@@ -122,6 +122,9 @@ library
                      Simulation.Aivika.Trans.Resource.Preemption
                      Simulation.Aivika.Trans.Resource.Preemption.Base
                      Simulation.Aivika.Trans.Results.Locale
+                     Simulation.Aivika.Trans.Results.Locale.Russian
+                     Simulation.Aivika.Trans.Results.Locale.English
+                     Simulation.Aivika.Trans.Results.Locale.Types
                      Simulation.Aivika.Trans.Results
                      Simulation.Aivika.Trans.Results.IO
                      Simulation.Aivika.Trans.Results.Transform
@@ -172,7 +175,7 @@ library
                      random >= 1.0.0.3,
                      mwc-random >= 0.13.0.0,
                      vector >= 0.10.0.1,
-                     aivika >= 5.2
+                     aivika >= 5.3
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,
