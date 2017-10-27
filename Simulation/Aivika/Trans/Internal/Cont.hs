@@ -271,7 +271,7 @@ data ContParamsAux m =
   ContParamsAux { contECont :: SomeException -> Event m (),
                   contCCont :: () -> Event m (),
                   contId :: ContId m,
-                  contCancelFlag :: Event m Bool,
+                  contCancelRef :: Ref m Bool,
                   contCatchFlag  :: Bool }
 
 instance MonadDES m => Monad (Cont m) where
@@ -475,7 +475,7 @@ runCont (Cont m) cont econt ccont cid catchFlag =
                    ContParamsAux { contECont = econt,
                                    contCCont = ccont,
                                    contId    = cid,
-                                   contCancelFlag = contCancellationActivated cid, 
+                                   contCancelRef = contCancellationActivatedRef cid, 
                                    contCatchFlag  = catchFlag } }
   
 liftWithoutCatching :: MonadDES m => m a -> Point m -> ContParams m a -> m ()
@@ -530,9 +530,9 @@ resumeECont c e =
        else invokeEvent p $ (contECont $ contAux c) e
 
 -- | Test whether the computation is canceled.
-contCanceled :: ContParams m a -> Event m Bool
+contCanceled :: MonadDES m => ContParams m a -> Event m Bool
 {-# INLINE contCanceled #-}
-contCanceled c = contCancelFlag $ contAux c
+contCanceled c = readRef $ contCancelRef $ contAux c
 
 -- | Execute the specified computations in parallel within
 -- the current computation and return their results. The cancellation
