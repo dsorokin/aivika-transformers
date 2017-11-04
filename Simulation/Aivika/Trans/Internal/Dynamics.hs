@@ -70,7 +70,7 @@ runDynamicsInStartTime (Dynamics m) =
 runDynamicsInStopTime :: Dynamics m a -> Simulation m a
 {-# INLINABLE runDynamicsInStopTime #-}
 runDynamicsInStopTime (Dynamics m) =
-  Simulation $ m . integStopPoint
+  Simulation $ m . simulationStopPoint
 
 -- | Run the 'Dynamics' computation in all integration time points.
 runDynamicsInIntegTimes :: Monad m => Dynamics m a -> Simulation m [m a]

@@ -220,7 +220,7 @@ enqueueEventWithStopTime :: MonadDES m => Event m () -> Event m ()
 {-# INLINABLE enqueueEventWithStopTime #-}
 enqueueEventWithStopTime e =
   Event $ \p ->
-  let p0 = integStopPoint $ pointRun p
+  let p0 = simulationStopPoint $ pointRun p
   in invokeEvent p $ enqueueEventWithPoints [p0] e
 
 -- | It allows cancelling the event.
@@ -393,5 +393,5 @@ enqueueEventIOWithStopTime :: (MonadDES m, EventIOQueueing m) => Event m () -> E
 {-# INLINABLE enqueueEventIOWithStopTime #-}
 enqueueEventIOWithStopTime e =
   Event $ \p ->
-  let p0 = integStopPoint $ pointRun p
+  let p0 = simulationStopPoint $ pointRun p
   in invokeEvent p $ enqueueEventIOWithPoints [p0] e
