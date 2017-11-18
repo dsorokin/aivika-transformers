@@ -69,6 +69,7 @@ integPhases sc =
     Euler -> [0]
     RungeKutta2 -> [0, 1]
     RungeKutta4 -> [0, 1, 2, 3]
+    RungeKutta4b -> [0, 1, 2, 3]
 
 -- | Returns the first and last integration phases.
 integPhaseBnds :: Specs m -> (Int, Int)
@@ -77,6 +78,7 @@ integPhaseBnds sc =
     Euler -> (0, 0)
     RungeKutta2 -> (0, 1)
     RungeKutta4 -> (0, 3)
+    RungeKutta4b -> (0, 3)
 
 -- | Returns the first integration phase, i.e. zero.
 integPhaseLoBnd :: Specs m -> Int
@@ -89,6 +91,7 @@ integPhaseHiBnd sc =
     Euler -> 0
     RungeKutta2 -> 1
     RungeKutta4 -> 3
+    RungeKutta4b -> 3
 
 -- | Returns a simulation time for the integration point specified by 
 -- the specs, iteration and phase.
@@ -107,6 +110,10 @@ basicTime sc n ph =
             delta RungeKutta4 1 = spcDT sc / 2
             delta RungeKutta4 2 = spcDT sc / 2
             delta RungeKutta4 3 = spcDT sc
+            delta RungeKutta4b 0 = 0
+            delta RungeKutta4b 1 = spcDT sc / 3
+            delta RungeKutta4b 2 = 2 * spcDT sc / 3
+            delta RungeKutta4b 3 = spcDT sc
 
 -- | Return the integration time values.
 integTimes :: Specs m -> [Double]

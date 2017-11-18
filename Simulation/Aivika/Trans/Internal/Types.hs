@@ -44,6 +44,7 @@ data Specs m = Specs { spcStartTime :: Double,    -- ^ the start time
 data Method = Euler          -- ^ Euler's method
             | RungeKutta2    -- ^ the 2nd order Runge-Kutta method
             | RungeKutta4    -- ^ the 4th order Runge-Kutta method
+            | RungeKutta4b   -- ^ the 4th order Runge-Kutta 3/8-method
             deriving (Eq, Ord, Show)
 
 -- | It indentifies the simulation run.
