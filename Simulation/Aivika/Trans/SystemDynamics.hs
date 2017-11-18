@@ -49,6 +49,8 @@ module Simulation.Aivika.Trans.SystemDynamics
         -- * Discrete Functions
         delay,
         delayI,
+        delayByDT,
+        delayIByDT,
         step,
         pulse,
         pulseP,
@@ -775,6 +777,71 @@ delayI (Dynamics x) (Dynamics d) (Dynamics i) = M.memo0Dynamics $ Dynamics r
                           "The lag time cannot be negative."
             | otherwise = error $
                           "Cannot return the current data: delay. " ++
+                          "The lag time is too small."
+      y
+
+-- | Return the delayed value by the specified positive number of
+-- integration time steps used for calculating the lag time.
+delayByDT :: Monad m
+             => Dynamics m a
+             -- ^ the value to delay
+             -> Dynamics m Int
+             -- ^ the delay as a multiplication of the corresponding number
+             -- and the integration time step
+             -> Dynamics m a
+             -- ^ the delayed value
+{-# INLINABLE delayByDT #-}
+delayByDT (Dynamics x) (Dynamics d) = discreteDynamics $ Dynamics r 
+  where
+    r p = do 
+      let sc = pointSpecs p
+          n  = pointIteration p
+      a <- d p
+      let p' = delayPoint p a
+          n' = pointIteration p'
+          y | n' < 0    = x $ p { pointTime = spcStartTime sc,
+                                  pointIteration = 0, 
+                                  pointPhase = 0 }
+            | n' < n    = x p'
+            | n' > n    = error $
+                          "Cannot return the future data: delayByDT. " ++
+                          "The lag time cannot be negative."
+            | otherwise = error $
+                          "Cannot return the current data: delayByDT. " ++
+                          "The lag time is too small."
+      y
+      
+-- | Return the delayed value by the specified initial value and
+-- a positive number of integration time steps used for calculating
+-- the lag time. It allows creating a loop back.
+delayIByDT :: MonadSD m
+              => Dynamics m a
+              -- ^ the value to delay
+              -> Dynamics m Int
+              -- ^ the delay as a multiplication of the corresponding number
+              -- and the integration time step
+              -> Dynamics m a
+              -- ^ the initial value
+              -> Simulation m (Dynamics m a)
+              -- ^ the delayed value
+{-# INLINABLE delayIByDT #-}
+delayIByDT (Dynamics x) (Dynamics d) (Dynamics i) = M.memoDynamics $ Dynamics r 
+  where
+    r p = do 
+      let sc = pointSpecs p
+          n  = pointIteration p
+      a <- d p
+      let p' = delayPoint p a
+          n' = pointIteration p'
+          y | n' < 0    = i $ p { pointTime = spcStartTime sc,
+                                  pointIteration = 0, 
+                                  pointPhase = 0 }
+            | n' < n    = x p'
+            | n' > n    = error $
+                          "Cannot return the future data: delayIByDT. " ++
+                          "The lag time cannot be negative."
+            | otherwise = error $
+                          "Cannot return the current data: delayIByDT. " ++
                           "The lag time is too small."
       y
 
