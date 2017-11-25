@@ -721,6 +721,7 @@ lookupStepwiseDynamics (Dynamics m) tbl =
 --
 
 -- | Return the delayed value using the specified lag time.
+-- This function is less accurate than 'delayByDT'.
 delay :: Monad m
          => Dynamics m a          -- ^ the value to delay
          -> Dynamics m Double     -- ^ the lag time
@@ -751,6 +752,7 @@ delay (Dynamics x) (Dynamics d) = discreteDynamics $ Dynamics r
 
 -- | Return the delayed value using the specified lag time and initial value.
 -- Because of the latter, it allows creating a loop back.
+-- This function is less accurate than 'delayIByDT'.
 delayI :: MonadSD m
           => Dynamics m a                    -- ^ the value to delay
           -> Dynamics m Double               -- ^ the lag time
