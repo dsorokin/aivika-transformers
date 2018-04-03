@@ -61,7 +61,8 @@ module Simulation.Aivika.Trans.Signal
         -- * Debugging
         traceSignal) where
 
-import Data.Monoid
+import Data.Monoid hiding ((<>))
+import Data.Semigroup (Semigroup(..))
 import Data.List
 import Data.Array
 
@@ -195,13 +196,18 @@ instance MonadDES m => Functor (Signal m) where
   {-# INLINE fmap #-}
   fmap = mapSignal
   
+instance MonadDES m => Semigroup (Signal m a) where
+
+  {-# INLINE (<>) #-}
+  (<>) = merge2Signals
+
 instance MonadDES m => Monoid (Signal m a) where 
 
   {-# INLINE mempty #-}
   mempty = emptySignal
 
   {-# INLINE mappend #-}
-  mappend = merge2Signals
+  mappend = (<>)
 
   {-# INLINABLE mconcat #-}
   mconcat [] = emptySignal
@@ -445,13 +451,18 @@ instance Functor m => Functor (Signalable m) where
   {-# INLINE fmap #-}
   fmap f x = x { readSignalable = fmap f (readSignalable x) }
 
-instance (MonadDES m, Monoid a) => Monoid (Signalable m a) where
+instance (MonadDES m, Semigroup a) => Semigroup (Signalable m a) where
+
+  {-# INLINE (<>) #-}
+  (<>) = appendSignalable
+
+instance (MonadDES m, Monoid a, Semigroup a) => Monoid (Signalable m a) where
 
   {-# INLINE mempty #-}
   mempty = emptySignalable
 
   {-# INLINE mappend #-}
-  mappend = appendSignalable
+  mappend = (<>)
 
 -- | Return an identity.
 emptySignalable :: (MonadDES m, Monoid a) => Signalable m a
@@ -461,7 +472,7 @@ emptySignalable =
                signalableChanged_ = mempty }
 
 -- | An associative operation.
-appendSignalable :: (MonadDES m, Monoid a) => Signalable m a -> Signalable m a -> Signalable m a
+appendSignalable :: (MonadDES m, Semigroup a) => Signalable m a -> Signalable m a -> Signalable m a
 {-# INLINABLE appendSignalable #-}
 appendSignalable m1 m2 =
   Signalable { readSignalable = liftM2 (<>) (readSignalable m1) (readSignalable m2),
