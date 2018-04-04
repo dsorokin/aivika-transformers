@@ -86,6 +86,7 @@ module Simulation.Aivika.Trans.Stream
 import Data.Maybe
 import Data.Monoid hiding ((<>))
 import Data.Semigroup (Semigroup(..))
+import Data.List.NonEmpty (NonEmpty((:|)))
 
 import Control.Applicative
 import Control.Monad
@@ -137,6 +138,9 @@ instance MonadDES m => Semigroup (Stream m a) where
 
   {-# INLINE (<>) #-}
   (<>) = mergeStreams
+
+  {-# INLINE sconcat #-}
+  sconcat (h :| t) = concatStreams (h : t)
 
 instance MonadDES m => Monoid (Stream m a) where
 
