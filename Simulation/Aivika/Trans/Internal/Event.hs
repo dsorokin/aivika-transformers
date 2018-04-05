@@ -55,7 +55,8 @@ module Simulation.Aivika.Trans.Internal.Event
         -- * Debugging
         traceEvent) where
 
-import Data.Monoid
+import Data.Monoid hiding ((<>))
+import Data.Semigroup (Semigroup(..))
 
 import Control.Exception
 import Control.Monad
@@ -316,13 +317,17 @@ newtype DisposableEvent m =
                     -- ^ Dispose something within the 'Event' computation.
                   }
 
+instance Monad m => Semigroup (DisposableEvent m) where
+  {-# INLINE (<>) #-}
+  DisposableEvent x <> DisposableEvent y = DisposableEvent $ x >> y
+
 instance Monad m => Monoid (DisposableEvent m) where
 
   {-# INLINE mempty #-}
   mempty = DisposableEvent $ return ()
 
   {-# INLINE mappend #-}
-  mappend (DisposableEvent x) (DisposableEvent y) = DisposableEvent $ x >> y
+  mappend = (<>)
 
 -- | Retry the current computation as possible, using the specified argument
 -- as a 'SimulationRetry' exception message in case of failure. It makes sense

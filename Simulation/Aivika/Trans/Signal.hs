@@ -61,7 +61,9 @@ module Simulation.Aivika.Trans.Signal
         -- * Debugging
         traceSignal) where
 
-import Data.Monoid
+import Data.Monoid hiding ((<>))
+import Data.Semigroup (Semigroup(..))
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.List
 import Data.Array
 
@@ -195,23 +197,31 @@ instance MonadDES m => Functor (Signal m) where
   {-# INLINE fmap #-}
   fmap = mapSignal
   
+instance MonadDES m => Semigroup (Signal m a) where
+
+  {-# INLINE (<>) #-}
+  (<>) = merge2Signals
+
+  {-# INLINABLE sconcat #-}
+  sconcat (x1 :| []) = x1
+  sconcat (x1 :| [x2]) = merge2Signals x1 x2
+  sconcat (x1 :| [x2, x3]) = merge3Signals x1 x2 x3
+  sconcat (x1 :| [x2, x3, x4]) = merge4Signals x1 x2 x3 x4
+  sconcat (x1 :| [x2, x3, x4, x5]) = merge5Signals x1 x2 x3 x4 x5
+  sconcat (x1 :| (x2 : x3 : x4 : x5 : xs)) = 
+    sconcat $ merge5Signals x1 x2 x3 x4 x5 :| xs
+
 instance MonadDES m => Monoid (Signal m a) where 
 
   {-# INLINE mempty #-}
   mempty = emptySignal
 
   {-# INLINE mappend #-}
-  mappend = merge2Signals
+  mappend = (<>)
 
   {-# INLINABLE mconcat #-}
-  mconcat [] = emptySignal
-  mconcat [x1] = x1
-  mconcat [x1, x2] = merge2Signals x1 x2
-  mconcat [x1, x2, x3] = merge3Signals x1 x2 x3
-  mconcat [x1, x2, x3, x4] = merge4Signals x1 x2 x3 x4
-  mconcat [x1, x2, x3, x4, x5] = merge5Signals x1 x2 x3 x4 x5
-  mconcat (x1 : x2 : x3 : x4 : x5 : xs) = 
-    mconcat $ merge5Signals x1 x2 x3 x4 x5 : xs
+  mconcat [] = mempty
+  mconcat (h:t) = sconcat (h :| t)
   
 -- | Map the signal according the specified function.
 mapSignal :: MonadDES m => (a -> b) -> Signal m a -> Signal m b
@@ -445,13 +455,18 @@ instance Functor m => Functor (Signalable m) where
   {-# INLINE fmap #-}
   fmap f x = x { readSignalable = fmap f (readSignalable x) }
 
-instance (MonadDES m, Monoid a) => Monoid (Signalable m a) where
+instance (MonadDES m, Semigroup a) => Semigroup (Signalable m a) where
+
+  {-# INLINE (<>) #-}
+  (<>) = appendSignalable
+
+instance (MonadDES m, Monoid a, Semigroup a) => Monoid (Signalable m a) where
 
   {-# INLINE mempty #-}
   mempty = emptySignalable
 
   {-# INLINE mappend #-}
-  mappend = appendSignalable
+  mappend = (<>)
 
 -- | Return an identity.
 emptySignalable :: (MonadDES m, Monoid a) => Signalable m a
@@ -461,7 +476,7 @@ emptySignalable =
                signalableChanged_ = mempty }
 
 -- | An associative operation.
-appendSignalable :: (MonadDES m, Monoid a) => Signalable m a -> Signalable m a -> Signalable m a
+appendSignalable :: (MonadDES m, Semigroup a) => Signalable m a -> Signalable m a -> Signalable m a
 {-# INLINABLE appendSignalable #-}
 appendSignalable m1 m2 =
   Signalable { readSignalable = liftM2 (<>) (readSignalable m1) (readSignalable m2),
