@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         5.5
+version:         5.6
 synopsis:        Transformers for the Aivika simulation library
 description:
     This package is a generalization of the aivika [1] simulation library
@@ -175,8 +175,8 @@ library
                      random >= 1.0.0.3,
                      mwc-random >= 0.13.0.0,
                      vector >= 0.10.0.1,
-                     aivika >= 5.5,
-                     semigroups >= 0.10
+                     semigroups >= 0.10,
+                     aivika >= 5.6
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,
