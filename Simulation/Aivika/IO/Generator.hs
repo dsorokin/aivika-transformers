@@ -22,6 +22,7 @@ import Control.Monad.Trans
 
 import Data.IORef
 import Data.Vector
+import Data.Functor
 
 import Simulation.Aivika.Trans.Generator
 import Simulation.Aivika.Trans.Generator.Primitive
