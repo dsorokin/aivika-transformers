@@ -176,7 +176,7 @@ library
                      mwc-random >= 0.13.0.0,
                      vector >= 0.10.0.1,
                      aivika >= 5.5,
-                     semigroups >= 0.18
+                     semigroups >= 0.10
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,
