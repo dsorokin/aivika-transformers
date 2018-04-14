@@ -60,6 +60,7 @@ import Data.Monoid
 import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
+import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
 import Debug.Trace (trace)
@@ -368,6 +369,16 @@ instance MonadDES m => Applicative (Cont m) where
 
   {-# INLINE (<*>) #-}
   (<*>) = ap
+
+instance MonadDES m => MC.MonadThrow (Cont m) where
+
+  {-# INLINE throwM #-}
+  throwM = throwCont
+
+instance MonadDES m => MC.MonadCatch (Cont m) where
+
+  {-# INLINE catch #-}
+  catch = catchCont
 
 -- | Invoke the computation.
 invokeCont :: ContParams m a -> Cont m a -> Event m ()

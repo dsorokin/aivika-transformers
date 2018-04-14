@@ -100,6 +100,7 @@ import Data.Maybe
 import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
+import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
 import Simulation.Aivika.Trans.Ref.Base
@@ -528,6 +529,16 @@ instance MonadDES m => ProcessLift Process m where
 
   {-# INLINE liftProcess #-}
   liftProcess = id
+
+instance MonadDES m => MC.MonadThrow (Process m) where
+
+  {-# INLINE throwM #-}
+  throwM = throwProcess
+
+instance MonadDES m => MC.MonadCatch (Process m) where
+
+  {-# INLINE catch #-}
+  catch = catchProcess
 
 -- | Exception handling within 'Process' computations.
 catchProcess :: (MonadDES m, Exception e) => Process m a -> (e -> Process m a) -> Process m a
