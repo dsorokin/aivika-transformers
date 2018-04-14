@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, RankNTypes #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Parameter
@@ -45,6 +45,7 @@ import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
 import Data.IORef
@@ -274,6 +275,24 @@ throwParameter e =
   Parameter $ \r ->
   throwComp e
 
+-- | Runs an action with asynchronous exceptions disabled.
+maskParameter :: MC.MonadMask m => ((forall a. Parameter m a -> Parameter m a) -> Parameter m b) -> Parameter m b
+{-# INLINABLE maskParameter #-}
+maskParameter a =
+  Parameter $ \r ->
+  MC.mask $ \u ->
+  invokeParameter r (a $ q u)
+  where q u (Parameter b) = Parameter (u . b)
+
+-- | Like 'maskParameter', but the masked computation is not interruptible.
+uninterruptibleMaskParameter :: MC.MonadMask m => ((forall a. Parameter m a -> Parameter m a) -> Parameter m b) -> Parameter m b
+{-# INLINABLE uninterruptibleMaskParameter #-}
+uninterruptibleMaskParameter a =
+  Parameter $ \r ->
+  MC.uninterruptibleMask $ \u ->
+  invokeParameter r (a $ q u)
+  where q u (Parameter b) = Parameter (u . b)
+
 instance MonadFix m => MonadFix (Parameter m) where
 
   {-# INLINE mfix #-}
@@ -281,11 +300,29 @@ instance MonadFix m => MonadFix (Parameter m) where
     Parameter $ \r ->
     do { rec { a <- invokeParameter r (f a) }; return a }
 
+instance MonadException m => MC.MonadThrow (Parameter m) where
+
+  {-# INLINE throwM #-}
+  throwM = throwParameter
+
+instance MonadException m => MC.MonadCatch (Parameter m) where
+
+  {-# INLINE catch #-}
+  catch = catchParameter
+
+instance (MonadException m, MC.MonadMask m) => MC.MonadMask (Parameter m) where
+
+  {-# INLINE mask #-}
+  mask = maskParameter
+  
+  {-# INLINE uninterruptibleMask #-}
+  uninterruptibleMask = uninterruptibleMaskParameter
+
 -- | Memoize the 'Parameter' computation, always returning the same value
 -- within a simulation run. However, the value will be recalculated for other
 -- simulation runs. Also it is thread-safe when different simulation runs
 -- are executed in parallel on physically different operating system threads.
-memoParameter :: (MonadComp m, MonadIO m) => Parameter m a -> m (Parameter m a)
+memoParameter :: (MonadComp m, MonadIO m, MC.MonadMask m) => Parameter m a -> m (Parameter m a)
 memoParameter x = 
   do lock <- liftIO $ newMVar ()
      dict <- liftIO $ newIORef M.empty

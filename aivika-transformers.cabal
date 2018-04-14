@@ -176,6 +176,7 @@ library
                      mwc-random >= 0.13.0.0,
                      vector >= 0.10.0.1,
                      semigroups >= 0.10,
+                     exceptions >= 0.6,
                      aivika >= 5.6
 
     other-extensions:   FlexibleContexts,

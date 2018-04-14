@@ -15,7 +15,8 @@ module Simulation.Aivika.Trans.Concurrent.MVar
 import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.Trans
+import qualified Control.Monad.Catch as MC
 
 import Simulation.Aivika.Trans.Comp
 
-withMVarComp :: (MonadComp m, MonadIO m) => MVar a -> (a -> m b) -> m b
+withMVarComp :: (MonadComp m, MonadIO m, MC.MonadMask m) => MVar a -> (a -> m b) -> m b

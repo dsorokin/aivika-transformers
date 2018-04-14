@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE RecursiveDo, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances, RankNTypes #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Simulation
@@ -33,6 +33,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
 import Simulation.Aivika.Trans.Exception
@@ -174,9 +175,45 @@ throwSimulation e =
   Simulation $ \r ->
   throwComp e
 
+-- | Runs an action with asynchronous exceptions disabled.
+maskSimulation :: MC.MonadMask m => ((forall a. Simulation m a -> Simulation m a) -> Simulation m b) -> Simulation m b
+{-# INLINABLE maskSimulation #-}
+maskSimulation a =
+  Simulation $ \r ->
+  MC.mask $ \u ->
+  invokeSimulation r (a $ q u)
+  where q u (Simulation b) = Simulation (u . b)
+
+-- | Like 'maskSimulation', but the masked computation is not interruptible.
+uninterruptibleMaskSimulation :: MC.MonadMask m => ((forall a. Simulation m a -> Simulation m a) -> Simulation m b) -> Simulation m b
+{-# INLINABLE uninterruptibleMaskSimulation #-}
+uninterruptibleMaskSimulation a =
+  Simulation $ \r ->
+  MC.uninterruptibleMask $ \u ->
+  invokeSimulation r (a $ q u)
+  where q u (Simulation b) = Simulation (u . b)
+
 instance MonadFix m => MonadFix (Simulation m) where
 
   {-# INLINE mfix #-}
   mfix f = 
     Simulation $ \r ->
     do { rec { a <- invokeSimulation r (f a) }; return a }
+
+instance MonadException m => MC.MonadThrow (Simulation m) where
+
+  {-# INLINE throwM #-}
+  throwM = throwSimulation
+
+instance MonadException m => MC.MonadCatch (Simulation m) where
+
+  {-# INLINE catch #-}
+  catch = catchSimulation
+
+instance (MonadException m, MC.MonadMask m) => MC.MonadMask (Simulation m) where
+
+  {-# INLINE mask #-}
+  mask = maskSimulation
+  
+  {-# INLINE uninterruptibleMask #-}
+  uninterruptibleMask = uninterruptibleMaskSimulation

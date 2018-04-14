@@ -1,5 +1,5 @@
 
-{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE RecursiveDo, MultiParamTypeClasses, FlexibleInstances, RankNTypes #-}
 
 -- |
 -- Module     : Simulation.Aivika.Trans.Internal.Dynamics
@@ -37,6 +37,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
 import Debug.Trace (trace)
@@ -258,12 +259,48 @@ throwDynamics e =
   Dynamics $ \p ->
   throwComp e
 
+-- | Runs an action with asynchronous exceptions disabled.
+maskDynamics :: MC.MonadMask m => ((forall a. Dynamics m a -> Dynamics m a) -> Dynamics m b) -> Dynamics m b
+{-# INLINABLE maskDynamics #-}
+maskDynamics a =
+  Dynamics $ \p ->
+  MC.mask $ \u ->
+  invokeDynamics p (a $ q u)
+  where q u (Dynamics b) = Dynamics (u . b)
+
+-- | Like 'maskDynamics', but the masked computation is not interruptible.
+uninterruptibleMaskDynamics :: MC.MonadMask m => ((forall a. Dynamics m a -> Dynamics m a) -> Dynamics m b) -> Dynamics m b
+{-# INLINABLE uninterruptibleMaskDynamics #-}
+uninterruptibleMaskDynamics a =
+  Dynamics $ \p ->
+  MC.uninterruptibleMask $ \u ->
+  invokeDynamics p (a $ q u)
+  where q u (Dynamics b) = Dynamics (u . b)
+
 instance MonadFix m => MonadFix (Dynamics m) where
 
   {-# INLINE mfix #-}
   mfix f = 
     Dynamics $ \p ->
     do { rec { a <- invokeDynamics p (f a) }; return a }
+
+instance MonadException m => MC.MonadThrow (Dynamics m) where
+
+  {-# INLINE throwM #-}
+  throwM = throwDynamics
+
+instance MonadException m => MC.MonadCatch (Dynamics m) where
+
+  {-# INLINE catch #-}
+  catch = catchDynamics
+
+instance (MonadException m, MC.MonadMask m) => MC.MonadMask (Dynamics m) where
+
+  {-# INLINE mask #-}
+  mask = maskDynamics
+  
+  {-# INLINE uninterruptibleMask #-}
+  uninterruptibleMask = uninterruptibleMaskDynamics
 
 -- | Computation that returns the current simulation time.
 time :: Monad m => Dynamics m Double
