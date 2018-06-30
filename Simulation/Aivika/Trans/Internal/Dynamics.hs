@@ -277,6 +277,20 @@ uninterruptibleMaskDynamics a =
   invokeDynamics p (a $ q u)
   where q u (Dynamics b) = Dynamics (u . b)
 
+-- | An implementation of 'generalBracket'.
+generalBracketDynamics :: MC.MonadMask m
+                          => Dynamics m a
+                          -> (a -> MC.ExitCase b -> Dynamics m c)
+                          -> (a -> Dynamics m b)
+                          -> Dynamics m (b, c)
+{-# INLINABLE generalBracketDynamics #-}
+generalBracketDynamics acquire release use =
+  Dynamics $ \p -> do
+    MC.generalBracket
+      (invokeDynamics p acquire)
+      (\resource e -> invokeDynamics p $ release resource e)
+      (\resource -> invokeDynamics p $ use resource)
+
 instance MonadFix m => MonadFix (Dynamics m) where
 
   {-# INLINE mfix #-}
@@ -301,6 +315,9 @@ instance (MonadException m, MC.MonadMask m) => MC.MonadMask (Dynamics m) where
   
   {-# INLINE uninterruptibleMask #-}
   uninterruptibleMask = uninterruptibleMaskDynamics
+  
+  {-# INLINE generalBracket #-}
+  generalBracket = generalBracketDynamics
 
 -- | Computation that returns the current simulation time.
 time :: Monad m => Dynamics m Double

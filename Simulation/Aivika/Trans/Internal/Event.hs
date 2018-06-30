@@ -183,6 +183,20 @@ uninterruptibleMaskEvent a =
   invokeEvent p (a $ q u)
   where q u (Event b) = Event (u . b)
 
+-- | An implementation of 'generalBracket'.
+generalBracketEvent :: MC.MonadMask m
+                       => Event m a
+                       -> (a -> MC.ExitCase b -> Event m c)
+                       -> (a -> Event m b)
+                       -> Event m (b, c)
+{-# INLINABLE generalBracketEvent #-}
+generalBracketEvent acquire release use =
+  Event $ \p -> do
+    MC.generalBracket
+      (invokeEvent p acquire)
+      (\resource e -> invokeEvent p $ release resource e)
+      (\resource -> invokeEvent p $ use resource)
+
 instance MonadFix m => MonadFix (Event m) where
 
   {-# INLINE mfix #-}
@@ -207,6 +221,9 @@ instance (MonadException m, MC.MonadMask m) => MC.MonadMask (Event m) where
   
   {-# INLINE uninterruptibleMask #-}
   uninterruptibleMask = uninterruptibleMaskEvent
+  
+  {-# INLINE generalBracket #-}
+  generalBracket = generalBracketEvent
 
 -- | Run the 'Event' computation in the start time involving all
 -- pending 'CurrentEvents' in the processing too.
