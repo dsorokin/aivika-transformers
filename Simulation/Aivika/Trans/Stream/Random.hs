@@ -45,7 +45,7 @@ import Simulation.Aivika.Trans.Statistics
 import Simulation.Aivika.Trans.Ref
 import Simulation.Aivika.Trans.Arrival
 
--- | Return a sream of random events that arrive with the specified delay.
+-- | Return a stream of random events that arrive with the specified delay.
 randomStream :: MonadDES m
                 => Parameter m (Double, a)
                 -- ^ compute a pair of the delay and event of type @a@
