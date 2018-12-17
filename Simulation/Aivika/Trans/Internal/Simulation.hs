@@ -33,6 +33,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import Control.Monad.Fail
 import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
@@ -116,6 +117,11 @@ instance Applicative m => Applicative (Simulation m) where
   
   {-# INLINE (<*>) #-}
   (Simulation x) <*> (Simulation y) = Simulation $ \r -> x r <*> y r
+
+instance Monad m => MonadFail (Simulation m) where
+
+  {-# INLINE fail #-}
+  fail = error
 
 liftMS :: Monad m => (a -> b) -> Simulation m a -> Simulation m b
 {-# INLINE liftMS #-}

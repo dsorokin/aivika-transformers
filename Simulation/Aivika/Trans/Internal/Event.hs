@@ -62,6 +62,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import Control.Monad.Fail
 import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
@@ -101,6 +102,11 @@ instance Applicative m => Applicative (Event m) where
   
   {-# INLINE (<*>) #-}
   (Event x) <*> (Event y) = Event $ \p -> x p <*> y p
+
+instance Monad m => MonadFail (Event m) where
+
+  {-# INLINE fail #-}
+  fail = error
 
 instance MonadTrans Event where
 

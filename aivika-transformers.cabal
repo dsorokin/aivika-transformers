@@ -1,5 +1,5 @@
 name:            aivika-transformers
-version:         5.8
+version:         5.9
 synopsis:        Transformers for the Aivika simulation library
 description:
     This package is a generalization of the aivika [1] simulation library
@@ -168,7 +168,7 @@ library
                      Simulation.Aivika.IO.Var
                      Simulation.Aivika.IO.Var.Unboxed
 
-    build-depends:   base >= 4.6.0.0 && < 6,
+    build-depends:   base >= 4.9.0.0 && < 6,
                      mtl >= 2.1.1,
                      array >= 0.3.0.0,
                      containers >= 0.4.0.0,
@@ -177,7 +177,7 @@ library
                      vector >= 0.10.0.1,
                      semigroups >= 0.10,
                      exceptions >= 0.9.0,
-                     aivika >= 5.8
+                     aivika >= 5.9
 
     other-extensions:   FlexibleContexts,
                         FlexibleInstances,

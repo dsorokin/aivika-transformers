@@ -45,6 +45,7 @@ import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import Control.Monad.Fail
 import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
@@ -129,6 +130,11 @@ instance Applicative m => Applicative (Parameter m) where
   
   {-# INLINE (<*>) #-}
   (Parameter x) <*> (Parameter y) = Parameter $ \r -> x r <*> y r
+
+instance Monad m => MonadFail (Parameter m) where
+
+  {-# INLINE fail #-}
+  fail = error
 
 liftMP :: Monad m => (a -> b) -> Parameter m a -> Parameter m b
 {-# INLINE liftMP #-}

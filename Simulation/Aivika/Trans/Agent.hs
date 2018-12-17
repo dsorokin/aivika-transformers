@@ -222,8 +222,10 @@ selectState st =
          "Use the setStateTransition function to define " ++
          "the transition state: activateState."
        ProcessingMode ->
-         do x0 @ (Just st0) <- invokeEvent p $ readRef (agentStateRef agent)
-            invokeEvent p $ traversePath x0 st
+         do x0 <- invokeEvent p $ readRef (agentStateRef agent)
+            case x0 of
+              Just st0 -> invokeEvent p $ traversePath x0 st
+              Nothing  -> error "Pattern match failed: selectState"
 
 -- | Set the activation computation for the specified state.
 setStateActivation :: MonadDES m => AgentState m -> Event m () -> Event m ()

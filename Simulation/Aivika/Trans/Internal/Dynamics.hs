@@ -37,6 +37,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import Control.Monad.Fail
 import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
@@ -103,6 +104,11 @@ instance Applicative m => Applicative (Dynamics m) where
   
   {-# INLINE (<*>) #-}
   (Dynamics x) <*> (Dynamics y) = Dynamics $ \p -> x p <*> y p
+
+instance Monad m => MonadFail (Dynamics m) where
+
+  {-# INLINE fail #-}
+  fail = error
 
 liftMD :: Monad m => (a -> b) -> Dynamics m a -> Dynamics m b
 {-# INLINE liftMD #-}

@@ -28,6 +28,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Fix
+import Control.Monad.Fail
 import Control.Applicative
 
 import Simulation.Aivika.Trans.Comp
@@ -96,6 +97,11 @@ instance Monad m => Monad (Composite m) where
        let Composite m' = k a
        (b, h') <- m' h
        return (b, h')
+
+instance Monad m => MonadFail (Composite m) where
+
+  {-# INLINE fail #-}
+  fail = error
 
 instance (Monad m, MonadIO (Event m)) => MonadIO (Composite m) where
 

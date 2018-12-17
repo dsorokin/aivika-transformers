@@ -100,6 +100,7 @@ import Data.Maybe
 import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.Fail
 import qualified Control.Monad.Catch as MC
 import Control.Applicative
 
@@ -499,6 +500,11 @@ instance MonadDES m => Applicative (Process m) where
   
   {-# INLINE (<*>) #-}
   (Process x) <*> (Process y) = Process $ \pid -> x pid <*> y pid
+
+instance MonadDES m => MonadFail (Process m) where
+
+  {-# INLINE fail #-}
+  fail = error
 
 instance (MonadDES m, MonadIO m) => MonadIO (Process m) where
   
