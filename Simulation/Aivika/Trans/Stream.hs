@@ -323,7 +323,7 @@ rightStream (Cons s) = Cons y where
 -- | Replace the 'Left' values.
 replaceLeftStream :: MonadDES m => Stream m (Either a b) -> Stream m c -> Stream m (Either c b)
 {-# INLINABLE replaceLeftStream #-}
-replaceLeftStream (Cons sab) (ys0 @ ~(Cons sc)) = Cons z where
+replaceLeftStream (Cons sab) (ys0@(Cons sc)) = Cons z where
   z = do (a, xs) <- sab
          case a of
            Left _ ->
@@ -335,7 +335,7 @@ replaceLeftStream (Cons sab) (ys0 @ ~(Cons sc)) = Cons z where
 -- | Replace the 'Right' values.
 replaceRightStream :: MonadDES m => Stream m (Either a b) -> Stream m c -> Stream m (Either a c)
 {-# INLINABLE replaceRightStream #-}
-replaceRightStream (Cons sab) (ys0 @ ~(Cons sc)) = Cons z where
+replaceRightStream (Cons sab) (ys0@(Cons sc)) = Cons z where
   z = do (a, xs) <- sab
          case a of
            Right _ ->
