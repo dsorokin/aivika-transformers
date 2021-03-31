@@ -821,7 +821,7 @@ freezeContReentering c a m =
           invokeEvent p $ writeRef rc Nothing
           case c of
             Nothing -> return Nothing
-            z @ (Just c) ->
+            z@(Just c) ->
               do f <- invokeEvent p $
                       contPreemptionBegun $
                       contId $ contAux c

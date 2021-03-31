@@ -211,10 +211,10 @@ listRemoveBy x p = readRef (listHead x) >>= loop
                              (Nothing, Nothing) ->
                                do writeRef (listHead x) Nothing
                                   writeRef (listTail x) Nothing
-                             (Nothing, head' @ (Just item')) ->
+                             (Nothing, head'@(Just item')) ->
                                do writeRef (itemPrev item') Nothing
                                   writeRef (listHead x) head'
-                             (tail' @ (Just item'), Nothing) ->
+                             (tail'@(Just item'), Nothing) ->
                                do writeRef (itemNext item') Nothing
                                   writeRef (listTail x) tail'
                              (Just prev', Just next') ->
