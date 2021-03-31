@@ -1,3 +1,7 @@
 dist/
+dist-newstyle/
 cabal-dev/
 .stack-work/
+cabal.project.local*
+.DS_Store
+
