@@ -1,3 +1,7 @@
+The project **has been moved** to https://gitflic.ru/project/dsorokin/aivika-transformers
+
+**The old web site URL has another owner now**
+
 Transformers for the Aivika simulation library
 
 The represented [aivika-transformers](http://hackage.haskell.org/package/aivika-transformers) package 
@@ -14,4 +18,3 @@ with charts, histograms, links to CSV tables, statistics summary and so on.
 
 This method can be used not only for the parallel distributed simulation, but also for other 
 simulation models created with help of the generalized version of the Aivika simulation library.
-Please consult the [AivikaSoft](http://www.aivikasoft.com) website for more details.
